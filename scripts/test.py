@@ -10,7 +10,7 @@ from torchvision.transforms import v2
 from omegaconf import OmegaConf
 
 from src.data_pipeline import DataPipeline
-from src.model import SimpleCNN
+from src.model import ResNet #変更点simpleCNN→ResNet
 from src.trainer import AccuracyEvaluator
 from src.train_id import print_config
 from src.util import set_random_seed
@@ -26,7 +26,12 @@ def main(
 
     print_config(cfg)
 
-    net = SimpleCNN(**cfg.model.params)
+    cfg.model.name = "resnet"#追加点（2行）
+    cfg.model.params = {"num_classes": 10}
+
+#モデルの再構築と重みの読み込み
+    #net = ResNet(**cfg.model.params)#変更点simpleCNN→ResNet
+    net = ResNet(resnet_name="resnet18", num_classes=10)
     net.load_state_dict(torch.load(f"/{os.environ['PROJECT_NAME']}/outputs/train/history/{train_id}/best_model.pth"))
     net = net.to(device)
 
@@ -35,11 +40,13 @@ def main(
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(**cfg.dataset.train.transform.normalize),
     ])
+    #テストデータセットの用意
     dataset = torchvision.datasets.MNIST(
         root="./data/",
         train=False,
         download=True,
     )
+    #現在のコードでは、MINIST(固定)、transforms,Normalize等が一致しないと精度に影響
     classes = dataset.classes
     datapipe = DataPipeline(dataset, static_transforms=transforms, dynamic_transforms=None, max_cache_size=0)
     test_loader = torch.utils.data.DataLoader(
@@ -50,16 +57,29 @@ def main(
     )
 
     net.eval()
+    #精度に関する部分はここが考えられる
     evaluator = AccuracyEvaluator(classes)
-    evaluator.initialize()
+    evaluator.initialize()#評価の内部状態を初期化
+    #評価実行
     for inputs, targets in test_loader:
         inputs, targets = inputs.to(device), targets.to(device)
         outputs = net(inputs)
         evaluator.eval_batch(outputs, targets)
     result = evaluator.finalize()
-    print(result)
+    #精度表示
+    print(f"[INFO]Axxuracy result for Train ID {train_id}:{result:.4f}")
+    for key, value in result.items():
+        print(f"{key}: {value:.4f}")
+    #結果をファイルに保存
+    log_path = Path("./outputs/test_results") / f"{train_id}_result.txt"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
 
+    with open(log_path,"w") as f:
+        f.write(f"Accurary result for Train ID {train_id}\n")
+        for key, value in result.items():
+            f.write(f"{key}:{value:.4f}\n")
 
+            
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--history_dir', type=str,
@@ -83,7 +103,7 @@ if __name__ == "__main__":
     for q in sorted(p.glob('**/config.yaml')):
         cfg = OmegaConf.load(str(q))
         train_id = q.parent.name
-
+        #今回（5月15日）に相談した所
         if not (q.parent / "best_model.pth").exists():
             print(f"A model for Train ID {train_id} does not exist")
             if args.remove_untrained_id:

@@ -1,3 +1,4 @@
+#モジュールの読み込み
 from pathlib import Path
 import os
 
@@ -12,13 +13,13 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 from src.data_pipeline import DataPipeline
-from src.model import SimpleCNN, ResNet
+from src.model import SimpleCNN, ResNet#Resnetモデルで評価対象を構成
 from src.trainer import Trainer, LossEvaluator, AccuracyEvaluator
 from src.train_id import print_config, generate_train_id, is_same_config
 from src.extension import ModelSaver, HistorySaver, HistoryLogger, MaxValueTrigger, IntervalTrigger, LearningCurvePlotter
 from src.util import set_random_seed
 
-
+#Hydraの起動と出力先の確保
 @hydra.main(version_base=None, config_path=f"/{os.environ['PROJECT_NAME']}/conf", config_name="config.yaml")
 def main(cfg: DictConfig) -> None:
     # 乱数を固定
@@ -77,8 +78,8 @@ def main(cfg: DictConfig) -> None:
         **cfg.dataloader
     )
 
-    # DNNを作る
     #net = SimpleCNN(**cfg.model.params)
+    #モデルの構想と表示（DNNを作る）
     net = ResNet('ResNet18').to(device)
     
     # ネットワークの構造やパラメータ数，必要なメモリ量などを表示
@@ -87,7 +88,8 @@ def main(cfg: DictConfig) -> None:
 
     # 損失関数やその他ハイパーパラメータの定義
     epochs = cfg.epoch
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss()#損失関数=交差エントロピー
+    #最適化手法=Adam
     optimizer = optim.Adam(net.parameters(), **cfg.optimizer.params)
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, [i * epochs for i in cfg.lr_scheduler.params.milestones], gamma=cfg.lr_scheduler.params.gamma)
 
@@ -97,11 +99,11 @@ def main(cfg: DictConfig) -> None:
         AccuracyEvaluator(classes)
     ]
 
-    # Extension (エポック毎に実行したい処理）の設定
+    # Extension (エポック毎に実行したい処理）の設定(拡張機能)  
     extensions = [
         ModelSaver(
             directory=p,
-            name=lambda x: "best_model.pth",
+            name=lambda x: "best_model.pth",#精度が最高だったときのモデルのみ保存
             trigger=MaxValueTrigger(mode="validation", key="total acc")),
         HistorySaver(
             directory=p,
