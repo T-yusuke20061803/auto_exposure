@@ -32,7 +32,7 @@ def main(
 #モデルの再構築と重みの読み込み
     #net = ResNet(**cfg.model.params)#変更点simpleCNN→ResNet
     net = ResNet(resnet_name="resnet18", num_classes=10)
-    net.load_state_dict(torch.load(f"/{os.environ['PROJECT_NAME']}/outputs/train/history/{train_id}/best_model.pth"))
+    net.load_state_dict(torch.load(f"/{os.environ['auto_exposure']}/outputs/train/history/{train_id}/best_model.pth"))
     net = net.to(device)
 
     transforms = v2.Compose([
