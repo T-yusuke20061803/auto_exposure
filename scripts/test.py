@@ -83,7 +83,7 @@ def main(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--history_dir', type=str,
-                        default=f"/{os.environ['PROJECT_NAME']}/outputs/train/history",
+                        default=f"/{os.environ['auto_exposure']}/outputs/train/history",
                         help='Directory path for searching trained models')
     parser.add_argument('--seed', type=int,
                         default=0,
@@ -110,7 +110,7 @@ if __name__ == "__main__":
                 shutil.rmtree(q.parent)
             continue
 
-        result_dir = Path(f"/{os.environ['PROJECT_NAME']}") / "outputs" / Path(__file__).stem
+        result_dir = Path(f"/{os.environ['auto_exposure']}") / "outputs" / Path(__file__).stem
         result_dir /= train_id
         if result_dir.exists():
             print(f"Train ID {train_id} is already tested")
@@ -125,3 +125,5 @@ if __name__ == "__main__":
                  seed=args.seed)
         except Exception as e:
             print(f"Train ID {train_id} is skipped due to an exception {e}")
+###5月19日
+# PROJECT_NAME→auto_exposureに変更
