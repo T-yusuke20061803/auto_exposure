@@ -21,32 +21,30 @@ def main(
         train_id,
         seed
     ):
-    set_random_seed(seed)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    set_random_seed(seed)#乱数値の固定（再現性確保のため）
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")#使用デバイスの設定
 
     print_config(cfg)
-
-    cfg.model.name = "resnet"#追加点（2行）
-    cfg.model.params = {"num_classes": 10}
 
 #モデルの再構築と重みの読み込み
     #net = ResNet(**cfg.model.params)#変更点simpleCNN→ResNet
     net = ResNet(resnet_name="resnet18", num_classes=10)
-    net.load_state_dict(torch.load(f"/{os.environ['PROJECT_NAME']}/outputs/train/history/{train_id}/best_model.pth"))
+    model_path = Path("outputs/train/history") / train_id / "best_model.pth"
+    net.load_state_dict(torch.load(model_path, map_location=device))
     net = net.to(device)
-
+  #テスト用の前処理
     transforms = v2.Compose([
         v2.ToImage(),
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(**cfg.dataset.train.transform.normalize),
     ])
-    #テストデータセットの用意
+    #テストデータセットの用意（MNIST固定）
     dataset = torchvision.datasets.MNIST(
         root="./data/",
         train=False,
         download=True,
     )
-    #現在のコードでは、MINIST(固定)、transforms,Normalize等が一致しないと精度に影響
+    #transforms,Normalize等が一致しないと精度に影響
     classes = dataset.classes
     datapipe = DataPipeline(dataset, static_transforms=transforms, dynamic_transforms=None, max_cache_size=0)
     test_loader = torch.utils.data.DataLoader(
@@ -67,11 +65,12 @@ def main(
         evaluator.eval_batch(outputs, targets)
     result = evaluator.finalize()
     #精度表示
-    print(f"[INFO]Axxuracy result for Train ID {train_id}:{result:.4f}")
+    print(f"\n[INFO]Axxuracy result for Train ID {train_id}:{result:.4f}")
     for key, value in result.items():
         print(f"{key}: {value:.4f}")
+
     #結果をファイルに保存
-    log_path = Path("./outputs/test_results") / f"{train_id}_result.txt"
+    log_path = Path("outputs/test_results") / f"{train_id}_result.txt"
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(log_path,"w") as f:
@@ -83,7 +82,7 @@ def main(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--history_dir', type=str,
-                        default=f"/{os.environ['PROJECT_NAME']}/outputs/train/history",
+                        default="./outputs/train/history",
                         help='Directory path for searching trained models')
     parser.add_argument('--seed', type=int,
                         default=0,
@@ -92,14 +91,14 @@ if __name__ == "__main__":
                         default=None,
                         help='Sets random seed')
     parser.add_argument('--remove_untrained_id', action="store_true",
-                        help='If True, history directories in history_dir'
-                        +'that do not contain model checkpoints will be removed')
+                        help='Delete folders that do not contain model checkpoints')
     parser.add_argument('--skip_tested', action="store_true",
-                        help='If True, train IDs whose resulting directories already exist'
-                        +'will be skipped')
+                        help='Skip train IDs that already have test results')
 
     args = parser.parse_args()
     p = Path.cwd() / args.history_dir
+
+    #フォルダを順に確認
     for q in sorted(p.glob('**/config.yaml')):
         cfg = OmegaConf.load(str(q))
         train_id = q.parent.name
@@ -109,9 +108,9 @@ if __name__ == "__main__":
             if args.remove_untrained_id:
                 shutil.rmtree(q.parent)
             continue
-
-        result_dir = Path(f"/{os.environ['PROJECT_NAME']}") / "outputs" / Path(__file__).stem
-        result_dir /= train_id
+        #既にテスト済みの場合、スキップ
+        result_dir = Path("outputs/test_results") 
+        result_file = result_dir /= f"{train_id}_result.txt"
         if result_dir.exists():
             print(f"Train ID {train_id} is already tested")
             if args.skip_tested:

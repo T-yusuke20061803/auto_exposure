@@ -138,3 +138,5 @@ def main(cfg: DictConfig) -> None:
 
 if __name__ == "__main__":
     main()
+
+#5/19→PROJECT_NAME→auto_exposureは変更してはいけない
