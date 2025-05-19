@@ -6,8 +6,8 @@ defaults:
   - lr_scheduler: multi_step
 seed: null
 dataloader: 
-  batch_size: 256
-  num_workers: 16
+  batch_size: 64  # ← 256 から減らす（まずは 64 に）
+  num_workers: 4  # ← 16 から減らす
   pin_memory: true
 epoch: 200
 optuna:
