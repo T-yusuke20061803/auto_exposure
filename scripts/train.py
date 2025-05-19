@@ -59,7 +59,7 @@ def main(cfg: DictConfig) -> None:
     dataset = torchvision.datasets.CIFAR10(
         **cfg.dataset.train.params
     )
-    datapipe = DataPipeline(dataset, static_transforms=transforms, dynamic_transforms=random_transforms, max_cache_size=len(dataset))
+    datapipe = DataPipeline(dataset, static_transforms=transforms, dynamic_transforms=random_transforms, max_cache_size=0)#len(dataset)→0、キャッシュを無効にして通信負荷を減らす（5月20日）
     train_set, val_set = torch.utils.data.random_split(
         datapipe,
         cfg.dataset.random_split.lengths
@@ -80,7 +80,8 @@ def main(cfg: DictConfig) -> None:
 
     #net = SimpleCNN(**cfg.model.params)
     #モデルの構想と表示（DNNを作る）
-    net = ResNet('ResNet18').to(device)
+    #ResNet → より軽量なモデル（SimpleCNN）に一時変更（5月20日）
+    net = SimpleCNN(**cfg.model.params).to(device)
     
     # ネットワークの構造やパラメータ数，必要なメモリ量などを表示
     input_size = train_set[0][0].shape
