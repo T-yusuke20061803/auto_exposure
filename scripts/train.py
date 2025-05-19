@@ -131,9 +131,9 @@ def main(cfg: DictConfig) -> None:
     trainer.train(epochs, val_loader)
 
     # モデル保存
-    output_dir = Path("../model")
+    output_dir = Path("./outputs/model")
     if not output_dir.exists():
-        output_dir.mkdir(parents=True)
+        output_dir.mkdir(parents=True, exist_ok=True)
     torch.save(net.state_dict(), output_dir / "final_model.pth")
 
 

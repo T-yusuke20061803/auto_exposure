@@ -4,12 +4,12 @@ defaults:
   - model: simple_cnn
   - optimizer: adam
   - lr_scheduler: multi_step
-seed: null
+seed: 50 #再現性確保のため、固定値を採用
 dataloader: 
-  batch_size: 64  # ← 256 から減らす（まずは 64 に）
+  batch_size: 64  # ← 256 から減らす（まずは 64 に）(5月20日)
   num_workers: 4  # ← 16 から減らす
   pin_memory: true
-epoch: 200
+epoch: 100 # 時間削減のため200→100へ変更
 optuna:
   direction: maximize
   n_trials: 100
