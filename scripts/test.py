@@ -110,7 +110,7 @@ if __name__ == "__main__":
             continue
         #既にテスト済みの場合、スキップ
         result_dir = Path("outputs/test_results") 
-        result_file = result_dir /= f"{train_id}_result.txt"
+        result_file = result_dir / f"{train_id}_result.txt"
         if result_dir.exists():
             print(f"Train ID {train_id} is already tested")
             if args.skip_tested:
