@@ -10,7 +10,7 @@ from torchvision.transforms import v2
 from omegaconf import OmegaConf
 
 from src.data_pipeline import DataPipeline
-from src.model import ResNet #変更点simpleCNN→ResNet
+from src.model import SimpleCNN #変更点ResNet→simpleCNN→
 from src.trainer import AccuracyEvaluator
 from src.train_id import print_config
 from src.util import set_random_seed
@@ -27,8 +27,8 @@ def main(
     print_config(cfg)
 
 #モデルの再構築と重みの読み込み
-    #net = ResNet(**cfg.model.params)#変更点simpleCNN→ResNet
-    net = ResNet(resnet_name="resnet18", num_classes=10)
+    #net = ResNet(**cfg.model.params)#変更点ResNet→SimpleCNN
+    net = SimpleCNN(num_classes=10)
     model_path = Path("outputs/train/history") / train_id / "best_model.pth"
     net.load_state_dict(torch.load(model_path, map_location=device))
     net = net.to(device)
@@ -38,8 +38,8 @@ def main(
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(**cfg.dataset.train.transform.normalize),
     ])
-    #テストデータセットの用意（MNIST固定）
-    dataset = torchvision.datasets.MNIST(
+    #テストデータセットの用意
+    dataset = torchvision.datasets.CIFAR10(#MNIST→CIFAR-10に変更することで統一
         root="./data/",
         train=False,
         download=True,
@@ -65,7 +65,7 @@ def main(
         evaluator.eval_batch(outputs, targets)
     result = evaluator.finalize()
     #精度表示
-    print(f"\n[INFO]Axxuracy result for Train ID {train_id}:{result:.4f}")
+    print(f"\n[INFO]Accuracy result for Train ID {train_id}")
     for key, value in result.items():
         print(f"{key}: {value:.4f}")
 
