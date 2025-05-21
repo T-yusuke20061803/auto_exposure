@@ -13,7 +13,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 from src.data_pipeline import DataPipeline
-from src.model import ResNet#Resnetモデルで評価対象を構成
+from src.model import SimpleCNN, ResNet#Resnetモデルで評価対象を構成
 from src.trainer import Trainer, LossEvaluator, AccuracyEvaluator
 from src.train_id import print_config, generate_train_id, is_same_config
 from src.extension import ModelSaver, HistorySaver, HistoryLogger, MaxValueTrigger, IntervalTrigger, LearningCurvePlotter
