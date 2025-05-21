@@ -1,0 +1,12 @@
+Accurary result for Train ID 406936bbf8
+total acc:0.3934
+airplane:0.4880
+automobile:0.5430
+bird:0.1060
+cat:0.2170
+deer:0.2020
+dog:0.1850
+frog:0.7180
+horse:0.3610
+ship:0.6290
+truck:0.4850
