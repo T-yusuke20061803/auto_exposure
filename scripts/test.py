@@ -10,7 +10,7 @@ from torchvision.transforms import v2
 from omegaconf import OmegaConf
 
 from src.data_pipeline import DataPipeline
-from src.model import SimpleCNN #変更点ResNet→simpleCNN→
+from src.model import ResNet #変更点simpleCNN→ResNet
 from src.trainer import AccuracyEvaluator
 from src.train_id import print_config
 from src.util import set_random_seed
@@ -27,8 +27,7 @@ def main(
     print_config(cfg)
 
 #モデルの再構築と重みの読み込み
-    #net = ResNet(**cfg.model.params)#変更点ResNet→SimpleCNN
-    net = SimpleCNN(num_classes=10)
+    net = ResNet(resnet_name="resnet18", num_classes=10)
     model_path = Path("outputs/train/history") / train_id / "best_model.pth"
     net.load_state_dict(torch.load(model_path, map_location=device))
     net = net.to(device)

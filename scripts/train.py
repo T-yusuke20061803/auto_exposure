@@ -13,7 +13,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 from src.data_pipeline import DataPipeline
-from src.model import SimpleCNN, ResNet#Resnetモデルで評価対象を構成
+from src.model import ResNet#Resnetモデルで評価対象を構成
 from src.trainer import Trainer, LossEvaluator, AccuracyEvaluator
 from src.train_id import print_config, generate_train_id, is_same_config
 from src.extension import ModelSaver, HistorySaver, HistoryLogger, MaxValueTrigger, IntervalTrigger, LearningCurvePlotter
@@ -81,7 +81,7 @@ def main(cfg: DictConfig) -> None:
     #net = SimpleCNN(**cfg.model.params)
     #モデルの構想と表示（DNNを作る）
     #ResNet → より軽量なモデル（SimpleCNN）に一時変更（5月20日）
-    net = SimpleCNN(**cfg.model.params).to(device)
+    net = ResNet(**cfg.model.params).to(device)
     
     # ネットワークの構造やパラメータ数，必要なメモリ量などを表示
     input_size = train_set[0][0].shape
