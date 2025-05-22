@@ -27,7 +27,7 @@ def main(
     print_config(cfg)
 
 #モデルの再構築と重みの読み込み
-    net = ResNet(**cfg.model.params).to(device)
+    net = ResNet(resnet_name="ResNet18", num_classes=10).to(device)
     model_path = Path("outputs/train/history") / train_id / "best_model.pth"
     net.load_state_dict(torch.load(model_path, map_location=device))
     net = net.to(device)
