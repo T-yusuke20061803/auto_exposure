@@ -10,7 +10,7 @@ from torchvision.transforms import v2
 from omegaconf import OmegaConf
 
 from src.data_pipeline import DataPipeline
-from src.model import ResNet #変更点simpleCNN→ResNet
+from src.model import ResNet, SimpleCNN #変更点simpleCNN→ResNet
 from src.trainer import AccuracyEvaluator
 from src.train_id import print_config
 from src.util import set_random_seed
@@ -27,7 +27,13 @@ def main(
     print_config(cfg)
 
 #モデルの再構築と重みの読み込み
-    net = ResNet("ResNet18", num_classes=10).to(device)
+    model_name = cfg.model.name.lower()
+    if model_name == "resnet":
+        net = ResNet(**cfg.model.params).to(device)
+    elif model_name == "simplecnn":
+        net = SimpleCNN(**cfg.model.params).to(device)
+    else:
+        raise ValueError(f"Unsupported model type: {cfg.model.name}")
     model_path = Path("outputs/train/history") / train_id / "best_model.pth"
     net.load_state_dict(torch.load(model_path, map_location=device))
     net = net.to(device)
@@ -74,6 +80,7 @@ def main(
 
     with open(log_path,"w") as f:
         f.write(f"Accurary result for Train ID {train_id}\n")
+        f.write(f"Model:{cfg.model.name}\n")
         for key, value in result.items():
             f.write(f"{key}:{value:.4f}\n")
 
