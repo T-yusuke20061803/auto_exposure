@@ -27,8 +27,8 @@ def main(
     print_config(cfg)
 
 #モデルの再構築と重みの読み込み
-    model_name = cfg.model.name.lower()
-    if model_name == "resnet":
+    model_name = cfg.model.name.lower()#.lower()→モデル名（ResNet→resnet）のように全て小文字変換させることで統一させ、バグorエラーを防止する
+    if model_name == "ResNet18":
         net = ResNet(**cfg.model.params).to(device)
     elif model_name == "simplecnn":
         net = SimpleCNN(**cfg.model.params).to(device)
@@ -80,7 +80,7 @@ def main(
 
     with open(log_path,"w") as f:
         f.write(f"Accurary result for Train ID {train_id}\n")
-        f.write(f"Model:{cfg.model.name}\n")
+        f.write(f"Model: {cfg.model.name}\n")
         for key, value in result.items():
             f.write(f"{key}:{value:.4f}\n")
 
