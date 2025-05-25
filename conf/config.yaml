@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - dataset: cifar10
-  - model: resnet #simple_cnn→resnet
+  - model: ResNet #simplecnn→resnet
   - optimizer: adam
   - lr_scheduler: multi_step
 seed: 50 #再現性確保のため、固定値を採用

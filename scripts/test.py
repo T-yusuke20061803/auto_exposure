@@ -28,7 +28,7 @@ def main(
 
 #モデルの再構築と重みの読み込み
     model_name = cfg.model.name.lower()#.lower()→モデル名（ResNet→resnet）のように全て小文字変換させることで統一させ、バグorエラーを防止する
-    if model_name == "ResNet18":
+    if model_name == "resnet":
         net = ResNet(**cfg.model.params).to(device)
     elif model_name == "simplecnn":
         net = SimpleCNN(**cfg.model.params).to(device)
@@ -70,7 +70,7 @@ def main(
         evaluator.eval_batch(outputs, targets)
     result = evaluator.finalize()
     #精度表示
-    print(f"\n[INFO]Accuracy result for Train ID {train_id}")
+    print(f"\n[INFO]Accuracy result for Train ID {train_id}") (Model: {cfg.model.name})")
     for key, value in result.items():
         print(f"{key}: {value:.4f}")
 
