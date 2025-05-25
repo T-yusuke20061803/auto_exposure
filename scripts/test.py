@@ -70,7 +70,7 @@ def main(
         evaluator.eval_batch(outputs, targets)
     result = evaluator.finalize()
     #精度表示
-    print(f"\n[INFO]Accuracy result for Train ID {train_id}") (Model: {cfg.model.name})")
+    print(f"\n[INFO]Accuracy result for Train ID {train_id} Model: {cfg.model.name})")
     for key, value in result.items():
         print(f"{key}: {value:.4f}")
 
