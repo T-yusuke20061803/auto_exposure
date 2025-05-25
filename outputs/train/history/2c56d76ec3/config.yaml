@@ -1,9 +1,9 @@
 seed: 50
 dataloader:
-  batch_size: 64
+  batch_size: 32
   num_workers: 4
   pin_memory: true
-epoch: 100
+epoch: 20
 optuna:
   direction: maximize
   n_trials: 100
@@ -42,7 +42,7 @@ dataset:
 model:
   name: resnet
   params:
-    resnet_name: resnet18
+    resnet_name: ResNet18
     num_classes: 10
 optimizer:
   name: adam
