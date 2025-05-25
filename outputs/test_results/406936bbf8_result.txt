@@ -1,4 +1,5 @@
 Accurary result for Train ID 406936bbf8
+Model: simplecnn
 total acc:0.3934
 airplane:0.4880
 automobile:0.5430
