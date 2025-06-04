@@ -9,7 +9,7 @@ dataloader:
   batch_size: 32  # ← 256 から減らす（64：SimpleCNN、32：ResNet）(5月20日)
   num_workers: 4  # ← 16 から減らす
   pin_memory: true
-epoch: 20 # 時間削減のため200→100へ変更
+epoch: 40 # 時間削減のため200→100へ変更
           #ResNetの際には、時間的考慮で20に変更
 optuna:
   direction: maximize
