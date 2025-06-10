@@ -16,7 +16,7 @@ from src.data_pipeline import DataPipeline
 from src.model import SimpleCNN#Resnetモデルで評価対象を構成
 from src.trainer import Trainer, LossEvaluator, AccuracyEvaluator
 from src.train_id import print_config, generate_train_id, is_same_config
-from src.extension import ModelSaver, HistorySaver, HistoryLogger, MaxValueTrigger, IntervalTrigger, LearningCurvePlotter
+from src.extension import ModelSaver, HistorySaver, HistoryLogger, MaxValueTrigger, IntervalTrigger, LearningCurvePlotter, MinValueTrigger
 from src.util import set_random_seed
 
 #Hydraの起動と出力先の確保
@@ -101,8 +101,8 @@ def main(cfg: DictConfig) -> None:
     extensions = [
         ModelSaver(
             directory=p,
-            name=lambda x: "best_model.pth",#精度が最高だったときのモデルのみ保存
-            trigger=MaxValueTrigger(mode="validation", key="loss", minimize=True)),
+            name=lambda x: "best_model.pth",#モデルのみ保存
+            trigger=MinValueTrigger(mode="validation", key="loss")),
         HistorySaver(
             directory=p,
             name=lambda x: "history.pth",
