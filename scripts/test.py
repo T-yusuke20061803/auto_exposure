@@ -12,6 +12,7 @@ from omegaconf import OmegaConf
 from src.data_pipeline import DataPipeline
 from src.model import ResNet, SimpleCNN #変更点simpleCNN→ResNet
 from src.trainer import AccuracyEvaluator
+from src.trainer import LossEvaluator
 from src.train_id import print_config
 from src.util import set_random_seed
 
@@ -23,7 +24,6 @@ def main(
     ):
     set_random_seed(seed)#乱数値の固定（再現性確保のため）
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")#使用デバイスの設定
-
     print_config(cfg)
 
 #モデルの再構築と重みの読み込み
@@ -34,6 +34,7 @@ def main(
         net = SimpleCNN(**cfg.model.params).to(device)
     else:
         raise ValueError(f"Unsupported model type: {cfg.model.name}")
+    
     model_path = Path("outputs/train/history") / train_id / "best_model.pth"
     net.load_state_dict(torch.load(model_path, map_location=device))
     net = net.to(device)
@@ -50,7 +51,7 @@ def main(
         download=True,
     )
     #transforms,Normalize等が一致しないと精度に影響
-    classes = dataset.classes
+    #classes = dataset.classes 06/07
     datapipe = DataPipeline(dataset, static_transforms=transforms, dynamic_transforms=None, max_cache_size=0)
     test_loader = torch.utils.data.DataLoader(
         datapipe,
@@ -60,17 +61,20 @@ def main(
     )
 
     net.eval()
-    #精度に関する部分はここが考えられる
-    evaluator = AccuracyEvaluator(classes)
+    criterion = torch.nn.MSELoss() #06/07　追加
+    #精度に関する部分はここが考えられる 
+    evaluator = LossEvaluator(criterion, criterion_name="MSE")
+    #evaluator = AccuracyEvaluator(classes)
     evaluator.initialize()#評価の内部状態を初期化
     #評価実行
     for inputs, targets in test_loader:
-        inputs, targets = inputs.to(device), targets.to(device)
+        inputs, targets = inputs.to(device)
+        targets = targets.to(device).float().unsqueeze(1) 
         outputs = net(inputs)
         evaluator.eval_batch(outputs, targets)
     result = evaluator.finalize()
     #精度表示
-    print(f"\n[INFO]Accuracy result for Train ID {train_id} Model: {cfg.model.name})")
+    print(f"\n[INFO]MSE result for Train ID {train_id} Model: {cfg.model.name})")
     for key, value in result.items():
         print(f"{key}: {value:.4f}")
 
@@ -79,7 +83,7 @@ def main(
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(log_path,"w") as f:
-        f.write(f"Accurary result for Train ID {train_id}\n")
+        f.write(f"MES result for Train ID {train_id}\n")
         f.write(f"Model: {cfg.model.name}\n")
         for key, value in result.items():
             f.write(f"{key}:{value:.4f}\n")

@@ -13,7 +13,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 from src.data_pipeline import DataPipeline
-from src.model import ResNet#Resnetモデルで評価対象を構成
+from src.model import SimpleCNN#Resnetモデルで評価対象を構成
 from src.trainer import Trainer, LossEvaluator, AccuracyEvaluator
 from src.train_id import print_config, generate_train_id, is_same_config
 from src.extension import ModelSaver, HistorySaver, HistoryLogger, MaxValueTrigger, IntervalTrigger, LearningCurvePlotter
@@ -56,9 +56,7 @@ def main(cfg: DictConfig) -> None:
         v2.RandomResizedCrop(**cfg.dataset.train.transform.random_resized_crop),
         v2.RandomHorizontalFlip(**cfg.dataset.train.transform.random_horizontal_flip),
     ])
-    dataset = torchvision.datasets.CIFAR10(
-        **cfg.dataset.train.params
-    )
+    dataset = torchvision.datasets.CIFAR10(**cfg.dataset.train.params)
     datapipe = DataPipeline(dataset, static_transforms=transforms, dynamic_transforms=random_transforms, max_cache_size=0)#len(dataset)→0、キャッシュを無効にして通信負荷を減らす（5月20日）
     train_set, val_set = torch.utils.data.random_split(
         datapipe,
@@ -78,10 +76,9 @@ def main(cfg: DictConfig) -> None:
         **cfg.dataloader
     )
 
-    #net = SimpleCNN(**cfg.model.params)
     #モデルの構想と表示（DNNを作る）
     #ResNet → より軽量なモデル（SimpleCNN）に一時変更（5月20日）
-    net = ResNet("ResNet18", num_classes=10).to(device)
+    net = SimpleCNN(num_classes=1).to(device)#回帰出力（num_classes）10→1に変更
     
     # ネットワークの構造やパラメータ数，必要なメモリ量などを表示
     input_size = train_set[0][0].shape
@@ -89,15 +86,15 @@ def main(cfg: DictConfig) -> None:
 
     # 損失関数やその他ハイパーパラメータの定義
     epochs = cfg.epoch
-    criterion = nn.CrossEntropyLoss()#損失関数=交差エントロピー
+    criterion = nn.MSELoss()#損失関数（交差エントロピーから二乗誤差法｛MELoss｝に変更）ここ注意　06/07
     #最適化手法=Adam
     optimizer = optim.Adam(net.parameters(), **cfg.optimizer.params)
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, [i * epochs for i in cfg.lr_scheduler.params.milestones], gamma=cfg.lr_scheduler.params.gamma)
 
     # 検証データセットに対する評価方法の設定
     evaluators = [
-        LossEvaluator(criterion, criterion_name="cross entropy"),
-        AccuracyEvaluator(classes)
+        LossEvaluator(criterion, criterion_name="MSE")
+        #AccuracyEvaluator(classes)
     ]
 
     # Extension (エポック毎に実行したい処理）の設定(拡張機能)  
@@ -105,7 +102,7 @@ def main(cfg: DictConfig) -> None:
         ModelSaver(
             directory=p,
             name=lambda x: "best_model.pth",#精度が最高だったときのモデルのみ保存
-            trigger=MaxValueTrigger(mode="validation", key="total acc")),
+            trigger=MaxValueTrigger(mode="validation", key="loss", minimize=True)),
         HistorySaver(
             directory=p,
             name=lambda x: "history.pth",
