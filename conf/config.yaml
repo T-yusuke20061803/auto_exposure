@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - #dataset: cifar10
+  - dataset: cifar10
   - model: simplecnn #simplecnn→resnet
   - optimizer: adam
   - lr_scheduler: multi_step
