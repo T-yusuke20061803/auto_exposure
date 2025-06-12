@@ -1,0 +1,3 @@
+MSE result for Train ID cb2b3c035b
+Model: SimpleCNN
+loss:6.5935

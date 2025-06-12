@@ -1,3 +1,0 @@
-name: simple_cnn
-params:
-  num_classes: 10
