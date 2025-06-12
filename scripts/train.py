@@ -23,7 +23,7 @@ from src.util import set_random_seed
 @hydra.main(version_base=None, config_path=f"/{os.environ['PROJECT_NAME']}/conf", config_name="config.yaml")
 def main(cfg: DictConfig) -> None:
     # 乱数を固定
-    set_random_seed(42)
+    set_random_seed(cfg.seed)
 
     # 計算デバイスの設定
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

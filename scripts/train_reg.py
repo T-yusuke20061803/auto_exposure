@@ -1,4 +1,4 @@
-# モジュールの読み込み
+# train.py
 from pathlib import Path
 import os
 
@@ -18,37 +18,25 @@ from src.train_id import print_config, generate_train_id, is_same_config
 from src.extension import ModelSaver, HistorySaver, HistoryLogger, IntervalTrigger, LearningCurvePlotter, MinValueTrigger
 from src.util import set_random_seed
 
-from PIL import Image
-import csv
-
-class EVRegressionDataset(torch.utils.data.Dataset):
-    def __init__(self, csv_file, transform=None):
-        self.samples = []
-        with open(csv_file, newline='') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                img_path, ev = row
-                self.samples.append((img_path, float(ev)))
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.samples)
+class EVLabelWrapper(torch.utils.data.Dataset):
+    def __init__(self, base_dataset):
+        self.dataset = base_dataset
 
     def __getitem__(self, idx):
-        path, ev = self.samples[idx]
-        img = Image.open(path).convert("RGB")
-        if self.transform:
-            img = self.transform(img)
-        ev_tensor = torch.tensor([ev], dtype=torch.float32)
-        return img, ev_tensor
+        img, label = self.dataset[idx]
+        ev = torch.tensor([label - 4.5], dtype=torch.float32)  # EV値に変換 CIFAR-10のカテゴリラベル（0〜9）をEV値（-4.5〜+4.5）に線形変換
+        return img, ev
+
+    def __len__(self):
+        return len(self.dataset)
 
 
 @hydra.main(version_base=None, config_path=f"/{os.environ['PROJECT_NAME']}/conf", config_name="config.yaml")
 def main(cfg: DictConfig) -> None:
-    set_random_seed(42)
+    set_random_seed(cfg.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    output_dir = Path(f"/{os.environ['PROJECT_NAME']}/outputs/{Path(__file__).stem}")
+    output_dir = Path(f"/{os.environ['PROJECT_NAME']}/outputs/train")
     train_id = generate_train_id(cfg)
     p = output_dir / "history" / train_id
     p.mkdir(parents=True, exist_ok=True)
@@ -69,7 +57,8 @@ def main(cfg: DictConfig) -> None:
         v2.Normalize(**cfg.dataset.train.transform.normalize),
     ])
 
-    dataset = EVRegressionDataset(cfg.dataset.train.csv_file, transform=transforms)
+    dataset = torchvision.datasets.CIFAR10(root="./data", train=True, download=True, transform=transforms)
+    dataset = EVLabelWrapper(dataset)
     train_set, val_set = torch.utils.data.random_split(dataset, cfg.dataset.random_split.lengths)
 
     train_loader = torch.utils.data.DataLoader(train_set, shuffle=True, **cfg.dataloader)

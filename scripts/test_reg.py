@@ -1,40 +1,31 @@
+# test.py
 from pathlib import Path
 import os
 import shutil
 import argparse
-import csv
-
 import torch
+import torchvision
 from torchvision.transforms import v2
 from PIL import Image
 from omegaconf import OmegaConf
+import csv
 
 from src.model import ResNet, SimpleCNN
 from src.trainer import LossEvaluator
 from src.train_id import print_config
 from src.util import set_random_seed
 
-class EVRegressionDataset(torch.utils.data.Dataset):
-    def __init__(self, csv_file, transform=None):
-        self.samples = []
-        with open(csv_file, newline='') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                img_path, ev = row
-                self.samples.append((img_path, float(ev)))
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.samples)
+class EVLabelWrapper(torch.utils.data.Dataset):
+    def __init__(self, base_dataset):
+        self.dataset = base_dataset
 
     def __getitem__(self, idx):
-        path, ev = self.samples[idx]
-        img = Image.open(path).convert("RGB")
-        if self.transform:
-            img = self.transform(img)
-        ev_tensor = torch.tensor([ev], dtype=torch.float32)
-        return img, ev_tensor
+        img, label = self.dataset[idx]
+        ev = torch.tensor([label - 4.5], dtype=torch.float32)
+        return img, ev
 
+    def __len__(self):
+        return len(self.dataset)
 
 def main(cfg, train_id, seed):
     set_random_seed(seed)
@@ -59,8 +50,9 @@ def main(cfg, train_id, seed):
         v2.Normalize(**cfg.dataset.train.transform.normalize),
     ])
 
-    test_dataset = EVRegressionDataset(cfg.dataset.test.csv_file, transform=transforms)
-    test_loader = torch.utils.data.DataLoader(test_dataset, shuffle=False, batch_size=64, num_workers=0)
+    dataset = torchvision.datasets.CIFAR10(root="./data", train=False, download=True, transform=transforms)
+    dataset = EVLabelWrapper(dataset)
+    test_loader = torch.utils.data.DataLoader(dataset, shuffle=False, batch_size=64, num_workers=0)
 
     net.eval()
     criterion = torch.nn.MSELoss()
@@ -68,16 +60,13 @@ def main(cfg, train_id, seed):
     evaluator.initialize()
 
     predictions = []
-    for i, (inputs, targets) in enumerate(test_loader):
+    for inputs, targets in test_loader:
         inputs, targets = inputs.to(device), targets.to(device)
         outputs = net(inputs)
         evaluator.eval_batch(outputs, targets)
 
-        for j in range(inputs.size(0)):
-            pred_ev = outputs[j].item()
-            true_ev = targets[j].item()
-            image_path = test_dataset.samples[i * test_loader.batch_size + j][0]
-            predictions.append([image_path, true_ev, pred_ev])
+        for img, target, output in zip(inputs, targets, outputs):
+            predictions.append([target.item(), output.item()])
 
     result = evaluator.finalize()
     print(f"\n[INFO] MSE result for Train ID {train_id} Model: {cfg.model.name}")
@@ -96,9 +85,8 @@ def main(cfg, train_id, seed):
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["image_path", "true_ev", "pred_ev"])
+        writer.writerow(["true_ev", "pred_ev"])
         writer.writerows(predictions)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -107,8 +95,8 @@ if __name__ == "__main__":
     parser.add_argument('--dataset_dir', type=str, default=None)
     parser.add_argument('--remove_untrained_id', action="store_true")
     parser.add_argument('--skip_tested', action="store_true")
-
     args = parser.parse_args()
+
     p = Path.cwd() / args.history_dir
 
     for q in sorted(p.glob('**/config.yaml')):
