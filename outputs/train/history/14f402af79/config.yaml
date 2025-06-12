@@ -3,7 +3,7 @@ dataloader:
   batch_size: 64
   num_workers: 4
   pin_memory: true
-epoch: 40
+epoch: 100
 dataset:
   train:
     transform:
@@ -42,7 +42,7 @@ optuna:
 model:
   name: SimpleCNN
   params:
-    num_classes: 10
+    num_classes: 1
 optimizer:
   name: adam
   params:
