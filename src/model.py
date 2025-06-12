@@ -12,10 +12,13 @@ class SimpleCNN(nn.Module):
         self.net = nn.Sequential(
             nn.LazyConv2d(out_channels=16, kernel_size=3, padding=2, stride=2, bias=False),
             nn.LazyBatchNorm2d(),
-            #nn.ReLU(), ReLUによって負の値が出ないようになっているため
-            nn.LazyConv2d(out_channels=16, kernel_size=3, padding=2, stride=2, bias=False),
+            nn.ReLU(),
+            nn.LazyConv2d(out_channels=32, kernel_size=3, padding=2, stride=2, bias=False),
             nn.LazyBatchNorm2d(),
-            #nn.ReLU(),
+            nn.ReLU(),
+            nn.LazyConv2d(out_channels=64, kernel_size=3, padding=2, stride=2, bias=False),
+            nn.LazyBatchNorm2d(),
+            nn.ReLU(),
             nn.AdaptiveAvgPool2d(1)
         )
         self.classifier = nn.LazyLinear(out_features=num_classes)
