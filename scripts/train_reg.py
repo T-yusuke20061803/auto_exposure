@@ -1,13 +1,14 @@
-# train.py
+# train_reg.py
 from pathlib import Path
 import os
-
+import csv
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchinfo
 import torchvision
 from torchvision.transforms import v2
+from PIL import Image
 
 import hydra
 from omegaconf import DictConfig, OmegaConf

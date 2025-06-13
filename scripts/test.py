@@ -61,7 +61,7 @@ def main(
     )
 
     net.eval()
-    criterion = torch.nn.MSELoss() #06/07　追加
+    criterion = torch.nn.MSELoss() #06/07　追加　損失関数をクロスエントロピーから二乗誤差に変更
     #精度に関する部分はここが考えられる 
     evaluator = LossEvaluator(criterion, criterion_name="MSE")
     #evaluator = AccuracyEvaluator(classes)

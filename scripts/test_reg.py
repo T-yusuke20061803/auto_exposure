@@ -85,10 +85,11 @@ def main(cfg, train_id, seed):
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["true_ev", "pred_ev"])
+        writer.writerow(["image_path","true_ev", "pred_ev"])
         writer.writerows(predictions)
 
 if __name__ == "__main__":
+    import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--history_dir', type=str, default="./outputs/train/history")
     parser.add_argument('--seed', type=int, default=0)
