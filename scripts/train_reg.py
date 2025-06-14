@@ -53,6 +53,10 @@ def main(cfg: DictConfig) -> None:
     transforms = v2.Compose([
         v2.ToImage(),
         v2.RandomResizedCrop(**cfg.dataset.train.transform.random_resized_crop),
+        #データ拡張（左右反転、回転+α上下反転）
+        v2.RandomHorizontalFlip(p=0.5),  #左右反転
+        v2.RandomRotation(degrees=15), # 画像を±15度以内で回転
+        v2.RandomVerticalFlip(p=0.5),        # 上下反転
         v2.RandomHorizontalFlip(**cfg.dataset.train.transform.random_horizontal_flip),
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(**cfg.dataset.train.transform.normalize),

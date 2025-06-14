@@ -16,10 +16,16 @@ epoch: 100 # 時間削減のため200→100へ変更
 dataset:
   train:
     transform:
+    #データ拡張（6／15）
       random_resized_crop:
         size: 32
-      random_horizontal_flip:
+      random_horizontal_flip: # ← これが左右反転です
+        p: 0.5                # ← 50% の確率で反転
+      random_resized_crop: # 上下反転
         p: 0.5
+      random_rotation: # 回転
+        degrees: 15
+
       normalize:
         mean: [0.4914, 0.4822, 0.4465]
         std: [0.2023, 0.1994, 0.2010]
