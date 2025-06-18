@@ -11,7 +11,7 @@ dataloader:
   num_workers: 4  # ← 16 から減らす
   pin_memory: true
 
-epoch: 100 # 時間削減のため200→100へ変更
+epoch: 200 # 時間削減のため200→100へ変更
           #ResNetの際には、時間的考慮で20に変更
 dataset:
   train:
