@@ -21,7 +21,7 @@ dataset:
         size: 32
       random_horizontal_flip: # ← これが左右反転です
         p: 0.5                # ← 50% の確率で反転
-      random_resized_crop: # 上下反転
+      random_vertical_crop: # 上下反転
         p: 0.5
       random_rotation: # 回転
         degrees: 15
