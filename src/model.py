@@ -19,6 +19,9 @@ class SimpleCNN(nn.Module):
             nn.LazyConv2d(out_channels=64, kernel_size=3, padding=2, stride=2, bias=False),
             nn.LazyBatchNorm2d(),
             nn.ReLU(),
+            nn.LazyConv2d(out_channels=128, kernel_size=3, padding=2, stride=2, bias=False),
+            nn.LazyBatchNorm2d(),
+            nn.ReLU(),
             nn.AdaptiveAvgPool2d(1)
         )
         self.classifier = nn.LazyLinear(out_features=num_classes)
