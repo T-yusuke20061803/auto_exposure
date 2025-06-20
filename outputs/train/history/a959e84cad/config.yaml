@@ -1,0 +1,66 @@
+seed: 50
+dataloader:
+  batch_size: 64
+  num_workers: 4
+  pin_memory: true
+epoch: 200
+dataset:
+  train:
+    transform:
+      random_resized_crop:
+        size:
+        - 32
+        - 32
+        antialias: true
+      random_horizontal_flip:
+        p: 0.5
+      random_vertical_crop:
+        p: 0.5
+      random_rotation:
+        degrees: 15
+      normalize:
+        mean:
+        - 0.4914
+        - 0.4822
+        - 0.4465
+        std:
+        - 0.2023
+        - 0.1994
+        - 0.201
+      to_image: null
+      to_dtype: null
+    params:
+      root: ./data/
+      train: true
+      download: true
+  random_split:
+    lengths:
+    - 0.9
+    - 0.1
+  name: cifar10
+optuna:
+  direction: maximize
+  n_trials: 100
+  sampler:
+    _target_: optuna.samplers.TPESampler
+model:
+  name: SimpleCNN
+  params:
+    num_classes: 1
+optimizer:
+  name: adam
+  params:
+    lr: 0.001
+    betas:
+    - 0.9
+    - 0.999
+    eps: 1.0e-08
+    weight_decay: 0
+    amsgrad: false
+lr_scheduler:
+  name: multi_step
+  params:
+    milestones:
+    - 0.5
+    - 0.75
+    gamma: 0.1

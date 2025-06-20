@@ -1,0 +1,3 @@
+MSE result for Train ID a959e84cad
+Model: SimpleCNN
+loss:5.9413
