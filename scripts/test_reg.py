@@ -73,18 +73,18 @@ def main(cfg, train_id, seed):
     rmse_value = torch.sqrt(torch.tensor(mse_value)).item()
     result['loss/RMSE'] = rmse_value # 結果にRMSEを追加
 
-    print(f"\n[INFO] MSE result for Train ID {train_id} Model: {cfg.model.name}")
-    for key, value in result.items():
-        print(f"{key}: {value:.4f}")
+    print(f"\n[INFO] RMSE result for Train ID {train_id} Model: {cfg.model.name}")
+    for key, mse_value ,rmse_value in result.items():
+        print(f"{key}: {rmse_value:.4f}")
     
 
     log_path = Path("outputs/test_results") / f"{train_id}_result.txt"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with open(log_path, "w") as f:
-        f.write(f"MSE result for Train ID {train_id}\n")
+        f.write(f"RMSE result for Train ID {train_id}\n")
         f.write(f"Model: {cfg.model.name}\n")
         for key, value in result.items():
-            f.write(f"{key}:{value:.4f}\n")
+            f.write(f"{key}:{rmse_value:.4f}[{mse_value:.4f}]\n")
 
     csv_path = Path(f"outputs/predictions/{train_id}_predictions.csv")
     csv_path.parent.mkdir(parents=True, exist_ok=True)
