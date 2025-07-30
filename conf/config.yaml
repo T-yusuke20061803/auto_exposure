@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - dataset: cifar10
+  #- dataset: cifar10(2025/07/18)
   - model: simplecnn #simplecnn→resnet
   - optimizer: adam
   - lr_scheduler: multi_step
@@ -8,17 +8,22 @@ seed: 50 #再現性確保のため、固定値を採用
 
 dataloader: 
   batch_size: 64  # ← 256 から減らす（64：SimpleCNN、32：ResNet）(5月20日)
-  num_workers: 4  # ← 16 から減らす
+  num_workers: 2  # ← 16 から減らす
   pin_memory: true
 
-epoch: 200 # 時間削減のため200→100へ変更
+epoch: 100 # 時間削減のため200→100へ変更
           #ResNetの際には、時間的考慮で20に変更
-dataset:
+        #---データセットの指定---
+dataset: #ここを修正する（2025/07/18）
   train:
+    _target_: train_reg.EVLabelWrapper #train_reg.py内のクラスを指定
+    annotation_file: "path/to/your/annotations.csv" # annotations.csvへのパス
+    img_dir: "path/to/your/training_images"       # 学習用画像が保存されているフォルダへのパス
+
     transform:
     #データ拡張（6／15）
       random_resized_crop:
-        size: 32
+        size: 32 #モデルに合わせて調整（32×32）
       random_horizontal_flip: # ← これが左右反転です
         p: 0.5                # ← 50% の確率で反転
       random_vertical_crop: # 上下反転
@@ -29,8 +34,11 @@ dataset:
       normalize:
         mean: [0.4914, 0.4822, 0.4465]
         std: [0.2023, 0.1994, 0.2010]
+  # 学習・検証データ分割の設定 (例: 全3640件を3000件の学習と640件の検証に分割)
   random_split:
-    lengths: [40000, 10000]
+    lengths: [3000, 640] #変更前lengths: [40000, 10000]
+    
+  #---Optuna1とHydraの設定---
 optuna:
   direction: maximize
   n_trials: 100

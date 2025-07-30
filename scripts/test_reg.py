@@ -50,7 +50,7 @@ def main(cfg, train_id, seed):
         v2.Normalize(**cfg.dataset.train.transform.normalize),
     ])
 
-    dataset = torchvision.datasets.CIFAR10(root="./data", train=False, download=True, transform=transforms)
+    dataset = torchvision.datasets.CIFAR10(root="./data", train=False, download=True, transform=transforms)#ここを変更する
     dataset = EVLabelWrapper(dataset)
     test_loader = torch.utils.data.DataLoader(dataset, shuffle=False, batch_size=64, num_workers=0)
 
@@ -67,11 +67,16 @@ def main(cfg, train_id, seed):
 
         for img, target, output in zip(inputs, targets, outputs):
             predictions.append([target.item(), output.item()])
-
+    
     result = evaluator.finalize()
+    mse_value = result['loss/MSE']
+    rmse_value = torch.sqrt(torch.tensor(mse_value)).item()
+    result['loss/RMSE'] = rmse_value # 結果にRMSEを追加
+
     print(f"\n[INFO] MSE result for Train ID {train_id} Model: {cfg.model.name}")
     for key, value in result.items():
         print(f"{key}: {value:.4f}")
+    
 
     log_path = Path("outputs/test_results") / f"{train_id}_result.txt"
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -87,6 +92,7 @@ def main(cfg, train_id, seed):
         writer = csv.writer(f)
         writer.writerow(["image_path","true_ev", "pred_ev"])
         writer.writerows(predictions)
+    print(f"予測結果を {csv_path} に保存しました")
 
 if __name__ == "__main__":
     import argparse
@@ -114,6 +120,8 @@ if __name__ == "__main__":
             print(f"Train ID {train_id} is already tested")
             continue
         try:
-            main(cfg=cfg, train_id=train_id, seed=args.seed)
+            main(cfg=cfg, 
+                 train_id=train_id, 
+                 seed=args.seed)
         except Exception as e:
             print(f"Train ID {train_id} is skipped due to an exception {e}")
