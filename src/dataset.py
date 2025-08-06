@@ -3,6 +3,7 @@ import os
 import os.path
 
 from PIL import Image
+import pandas as pd
 
 import torch
 import torchaudio
@@ -21,7 +22,7 @@ class PureDatasetFolder(torchdata.Dataset):
     _repr_indent = 4
 
     def __init__(self, root):
-        if isinstance(root, torch._six.string_classes):
+        if isinstance(root, str):# torch._six.string_classes は古い記述のため str に変更
             root = os.path.expanduser(root)
         self.root = root
 
@@ -123,8 +124,10 @@ class DatasetFolder(PureDatasetFolder):
         targets (list): The class_index value for each image in the dataset
     """
 
-    def __init__(self, root, loader, extensions=None, is_valid_file=None):
+    def __init__(self, root, loader, extensions=None, transform=None, target_transform=None, is_valid_file=None):
         super(DatasetFolder, self).__init__(root)
+        self.transform = transform 
+        self.target_transform = target_transform
         classes, class_to_idx = self._find_classes(self.root)
         samples = make_dataset(self.root, class_to_idx, extensions, is_valid_file)
         if len(samples) == 0:
@@ -167,6 +170,10 @@ class DatasetFolder(PureDatasetFolder):
         """
         path, target = self.samples[index]
         sample = self.loader(path)
+        if self.transform is not None:
+            sample = self.transform(sample)
+        if self.target_transform is not None:
+            target = self.target_transform(target)
 
         return sample, target
 
@@ -267,3 +274,74 @@ def default_loader(path):
         return accimage_loader(path)
     else:
         return pil_loader(path)
+    
+class AnnotatedDatasetFolder(PureDatasetFolder):
+    """
+    外部のCSV（アノテーションファイル）に基づいてデータを読み込むためのクラス
+    
+    Args:
+        root (string): 画像が保存されているルートディレクトリのパス。
+        annotation_file (string): ファイル名とラベルが記載されたCSVファイルへのパス。
+        loader (callable): 画像パスからデータを読み込むための関数。
+        transform (callable, optional): 画像に適用する変換処理。
+        extension (str, optional): 画像ファイルの拡張子（.png, .jpgなど）。
+    """
+    def __init__(self, root,annotation_file, loader, transform=None, extension="png"):
+        super(AnnotatedDatasetFolder, self).__init__(root)
+
+        self.loader = loader
+        self.transform = transform
+        self.extension = extension
+
+        #アノテーションCSVファイルの読み込み
+        try:
+            annotations = pd.read_csv(annotation_file)
+        except FileNotFoundError:
+            raise RuntimeError(f"原因：アノテーションファイ（CSV）が見つからない")
+        
+        self.samples = []
+        #アノテーションファイルの各行をループ処理
+        for _,row in annotations.iterrows():
+            filename = row['Filename']
+            target = row['Exposure']# ラベルとして'Exposure'カラムを使用
+            path = os.path.join(self.root, f"{filename}{self.extension}")
+
+            if os.path.exists(path):
+                item = (path, float(target), filename) # (ファイルパス, ラベル, ファイル名本体)
+                self.samples.append(item)
+        
+        if len(self.samples) == 0:
+            raise RuntimeError(f"原因：アノテーションファイルに記載された画像が {self.root} に見つかりません。")
+    
+    def __getitem__(self, index):
+        """
+        Args:
+            index (int): データのインデックス
+        Returns:
+            tuple: (sample, target, filename)
+        """
+        path, target, filename = self.samples[index]
+        try:
+            sample = self.loader(path)
+        except Exception as e:
+            print(f"error: 画像の読み込みに失敗 {path}, {e}")
+            return None
+        
+        if self.transform is not None:
+            sample = self.transform(sample)
+        
+        target = torch.tensor([target], dtype=torch.float32)
+
+        return sample, target, filename
+    
+    def __len__(self):
+        return len(self.samples)
+def collate_fn_skip_none(batch):
+    """
+    DataLoaderのためのカスタムcollate_fn。
+    バッチ内にNone（読み込み失敗データ）が含まれている場合、それを取り除く。
+    """
+    batch = list(filter(lambda x: x is not None, batch))
+    if not batch:
+        return None, None, None
+    return torch.utils.data.dataloader.default_collate(batch)

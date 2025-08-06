@@ -1,7 +1,7 @@
 defaults:
   - _self_
   #- dataset: cifar10(2025/07/18)
-  - model: simplecnn #simplecnn→resnet
+  - model: simplecnn #simplecnn　または resnet
   - optimizer: adam
   - lr_scheduler: multi_step
 seed: 50 #再現性確保のため、固定値を採用
@@ -18,22 +18,29 @@ dataset: #ここを修正する（2025/07/18）
   train:
     _target_: train_reg.EVLabelWrapper #train_reg.py内のクラスを指定
     annotation_file: "path/to/your/annotations.csv" # annotations.csvへのパス
-    img_dir: "path/to/your/training_images"       # 学習用画像が保存されているフォルダへのパス
+    img_dir: "path/to/your/training_images"       # 学習・検証に使う画像フォルダへのパス
 
     transform:
-    #データ拡張（6／15）
-      random_resized_crop:
-        size: 32 #モデルに合わせて調整（32×32）
-      random_horizontal_flip: # ← これが左右反転です
-        p: 0.5                # ← 50% の確率で反転
-      random_vertical_crop: # 上下反転
-        p: 0.5
-      random_rotation: # 回転
-        degrees: 15
-
-      normalize:
-        mean: [0.4914, 0.4822, 0.4465]
-        std: [0.2023, 0.1994, 0.2010]
+    #データ拡張（8/05）画像変換の設定を変更
+      _target_: torchvision.transform.v2.Compose
+      transforms:
+        - _target_: torchvision.transforms.v2.ToImage
+        - _target_: torchvision.transforms.v2.RandomResizedCrop #ランダムに切り抜いてリサイズする
+          size: 224 #モデルの入力サイズに合わせて調整
+          sxale: [0.8,1.0]
+        - _target_: torchvision.transforms.v2.RandomHorizontalFlip #左右反転
+          p: 0.5
+        - _target_: torchvision.transforms.RandomRotation #回転
+          degrees: 15
+        - _target_: torchvision.transforms.RandomVerticalFlip #上下反転
+          p: 0.5
+        - _target_: torchvision.transforms.v2.ToDtype #テンソルに変換
+          dtype: ${torch.float32}
+          scale: True
+        - _target_: torchvision.transforms.v2.Normalize #ピクセル値を正規化して、モデルが学習
+          mean: [0.485, 0.456, 0.406]
+          std: [0.229, 0.224, 0.225]
+    
   # 学習・検証データ分割の設定 (例: 全3640件を3000件の学習と640件の検証に分割)
   random_split:
     lengths: [3000, 640] #変更前lengths: [40000, 10000]
