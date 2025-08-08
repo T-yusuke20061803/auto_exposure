@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  #- dataset: cifar10(2025/07/18)
+  - dataset: annotated
   - model: simplecnn #simplecnn　または resnet
   - optimizer: adam
   - lr_scheduler: multi_step
@@ -17,8 +17,8 @@ epoch: 100 # 時間削減のため200→100へ変更
 dataset: #ここを修正する（2025/07/18）
   train:
     _target_: train_reg.EVLabelWrapper #train_reg.py内のクラスを指定
-    annotation_file: "path/to/your/annotations.csv" # annotations.csvへのパス
-    img_dir: "path/to/your/training_images"       # 学習・検証に使う画像フォルダへのパス
+    annotation_file: "auto_exposure/conf/dataset/annotations.csv" # annotations.csvへのパス
+    img_dir: "auto_exposure/conf/dataset/HDR_subdateset"      # 学習・検証に使う画像フォルダへのパス
 
     transform:
     #データ拡張（8/05）画像変換の設定を変更
