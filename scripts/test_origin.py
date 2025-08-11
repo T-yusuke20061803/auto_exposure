@@ -36,6 +36,7 @@ def adjust_exposure(image_tensor, ev_value):
     # 値が [0, 1] の範囲に収まるようにクリッピング
     return torch.clamp(corrected_image, 0, 1)
 
+@hydra.main(version_base=None, config_path="../conf", config_name="config.yaml")
 def main(cfg, train_id, seed):
     set_random_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

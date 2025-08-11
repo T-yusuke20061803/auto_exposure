@@ -19,12 +19,12 @@ from src.train_id import print_config, generate_train_id, is_same_config
 from src.extension import ModelSaver, HistorySaver, HistoryLogger, IntervalTrigger, LearningCurvePlotter, MinValueTrigger
 from src.util import set_random_seed
 
-@hydra.main(version_base=None, config_path="./conf", config_name="config.yaml")
+@hydra.main(version_base=None, config_path="../conf", config_name="config.yaml")
 def main(cfg: DictConfig) -> None:
     set_random_seed(cfg.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    output_dir = Path("./outputs/train")
+    output_dir = Path("../outputs/train")
     train_id = generate_train_id(cfg)
     p = output_dir / "history" / train_id
     p.mkdir(parents=True, exist_ok=True)
@@ -76,7 +76,7 @@ def main(cfg: DictConfig) -> None:
     trainer.train(cfg.epoch, val_loader)
 
      # 最終モデルの保存 
-    model_output_dir = Path("./outputs/model")
+    model_output_dir = Path("../outputs/model")
     model_output_dir.mkdir(parents=True, exist_ok=True)
     torch.save(net.state_dict(), model_output_dir / "final_model.pth")
 
