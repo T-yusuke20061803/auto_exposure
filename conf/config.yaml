@@ -1,6 +1,5 @@
 defaults:
   - _self_
-  - dataset: annotated
   - model: simplecnn #simplecnn　または resnet
   - optimizer: adam
   - lr_scheduler: multi_step
@@ -18,27 +17,61 @@ dataset:
 #  評価（試験）用データセットの設定 
   test:
     _target_: src.dataset.AnnotatedDatasetFolder
-    #評価用の画像フォルダ
-    root: "conf/dataset/HDR_subdataset"
     #評価用のアノテーションCSVファイル（ない場合は null を指定）
     annotation_file: "conf/dataset/annotations.csv" # or null
+    #評価用の画像フォルダ
+    root: "conf/dataset/HDR_subdataset"
     loader: #画像を読み込むためのloaderを追加
       _target_: src.dataset.pil_loader
 
-     # 評価時にはデータ拡張を行わない変換処理
+      # 訓練時に使用するデータ拡張
     transform:
       _target_: torchvision.transforms.v2.Compose
       transforms:
         - _target_: torchvision.transforms.v2.ToImage
-        - _target_: torchvision.transforms.v2.Resize
-          size: [224, 224] # 学習時とサイズを合わせる
+        - _target_: torchvision.transforms.v2.RandomResizedCrop
+          size: 224
+        - _target_: torchvision.transforms.v2.RandomHorizontalFlip
+          p: 0.5
+        - _target_: torchvision.transforms.v2.RandomRotation
+          degrees: 15
+        - _target_: torchvision.transforms.v2.RandomVerticalFlip
+          p: 0.5
         - _target_: torchvision.transforms.v2.ToDtype
           dtype: ${torch.float32}
           scale: True
         - _target_: torchvision.transforms.v2.Normalize
           mean: [0.485, 0.456, 0.406]
           std: [0.229, 0.224, 0.225]
+# 訓練/検証の自動分割設定 (80%を訓練、20%を検証に使用)
+  split:
+    val_size: 0.2
+    random_state: 42
 
+  # --- 評価（試験）用のデータセット設定 ---
+  test:
+    _target_: src.dataset.AnnotatedDatasetFolder
+    #評価専用の画像フォルダ 変更必須←同じ画像群を用いているため。本来以上の精度が出る
+    root: "conf/dataset/HDR_subdataset"
+    # 評価専用のアノテーションCSV（ラベルなし予測のみならnull）
+    annotation_file: null
+    
+    loader:
+      _target_: src.dataset.pil_loader
+    
+    # 評価時にはデータ拡張を行わない
+    transform:
+      _target_: torchvision.transforms.v2.Compose
+      transforms:
+        - _target_: torchvision.transforms.v2.ToImage
+        - _target_: torchvision.transforms.v2.Resize
+          size: [224, 224]
+        - _target_: torchvision.transforms.v2.ToDtype
+          dtype: ${torch.float32}
+          scale: True
+        - _target_: torchvision.transforms.v2.Normalize
+          mean: [0.485, 0.456, 0.406]
+          std: [0.229, 0.224, 0.225]
 
   #---Optuna1とHydraの設定---
 optuna:
