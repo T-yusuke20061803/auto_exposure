@@ -15,7 +15,7 @@ epoch: 100 # 時間削減のため200→100へ変更
         #---データセットの指定---
 dataset:
 #  評価（試験）用データセットの設定 
-  test:
+  train:
     _target_: src.dataset.AnnotatedDatasetFolder
     #評価用のアノテーションCSVファイル（ない場合は null を指定）
     annotation_file: "conf/dataset/annotations.csv" # or null
