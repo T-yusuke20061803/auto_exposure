@@ -1,17 +1,17 @@
 defaults:
   - _self_
-  - model: simplecnn #simplecnn　または resnet
+  - model: simplecnn #モデル設定（simplecnn or resnet)
   - optimizer: adam
   - lr_scheduler: multi_step
+  
 seed: 50 #再現性確保のため、固定値を採用
 
 dataloader: 
-  batch_size: 64  # ← 256 から減らす（64：SimpleCNN、32：ResNet）(5月20日)
-  num_workers: 2  # ← 16 から減らす
+  batch_size: 64  # ← 256 から減らす（64：SimpleCNN、32：ResNet）
+  num_workers: 2  # ← 16 から減らす 同様の理由
   pin_memory: true
 
-epoch: 100 # 時間削減のため200→100へ変更
-          #ResNetの際には、時間的考慮で20に変更
+epoch: 100 # 時間削減のため200→100へ変更（ResNetの場合20を推奨）
         #---データセットの指定---
 dataset:
 #  評価（試験）用データセットの設定 
@@ -23,26 +23,20 @@ dataset:
     root: "conf/dataset/HDR_subdataset"
     loader: #画像を読み込むためのloaderを追加
       _target_: src.dataset.pil_loader
-
-      # 訓練時に使用するデータ拡張
+      # 訓練時の変数処理パラメータ
     transform:
-      _target_: torchvision.transforms.v2.Compose
-      transforms:
-        - _target_: torchvision.transforms.v2.ToImage
-        - _target_: torchvision.transforms.v2.RandomResizedCrop
-          size: 224
-        - _target_: torchvision.transforms.v2.RandomHorizontalFlip
-          p: 0.5
-        - _target_: torchvision.transforms.v2.RandomRotation
-          degrees: 15
-        - _target_: torchvision.transforms.v2.RandomVerticalFlip
-          p: 0.5
-        - _target_: torchvision.transforms.v2.ToDtype
-          dtype: ${torch.float32}
-          scale: True
-        - _target_: torchvision.transforms.v2.Normalize
-          mean: [0.485, 0.456, 0.406]
-          std: [0.229, 0.224, 0.225]
+      random_resized_crop:
+        size: 224
+      random_horizontal_flip:
+        p: 0.5
+      random_rotation:
+        degrees: 15
+      random_vertical_flip:
+        p: 0.5
+      normalize:
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
+
 # 訓練/検証の自動分割設定 (80%を訓練、20%を検証に使用)
   split:
     val_size: 0.2
@@ -61,17 +55,17 @@ dataset:
     
     # 評価時にはデータ拡張を行わない
     transform:
-      _target_: torchvision.transforms.v2.Compose
-      transforms:
-        - _target_: torchvision.transforms.v2.ToImage
-        - _target_: torchvision.transforms.v2.Resize
-          size: [224, 224]
-        - _target_: torchvision.transforms.v2.ToDtype
-          dtype: ${torch.float32}
-          scale: True
-        - _target_: torchvision.transforms.v2.Normalize
-          mean: [0.485, 0.456, 0.406]
-          std: [0.229, 0.224, 0.225]
+      random_resized_crop:
+        size: 224
+      random_horizontal_flip:
+        p: 0.5
+      random_rotation:
+        degrees: 15
+      random_vertical_flip:
+        p: 0.5
+      normalize:
+        mean: [0.485, 0.456, 0.406]
+        std: [0.229, 0.224, 0.225]
 
   #---Optuna1とHydraの設定---
 optuna:
@@ -92,3 +86,4 @@ hydra:
     root:
       handlers: [console]
     disable_existing_loggers: false
+        

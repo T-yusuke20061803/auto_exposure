@@ -1,21 +1,17 @@
 from pathlib import Path
-import os
-import csv
 import torch
 import torch.nn as nn
-import torch.optim as optim
-import torchinfo
-import torchvision
 from torchvision.transforms import v2
-from PIL import Image
-
 import hydra
 from omegaconf import DictConfig, OmegaConf
+import pandas as pd
+from sklearn.model_selection import train_test_split
+import torchinfo
 
-from src.dataset import AnnotatedDatasetFolder, collate_fn_skip_none
+from src.dataset import AnnotatedDatasetFolder, collate_fn_skip_none, pil_loader
 from src.model import SimpleCNN
 from src.trainer import Trainer, LossEvaluator
-from src.train_id import print_config, generate_train_id, is_same_config
+from src.train_id import print_config, generate_train_id
 from src.extension import ModelSaver, HistorySaver, HistoryLogger, IntervalTrigger, LearningCurvePlotter, MinValueTrigger
 from src.util import set_random_seed
 
@@ -28,23 +24,50 @@ def main(cfg: DictConfig) -> None:
     train_id = generate_train_id(cfg)
     p = output_dir / "history" / train_id
     p.mkdir(parents=True, exist_ok=True)
+    OmegaConf.save(cfg, p/'config.yaml')
 
-    print_config(cfg)
-    cfg_path = p / 'config.yaml'
-    if cfg_path.exists():
-        existing_cfg = OmegaConf.load(str(cfg_path))
-        if not is_same_config(cfg, existing_cfg):
-            raise ValueError(f"Train ID {train_id} already exists, but config is different")
-    OmegaConf.save(cfg, str(cfg_path))
-    
-    # --- 主要な変更点 ---
-    # 変更点: transformsの定義を削除し、Hydraがconfig.yamlから直接生成するようにする
-    # 変更点: config.yamlの定義に基づき、AnnotatedDatasetFolderを自動で読み込む
+     # 1. データ拡張パイプラインをPythonコード内で定義
+    train_transforms = v2.Compose([
+        v2.ToImage(),
+        v2.RandomResizedCrop(**cfg.dataset.train.transform.random_resized_crop),
+        v2.RandomHorizontalFlip(**cfg.dataset.train.transform.random_horizontal_flip),
+        v2.RandomRotation(**cfg.dataset.train.transform.random_rotation),
+        v2.RandomVerticalFlip(**cfg.dataset.train.transform.random_vertical_flip),
+        v2.ToDtype(torch.float32, scale=True),
+        v2.Normalize(**cfg.dataset.train.transform.normalize),
+    ])
 
-    dataset = hydra.utils.instantiate(cfg.dataset.train)
-     # 読み込んだデータセットを学習用と検証用に分割
-    train_set, val_set = torch.utils.data.random_split(dataset, cfg.dataset.random_split.lengths)
-    # 変更点: collate_fnを追加してエラー耐性を向上
+    val_transforms = v2.Compose([
+        v2.ToImage(),
+        v2.Resize(cfg.dataset.train.transform.random_resized_crop.size),
+        v2.ToDtype(torch.float32, scale=True),
+        v2.Normalize(**cfg.dataset.train.transform.normalize),
+    ])
+
+     # 2. マスターアノテーションファイルを読み込んで分割
+    master_df = pd.read_csv(cfg.dataset.train.annotation_file)
+    train_df, val_df = train_test_split(
+        master_df,
+        test_size = cfg.dataset.split.val_size,
+        random_state = cfg.dataset.split.random_state
+    )
+    print(f'データ分割：訓練{len(train_df)}, 検証{len(val_df)}件')
+
+    #データセットを作成
+    train_set = AnnotatedDatasetFolder(
+        root=cfg.dataset.train.root, 
+        dataframe=train_df,
+        loader=pil_loader, 
+        transform=train_transforms
+    )
+    #検証用データにはval_transformsを適用
+    val_set = AnnotatedDatasetFolder(
+        root=cfg.dataset.train.root, 
+        dataframe=val_df,
+        loader=pil_loader, 
+        transform=val_transforms
+    )
+
     train_loader = torch.utils.data.DataLoader(train_set, shuffle=True, collate_fn=collate_fn_skip_none, **cfg.dataloader)
     val_loader = torch.utils.data.DataLoader(val_set, shuffle=False, collate_fn=collate_fn_skip_none, **cfg.dataloader)
     
