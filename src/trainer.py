@@ -95,7 +95,7 @@ class Trainer(ABCTrainer):
     def step(self):
         self.net.train()
         loss_meter = AverageMeter()
-        for inputs, targets in self.dataloader:
+        for inputs, targets, _ in self.dataloader:
             inputs = inputs.to(self.device)
             targets = targets.to(self.device)
 
@@ -124,7 +124,7 @@ class Trainer(ABCTrainer):
             evaluator.initialize()
 
         with torch.no_grad():
-            for inputs, targets in val_loader:
+            for inputs, targets, _ in val_loader:
                 inputs = inputs.to(self.device)
                 targets = targets.to(self.device)
                 outputs = self.net(inputs)
