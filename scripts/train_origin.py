@@ -39,7 +39,11 @@ def main(cfg: DictConfig) -> None:
 
     val_transforms = v2.Compose([
         v2.ToImage(),
-        v2.Resize(cfg.dataset.train.transform.random_resized_crop.size),
+        #v2.Resize(cfg.dataset.train.transform.random_resized_crop.size),
+        # 画像の短辺を256ピクセルにリサイズ（少し大きめに）
+        v2.Resize(256),
+        # 中央から224x224ピクセルを切り出す
+        v2.CenterCrop(224),
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(**cfg.dataset.train.transform.normalize),
     ])
