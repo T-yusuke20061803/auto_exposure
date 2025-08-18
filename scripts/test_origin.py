@@ -1,9 +1,13 @@
 from pathlib import Path
+import os
+import shutil
+import argparse
 import torch
 import torch.nn as nn
 from torchvision.transforms import v2
 import hydra
 from omegaconf import OmegaConf, DictConfig
+import csv
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import torchinfo
@@ -40,14 +44,21 @@ def adjust_exposure(image_tensor, ev_value):
 def run_evaluation(train_cfg, test_cfg, train_id, seed, device):
     """単一の学習済みモデルに対する評価処理を行う関数"""
     net = hydra.utils.instantiate(train_cfg.model).to(device)
-    model_path = Path("../outputs/train/history") / train_id / "best_model.pth"
+    model_path = Path("./outputs/train/history") / train_id / "best_model.pth"
     net.load_state_dict(torch.load(model_path, map_location=device))
 
     #config.yamlのtestセクションを元にデータセットを準備
-    if test_cfg.dataset.test.annotation_file == "null":
+    if test_cfg.dataset.test.annotation_file == "null" or test_cfg.dataset.test.annotation_file is None:
         test_cfg.dataset.test.annotation_file = None
+    else:
+        annotation_file_path = test_cfg.dataset.test.annotation_file
 
-    dataset = hydra.utils.instantiate(test_cfg.dataset.test)
+    dataset = AnnotatedDatasetFolder(
+        root=test_cfg.dataset.test.root,
+        annotation_file=annotation_file_path,
+        loader=pil_loader,
+        transform=hydra.utils.instantiate(test_cfg.dataset.test.transform)
+    )
     test_loader = torch.utils.data.DataLoader(dataset, shuffle=False, batch_size=64, num_workers=2, collate_fn=collate_fn_skip_none)
 
     net.eval()
@@ -107,7 +118,7 @@ def run_evaluation(train_cfg, test_cfg, train_id, seed, device):
             for key, value in result.items():
                 f.write(f"{key}:{value:.4f}\n")
 
-    csv_path = Path(f"../outputs/predictions/{train_id}_predictions.csv")
+    csv_path = Path(f"./outputs/predictions/{train_id}_predictions.csv")
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
@@ -128,10 +139,10 @@ def run_evaluation(train_cfg, test_cfg, train_id, seed, device):
         axes[1].imshow(corrected_img.permute(1, 2, 0))
         axes[1].set_title(f"補正後 (Corrected)\nPredicted EV: {best_image_info['pred_ev']:.2f}")
         axes[1].axis('off')
-        fig.suptitle(f"最も精度が良かった画像: {best_image_info['filename']}\n(Error: {best_image_info['min_error']:.4f})")
+        fig.suptitle(f"最高精度の画像: {best_image_info['filename']}\n(Error: {best_image_info['min_error']:.4f})")
         plt.show()
 
-        save_dir = Path(f"../outputs/best_predictions/{train_id}")
+        save_dir = Path(f"./outputs/best_predictions/{train_id}")
         save_dir.mkdir(parents=True, exist_ok=True)
         vutils.save_image(original_img_denorm, save_dir / f"{best_image_info['filename']}_original.png")
         vutils.save_image(corrected_img, save_dir / f"{best_image_info['filename']}_corrected.png")
@@ -151,24 +162,24 @@ def main(cfg: DictConfig) -> None:
         
         if not (q.parent / "best_model.pth").exists(): continue
         
-        result_file = Path("../outputs/test_results") / f"{train_id}_result.txt"
+        result_file = Path("./outputs/test_results") / f"{train_id}_result.txt"
         if result_file.exists() and args.skip_tested:
-            print(f"Train ID {train_id} はすでにテスト済みです")
+            print(f"Train ID {train_id} ：テスト済み")
             continue
         
         print("-" * 50)
-        print(f"Train ID: {train_id} のモデルをテストします")
+        print(f"Train ID: {train_id} のモデルをテスト")
 
         try:
             # 評価のコア処理を呼び出す
             run_evaluation(train_cfg, cfg, train_id, args.seed, device)
         except Exception as e:
-            print(f"例外が発生したため、Train ID {train_id} をスキップしました: {e}")
+            print(f"例外が発生したため、Train ID {train_id} をスキップ: {e}")
 
 if __name__ == "__main__":
     # argparse を使って、Hydraが直接管理しない引数を定義
     parser = argparse.ArgumentParser(description="学習済みモデルをテスト")
-    parser.add_argument('--history_dir', type=str, default="../outputs/train/history")
+    parser.add_argument('--history_dir', type=str, default="./outputs/train/history")
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--skip_tested', action="store_true")
     
