@@ -1,6 +1,13 @@
-name: multi_step
-params:
-  milestones:
-    - 0.5
-    - 0.75
-  gamma: 0.1
+_target_: torch.optim.lr_scheduler.MultiStepLR
+# 50エポック目と75エポック目に学習率を変更する
+milestones: [50, 75]
+  # 学習率を0.1倍に減衰させる
+gamma: 0.1
+
+#8月19日
+#name: multi_step
+#params:
+  #milestones:
+    #- 0.5
+    #- 0.75
+  #gamma: 0.1
