@@ -1,3 +1,5 @@
+args: ${args} #8月19日
+
 defaults:
   - _self_
   - model: simplecnn #モデル設定（simplecnn or resnet)
