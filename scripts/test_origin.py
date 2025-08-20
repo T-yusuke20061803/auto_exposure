@@ -4,7 +4,6 @@ import shutil
 import torch
 import torch.nn as nn
 from torchvision.transforms import v2
-import argparse
 import hydra
 from omegaconf import OmegaConf, DictConfig
 import csv
@@ -163,14 +162,6 @@ def run_evaluation(train_cfg, test_cfg, train_id, device, test_transforms):
         vutils.save_image(original_img_denorm, save_dir / f"{best_image_info['filename']}_original.png")
         vutils.save_image(corrected_img, save_dir / f"{best_image_info['filename']}_corrected.png")
         print(f"補正前後の画像を{save_dir} に保存しました")
-
-import argparse
-parser = argparse.ArgumentParser(description="学習済みモデルをテスト")
-parser.add_argument('--history_dir', type=str, default="./outputs/train/history")
-parser.add_argument('--seed', type=int, default=42)
-parser.add_argument('--skip_tested', action="store_true")
-cli_args, _ = parser.parse_known_args()
-OmegaConf.register_new_resolver("cli_args", lambda: cli_args)
 
 @hydra.main(version_base=None, config_path="../conf", config_name="config.yaml")
 def main(cfg: DictConfig) -> None:
