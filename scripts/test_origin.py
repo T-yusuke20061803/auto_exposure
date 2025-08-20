@@ -188,7 +188,7 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     
     # パースした引数をHydraの設定にマージするための登録
-    OmegaConf.register_new_resolver("args", lambda: args)
+    OmegaConf.register_new_resolver("cli_args", lambda: args)
     
     main()
 
