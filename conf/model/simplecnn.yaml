@@ -3,7 +3,6 @@
 _target_: src.model.SimpleCNN
 
 # SimpleCNNクラスのコンストラクタ(__init__)に渡す引数を定義
-name: SimpleCNN
 num_classes: 1
 
 #変更前
