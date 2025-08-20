@@ -1,3 +1,4 @@
+args: ${args}
 defaults:
   - _self_
   - model: simplecnn #モデル設定（simplecnn or resnet)
