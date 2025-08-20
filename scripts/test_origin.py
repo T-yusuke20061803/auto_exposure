@@ -42,7 +42,7 @@ def adjust_exposure(image_tensor, ev_value):
     return torch.clamp(corrected_image, 0, 1)
 
 # --- 評価のコアロジック ---
-def run_evaluation(train_cfg, test_cfg, train_id, seed, device, test_transforms):
+def run_evaluation(train_cfg, test_cfg, train_id, device, test_transforms):
     """単一の学習済みモデルに対する評価処理を行う関数"""
     net = hydra.utils.instantiate(train_cfg.model).to(device)
     model_path = Path("./outputs/train/history") / train_id / "best_model.pth"
