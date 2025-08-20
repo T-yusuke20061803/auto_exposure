@@ -168,6 +168,7 @@ def main(cfg: DictConfig) -> None:
     args = cfg.args 
     set_random_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    test_transforms = hydra.utils.instantiate(cfg.dataset.test.transform)
     
     p = Path(args.history_dir)
     # 学習履歴フォルダをループ
@@ -187,19 +188,19 @@ def main(cfg: DictConfig) -> None:
 
         try:
             # 評価のコア処理を呼び出す
-            run_evaluation(train_cfg, cfg, train_id, args.seed, device)
+            run_evaluation(train_cfg, cfg, train_id, device, test_transforms)
         except Exception as e:
             print(f"例外が発生したため、Train ID {train_id} をスキップ: {e}")
 
 if __name__ == "__main__":
     # argparse を使って、Hydraが直接管理しない引数を定義
-    parser = argparse.ArgumentParser(description="学習済みモデルをテスト")
-    parser.add_argument('--history_dir', type=str, default="./outputs/train/history")
-    parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--skip_tested', action="store_true")
+    #parser = argparse.ArgumentParser(description="学習済みモデルをテスト")
+    #parser.add_argument('--history_dir', type=str, default="./outputs/train/history")
+    #parser.add_argument('--seed', type=int, default=42)
+    #parser.add_argument('--skip_tested', action="store_true")
     
     # Hydraが解析しないコマンドライン引数のみをパース
-    args, _ = parser.parse_known_args()
+    #args, _ = parser.parse_known_args()
     
     # パースした引数をHydraの設定にマージするための登録
     OmegaConf.register_new_resolver("cli_args", lambda: args)
