@@ -42,7 +42,7 @@ def adjust_exposure(image_tensor, ev_value):
     return torch.clamp(corrected_image, 0, 1)
 
 # --- 評価のコアロジック ---
-def run_evaluation(train_cfg, test_cfg, train_id, seed, device):
+def run_evaluation(train_cfg, test_cfg, train_id, seed, device, test_transforms):
     """単一の学習済みモデルに対する評価処理を行う関数"""
     net = hydra.utils.instantiate(train_cfg.model).to(device)
     model_path = Path("./outputs/train/history") / train_id / "best_model.pth"
@@ -58,9 +58,15 @@ def run_evaluation(train_cfg, test_cfg, train_id, seed, device):
         root=test_cfg.dataset.test.root,
         annotation_file=annotation_file_path,
         loader=pil_loader,
-        transform=hydra.utils.instantiate(test_cfg.dataset.test.transform)
+        transform=test_transforms
     )
-    test_loader = torch.utils.data.DataLoader(dataset, shuffle=False, batch_size=64, num_workers=2, collate_fn=collate_fn_skip_none)
+    test_loader = torch.utils.data.DataLoader(
+        dataset, 
+        shuffle=False, 
+        batch_size=test_cfg.dataloader.batch_size, 
+        num_workers=test_cfg.dataloader.num_workers, 
+        collate_fn=collate_fn_skip_none
+    )
 
     net.eval()
     criterion = torch.nn.MSELoss()
@@ -127,11 +133,19 @@ def run_evaluation(train_cfg, test_cfg, train_id, seed, device):
         writer.writerows(predictions)
     print(f"予測結果を {csv_path} に保存しました")
 
-    if has_labels and 'original_image' in best_image_info:
-        mean = test_cfg.dataset.test.transform.transforms[-1].mean
-        std = test_cfg.dataset.test.transform.transforms[-1].std
-        original_img_denorm = denormalize(best_image_info['original_image'].clone(), mean, std)
+    if has_labels and best_image_info:
+        # 正規化を元に戻すためのmeanとstdをtransformオブジェクトから安全に取得
+        mean, std = [0.0, 0.0, 0.0], [1.0, 1.0, 1.0] 
+        if hasattr(test_transforms, 'transforms'):
+            for t in test_transforms.transforms:
+                if "Normalize" in t.__class__.__name__:
+                     mean, std = t.mean, t.std
+                     break
+        
+        original_img_denorm = denormalize(best_image_info['original_image'], mean, std)
         corrected_img = adjust_exposure(original_img_denorm, best_image_info['pred_ev'])
+
+        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
 
         fig, axes = plt.subplots(1, 2, figsize=(12, 6))
         axes[0].imshow(original_img_denorm.permute(1, 2, 0))
