@@ -1,6 +1,7 @@
 from pathlib import Path
 import torch
 import torch.nn as nn
+from torchvision.transforms import v2
 import hydra
 from omegaconf import DictConfig, OmegaConf
 import pandas as pd
@@ -25,10 +26,27 @@ def main(cfg: DictConfig) -> None:
     p.mkdir(parents=True, exist_ok=True)
     OmegaConf.save(cfg, p/'config.yaml')
 
-    # データ拡張パイプラインをPythonコード内で定義
-    # YAMLファイルを変更するだけでデータ拡張の内容を自由に変更可能になるように修正
-    train_transforms = hydra.utils.instantiate(cfg.dataset.train.transform)
-    val_transforms = hydra.utils.instantiate(cfg.dataset.test.transform)
+     # 1. データ拡張パイプラインをPythonコード内で定義
+    train_transforms = v2.Compose([
+        v2.ToImage(),
+        v2.RandomResizedCrop(**cfg.dataset.train.transform.random_resized_crop),
+        v2.RandomHorizontalFlip(**cfg.dataset.train.transform.random_horizontal_flip),
+        v2.RandomRotation(**cfg.dataset.train.transform.random_rotation),
+        v2.RandomVerticalFlip(**cfg.dataset.train.transform.random_vertical_flip),
+        v2.ToDtype(torch.float32, scale=True),
+        v2.Normalize(**cfg.dataset.train.transform.normalize),
+    ])
+
+    val_transforms = v2.Compose([
+        v2.ToImage(),
+        #v2.Resize(cfg.dataset.train.transform.random_resized_crop.size),
+        # 画像の短辺を256ピクセルにリサイズ（少し大きめに）
+        v2.Resize(256),
+        # 中央から224x224ピクセルを切り出す
+        v2.CenterCrop(224),
+        v2.ToDtype(torch.float32, scale=True),
+        v2.Normalize(**cfg.dataset.train.transform.normalize),
+    ])
 
      # 2. マスターアノテーションファイルを読み込んで分割
     master_df = pd.read_csv(cfg.dataset.train.annotation_file)
@@ -44,37 +62,32 @@ def main(cfg: DictConfig) -> None:
         root=cfg.dataset.train.root, 
         dataframe=train_df,
         loader=pil_loader, 
-        transform=train_transforms # YAMLから作成したtransformオブジェクトを渡す
+        transform=train_transforms
     )
     #検証用データにはval_transformsを適用
     val_set = AnnotatedDatasetFolder(
         root=cfg.dataset.train.root, 
         dataframe=val_df,
         loader=pil_loader, 
-        transform=val_transforms # YAMLから作成したtransformオブジェクトを渡す
+        transform=val_transforms
     )
 
-    # データローダーを作成 (cfg.dataloaderの内容を**で展開して渡す)
     train_loader = torch.utils.data.DataLoader(train_set, shuffle=True, collate_fn=collate_fn_skip_none, **cfg.dataloader)
     val_loader = torch.utils.data.DataLoader(val_set, shuffle=False, collate_fn=collate_fn_skip_none, **cfg.dataloader)
     
-    # --- モデル、損失関数、最適化手法の準備 ---
-    #YAMLから直接インスタンス化 model=resnet`のようにコマンドラインで指定するだけでモデルを切り替え可能になる
-    net = hydra.utils.instantiate(cfg.model).to(device)
+    net = SimpleCNN(num_classes=1).to(device)
 
-    # モデルの構造とパラメータ数を表示
+    # 最初の有効なデータでモデルのサマリーを表示
     sample_batch = next(iter(train_loader))
     if sample_batch[0] is not None:
         input_size = sample_batch[0][0].shape
         torchinfo.summary(net, input_size=(cfg.dataloader.batch_size, *input_size))
-
      # 損失関数、最適化手法、スケジューラ
     criterion = nn.MSELoss()
     optimizer = hydra.utils.instantiate(cfg.optimizer, params=net.parameters())
     scheduler = hydra.utils.instantiate(cfg.lr_scheduler, optimizer=optimizer)
 
     evaluators = [LossEvaluator(criterion, criterion_name="MSE")]
-    # 訓練中のイベント（モデル保存、ログ記録、グラフ描画など）を定義
     extensions = [
         ModelSaver(directory=p, name=lambda x: "best_model.pth", trigger=MinValueTrigger(mode="validation", key="loss")),
         HistorySaver(directory=p, name=lambda x: "history.pth", trigger=IntervalTrigger(period=1)),
@@ -82,7 +95,7 @@ def main(cfg: DictConfig) -> None:
         LearningCurvePlotter(directory=p, trigger=IntervalTrigger(period=1)),
     ]
 
-    # --- 訓練の実行 ---
+    # トレーナーの初期化と学習の開始
     trainer = Trainer(
         net, optimizer, criterion, train_loader, 
         scheduler=scheduler, extensions=extensions, evaluators=evaluators, device=device
