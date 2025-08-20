@@ -1,10 +1,8 @@
 from pathlib import Path
 import os
 import shutil
-import argparse
 import torch
 import torch.nn as nn
-from torchvision.transforms import v2
 import hydra
 from omegaconf import OmegaConf, DictConfig
 import csv
@@ -41,25 +39,35 @@ def adjust_exposure(image_tensor, ev_value):
     # 値が [0, 1] の範囲に収まるようにクリッピング
     return torch.clamp(corrected_image, 0, 1)
 
+# --- 評価のコアロジック ---
 def run_evaluation(train_cfg, test_cfg, train_id, seed, device):
     """単一の学習済みモデルに対する評価処理を行う関数"""
     net = hydra.utils.instantiate(train_cfg.model).to(device)
     model_path = Path("./outputs/train/history") / train_id / "best_model.pth"
     net.load_state_dict(torch.load(model_path, map_location=device))
 
-    #config.yamlのtestセクションを元にデータセットを準備
-    if test_cfg.dataset.test.annotation_file == "null" or test_cfg.dataset.test.annotation_file is None:
-        test_cfg.dataset.test.annotation_file = None
-    else:
-        annotation_file_path = test_cfg.dataset.test.annotation_file
+    # config.yamlのtestセクションを元にデータセットを準備
+    annotation_file_path = test_cfg.dataset.test.annotation_file
+    if str(annotation_file_path).lower() == "null" or annotation_file_path is None:
+        annotation_file_path = None
+    
+    # データ拡張(transform)は、config.yamlの定義に基づき、ここで直接インスタンス化
+    test_transforms = hydra.utils.instantiate(test_cfg.dataset.test.transform)
 
     dataset = AnnotatedDatasetFolder(
         root=test_cfg.dataset.test.root,
         annotation_file=annotation_file_path,
         loader=pil_loader,
-        transform=hydra.utils.instantiate(test_cfg.dataset.test.transform)
+        transform=test_transforms
     )
-    test_loader = torch.utils.data.DataLoader(dataset, shuffle=False, batch_size=64, num_workers=2, collate_fn=collate_fn_skip_none)
+    # 評価用データローダーを作成
+    test_loader = torch.utils.data.DataLoader(
+        dataset, 
+        shuffle=False, 
+        batch_size=test_cfg.dataloader.batch_size, # 評価時のバッチサイズを使用
+        num_workers=test_cfg.dataloader.num_workers, 
+        collate_fn=collate_fn_skip_none
+    )
 
     net.eval()
     criterion = torch.nn.MSELoss()
@@ -75,16 +83,18 @@ def run_evaluation(train_cfg, test_cfg, train_id, seed, device):
         'filename': None
     }
 
-    has_labels = test_cfg.dataset.test.annotation_file is not None
+    has_labels = annotation_file_path is not None
 
-    with torch.no_grad():
+    with torch.no_grad(): # 勾配計算を無効にして、メモリ消費を抑え、計算を高速化
         for batch in test_loader:
             if not batch or batch[0] is None: continue
             inputs, targets, filenames = batch
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
 
+            # 正解ラベルがある場合のみ、誤差の計算と比較を行う
             if has_labels:
+                targets = targets.to(device)
                 evaluator.eval_batch(outputs, targets)
                 abs_errors = torch.abs(outputs - targets).squeeze()
                 if abs_errors.dim() == 0: abs_errors = [abs_errors]
@@ -97,8 +107,10 @@ def run_evaluation(train_cfg, test_cfg, train_id, seed, device):
                             'true_ev': targets[i].item(),
                             'filename': filenames[i]
                         })
-            for filename, target, output in zip(filenames, targets, outputs):
-                predictions.append([filename, target.item(), output.item()])
+
+            target_items = targets.cpu().tolist() if has_labels else [None] * len(filenames)
+            for filename, target, output in zip(filenames, target_items, outputs.cpu()):
+                predictions.append([filename, target, output.item()])
 
     if has_labels:
         result = evaluator.finalize()
@@ -176,20 +188,20 @@ def main(cfg: DictConfig) -> None:
         except Exception as e:
             print(f"例外が発生したため、Train ID {train_id} をスキップ: {e}")
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
     # argparse を使って、Hydraが直接管理しない引数を定義
-    parser = argparse.ArgumentParser(description="学習済みモデルをテスト")
-    parser.add_argument('--history_dir', type=str, default="./outputs/train/history")
-    parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--skip_tested', action="store_true")
+    #parser = argparse.ArgumentParser(description="学習済みモデルをテスト")
+    #parser.add_argument('--history_dir', type=str, default="./outputs/train/history")
+    #parser.add_argument('--seed', type=int, default=42)
+    #parser.add_argument('--skip_tested', action="store_true")
     
     # Hydraが解析しないコマンドライン引数のみをパース
-    args, _ = parser.parse_known_args()
+    #args, _ = parser.parse_known_args()
     
     # パースした引数をHydraの設定にマージするための登録
-    OmegaConf.register_new_resolver("args", lambda: args)
+    #OmegaConf.register_new_resolver("args", lambda: args)
     
-    main()
+    #main()
 
 
 

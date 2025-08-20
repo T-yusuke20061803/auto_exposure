@@ -1,3 +1,12 @@
+# `_target_` は、HydraがPythonオブジェクトをインスタンス化するためのキー。
+# ここでは src.model モジュール内の SimpleCNN クラスを指定している。
+_target_: src.model.SimpleCNN
+
+# SimpleCNNクラスのコンストラクタ(__init__)に渡す引数を定義
 name: SimpleCNN
-params:
-  num_classes: 1
+num_classes: 1
+
+#変更前
+#name: SimpleCNN
+#params:
+  #num_classes: 1

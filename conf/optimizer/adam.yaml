@@ -1,5 +1,8 @@
-#name: adam
-_target_: torch.optim.Adam
+# torch.optim.Adam をインスタンス化するよう指定。
+# Python側で `hydra.utils.instantiate(cfg.optimizer, params=model.parameters())` 
+# のように呼び出すことで、params以外の引数(lr, weight_decay)が渡される。
+_target_: torch.optim.Adam #→name: adam（変更前）
+
 #params:変更前各一段をインデントする
 lr: 0.001
 betas:
