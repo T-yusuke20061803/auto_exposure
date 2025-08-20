@@ -41,6 +41,7 @@ def adjust_exposure(image_tensor, ev_value):
     # 値が [0, 1] の範囲に収まるようにクリッピング
     return torch.clamp(corrected_image, 0, 1)
 
+print("--- DEBUG: Defining run_evaluation with 5 arguments ---")
 # --- 評価のコアロジック ---
 def run_evaluation(train_cfg, test_cfg, train_id, device, test_transforms):
     """単一の学習済みモデルに対する評価処理を行う関数"""
@@ -162,6 +163,15 @@ def run_evaluation(train_cfg, test_cfg, train_id, device, test_transforms):
         vutils.save_image(original_img_denorm, save_dir / f"{best_image_info['filename']}_original.png")
         vutils.save_image(corrected_img, save_dir / f"{best_image_info['filename']}_corrected.png")
         print(f"補正前後の画像を{save_dir} に保存しました")
+
+import argparse
+parser = argparse.ArgumentParser(description="学習済みモデルをテスト")
+parser.add_argument('--history_dir', type=str, default="./outputs/train/history")
+parser.add_argument('--seed', type=int, default=42)
+parser.add_argument('--skip_tested', action="store_true")
+cli_args, _ = parser.parse_known_args()
+OmegaConf.register_new_resolver("cli_args", lambda: cli_args)
+
 @hydra.main(version_base=None, config_path="../conf", config_name="config.yaml")
 def main(cfg: DictConfig) -> None:
     # コマンドライン引数をHydraのconfigオブジェクトから取得
@@ -189,21 +199,11 @@ def main(cfg: DictConfig) -> None:
         try:
             # 評価のコア処理を呼び出す
             run_evaluation(train_cfg, cfg, train_id, device, test_transforms)
+            print("--- DEBUG: Calling run_evaluation with 5 arguments ---")
         except Exception as e:
             print(f"例外が発生したため、Train ID {train_id} をスキップ: {e}")
 
 if __name__ == "__main__":
-    # argparse を使って、Hydraが直接管理しない引数を定義
-    #parser = argparse.ArgumentParser(description="学習済みモデルをテスト")
-    #parser.add_argument('--history_dir', type=str, default="./outputs/train/history")
-    #parser.add_argument('--seed', type=int, default=42)
-    #parser.add_argument('--skip_tested', action="store_true")
-    
-    # Hydraが解析しないコマンドライン引数のみをパース
-    #args, _ = parser.parse_known_args()
-    
-    # パースした引数をHydraの設定にマージするための登録
-    OmegaConf.register_new_resolver("cli_args", lambda: args)
     
     main()
 
