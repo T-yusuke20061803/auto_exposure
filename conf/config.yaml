@@ -1,14 +1,14 @@
 defaults:
   - _self_
-  - model: simplecnn #model設定（simplecnn 又は resnet)
-  - optimizer: adam #optimizer設定（adam 又は sgd)
+  - model: simplecnn   # モデル切替（simplecnn / resnet）
+  - optimizer: adam    # Optimizer切替（adam / sgd）
   - lr_scheduler: multi_step
 
 args:
-  history_dir: "./outputs/train/history"
-  train_id: "your_train_id_here"  # 実行時に自動で上書きされる
+  history_dir: "./outputs/train_reg/history"
+  train_id: "your_train_id_here"  # 実行時に自動上書き
   seed: 42
-  skip_tested: false
+  skip_tested: fals
 
 seed: 50 #再現性確保のため、固定値を採用
 epoch: 100 # エポック数
@@ -24,7 +24,7 @@ dataset:
 #  評価（試験）用データセットの設定 
   train:
     #評価用のアノテーションCSVファイル（ない場合は null を指定）
-    csv_file: "conf/dataset/train.csv" # split_csv.py で作成した train.csv
+    csv_file: "conf/dataset/train.csv" # split_annotations.py で作成した train.csv
     #評価用の画像フォルダ
     root: "conf/dataset/HDR_subdataset" 
       # 訓練時の変数処理パラメータ
@@ -33,10 +33,10 @@ dataset:
         size: 224
       random_horizontal_flip:
         p: 0.5
-      random_rotation:
-        degrees: 15
       random_vertical_flip:
         p: 0.5
+      random_rotation:
+        degrees: 15
       normalize:
         mean: [0.485, 0.456, 0.406]
         std: [0.229, 0.224, 0.225]

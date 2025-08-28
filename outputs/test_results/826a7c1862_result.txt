@@ -1,3 +1,0 @@
-MSE result for Train ID 826a7c1862
-Model: SimpleCNN
-loss:6.8883

@@ -1,3 +1,0 @@
-MSE result for Train ID 14f402af79
-Model: SimpleCNN
-loss:5.4945

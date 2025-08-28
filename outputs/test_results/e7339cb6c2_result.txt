@@ -1,3 +1,0 @@
-MSE result for Train ID e7339cb6c2
-Model: SimpleCNN
-loss:6.2718

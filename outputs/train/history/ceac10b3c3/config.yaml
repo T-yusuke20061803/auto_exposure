@@ -1,0 +1,85 @@
+args:
+  history_dir: ./outputs/train/history
+  seed: 42
+  skip_tested: false
+seed: 50
+epoch: 100
+dataloader:
+  batch_size: 64
+  num_workers: 2
+  pin_memory: true
+dataset:
+  train:
+    _target_: src.dataset.AnnotatedDatasetFolder
+    annotation_file: conf/dataset/annotations.csv
+    root: conf/dataset/HDR_subdataset
+    loader:
+      _target_: src.dataset.pil_loader
+    transform:
+      random_resized_crop:
+        size: 224
+      random_horizontal_flip:
+        p: 0.5
+      random_rotation:
+        degrees: 15
+      random_vertical_flip:
+        p: 0.5
+      normalize:
+        mean:
+        - 0.485
+        - 0.456
+        - 0.406
+        std:
+        - 0.229
+        - 0.224
+        - 0.225
+  split:
+    val_size: 0.2
+    random_state: 42
+  test:
+    _target_: src.dataset.AnnotatedDatasetFolder
+    root: conf/dataset/HDR_subdataset
+    annotation_file: null
+    loader:
+      _target_: src.dataset.pil_loader
+    transform:
+      random_resized_crop:
+        size: 224
+      random_horizontal_flip:
+        p: 0.5
+      random_rotation:
+        degrees: 15
+      random_vertical_flip:
+        p: 0.5
+      normalize:
+        mean:
+        - 0.485
+        - 0.456
+        - 0.406
+        std:
+        - 0.229
+        - 0.224
+        - 0.225
+optuna:
+  direction: maximize
+  n_trials: 100
+  sampler:
+    _target_: optuna.samplers.TPESampler
+model:
+  _target_: src.model.SimpleCNN
+  num_classes: 1
+optimizer:
+  _target_: torch.optim.Adam
+  lr: 0.001
+  betas:
+  - 0.9
+  - 0.999
+  eps: 1.0e-08
+  weight_decay: 0
+  amsgrad: false
+lr_scheduler:
+  _target_: torch.optim.lr_scheduler.MultiStepLR
+  milestones:
+  - 50
+  - 75
+  gamma: 0.1
