@@ -29,6 +29,10 @@ def split_annotations(
     if filename_col not in df.columns or target_col not in df.columns:
         raise KeyError(f"CSVに {filename_col}, {target_col} カラムが必要です。")
 
+    # 拡張子 .jpg を追加 
+    # 文字列型に変換してから結合することで、予期せぬエラーを防ぎます
+    df[filename_col] = df[filename_col].astype(str) + ".jpg"
+
     # 学習用・テスト用に分割
     train_df, test_df = train_test_split(
         df,
@@ -37,6 +41,9 @@ def split_annotations(
         shuffle=True
     )
 
+    #保存する列のみ残す
+    train_df = train_df[[filename_col, target_col]]
+    test_df = test_df[[filename_col, target_col]]
     # 保存先ディレクトリを作成
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -44,7 +51,7 @@ def split_annotations(
     # 保存
     train_path = output_dir / "train.csv"
     test_path = output_dir / "test.csv"
-
+    # index=False を指定しないと、余計な列が保存されてしまうので注意
     train_df.to_csv(train_path, index=False)
     test_df.to_csv(test_path, index=False)
 
