@@ -129,10 +129,10 @@ def main(cfg: DictConfig):
     # 評価指標と拡張
     evaluators = [LossEvaluator(criterion, criterion_name="MSE")]
     extensions = [
-            ModelSaver(directory=p, name=lambda x: "best_model.pth", trigger=MinValueTrigger(mode="validation", key="loss")),
-            HistorySaver(directory=p, name=lambda x: "history.pth", trigger=IntervalTrigger(period=1)),
+            ModelSaver(directory=history_path, name=lambda x: "best_model.pth", trigger=MinValueTrigger(mode="validation", key="loss")),
+            HistorySaver(directory=history_path, name=lambda x: "history.pth", trigger=IntervalTrigger(period=1)),
             HistoryLogger(trigger=IntervalTrigger(period=1), print_func=print),
-            LearningCurvePlotter(directory=p, trigger=IntervalTrigger(period=1)),
+            LearningCurvePlotter(directory=history_path, trigger=IntervalTrigger(period=1)),
         ]
 
     # 学習
@@ -150,7 +150,7 @@ def main(cfg: DictConfig):
 
     model_output_dir = Path("./outputs/model")
     model_output_dir.mkdir(parents=True, exist_ok=True)
-    torch.save(net.state_dict(), model_output_dir / "best_model.pth")
+    torch.save(net.state_dict(), model_output_dir / "final_model.pth")
 
 
 if __name__ == "__main__":
