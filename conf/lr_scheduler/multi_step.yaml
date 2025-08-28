@@ -1,15 +1,9 @@
-# 指定したエポックで学習率を減衰させるスケジューラ。
-_target_: torch.optim.lr_scheduler.MultiStepLR
+name: multi_step
+params:
 # 50エポック目と75エポック目に学習率を変更する(値は整数である必要がある)
-milestones: [50, 75]
-# milestonesで指定したエポックに到達するたびに、
-# 現在の学習率をこの値の倍率(0.1倍)で更新する。
-gamma: 0.1
-
-#8月19日
-#name: multi_step
-#params:
-  #milestones:
-    #- 0.5
-    #- 0.75
-  #gamma: 0.1
+  milestones:
+    - 0.5
+    - 0.75
+  # milestonesで指定したエポックに到達するたびに、
+  # 現在の学習率をこの値の倍率(0.1倍)で更新する。
+  gamma: 0.1

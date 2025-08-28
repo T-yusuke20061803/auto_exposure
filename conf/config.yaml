@@ -1,33 +1,32 @@
 defaults:
   - _self_
-  - model: simplecnn #モデル設定（simplecnn or resnet)
-  - optimizer: adam
+  - model: simplecnn #model設定（simplecnn 又は resnet)
+  - optimizer: adam #optimizer設定（adam 又は sgd)
   - lr_scheduler: multi_step
 
 args:
   history_dir: "./outputs/train/history"
+  train_id: "your_train_id_here"  # 実行時に自動で上書きされる
   seed: 42
   skip_tested: false
 
 seed: 50 #再現性確保のため、固定値を採用
 epoch: 100 # エポック数
 
+# データローダ設定
 dataloader: 
-  batch_size: 64  # ← 256 から減らす（64：SimpleCNN、32：ResNet）
+  batch_size: 64  # SimpleCNN: 64, ResNet: 32
   num_workers: 2  # ← 16 から減らす 同様の理由
   pin_memory: true
 
-        #---データセットの指定---
+#---データセットの指定---
 dataset:
 #  評価（試験）用データセットの設定 
   train:
-    _target_: src.dataset.AnnotatedDatasetFolder
     #評価用のアノテーションCSVファイル（ない場合は null を指定）
-    annotation_file: "conf/dataset/annotations.csv" # or null
+    csv_file: "conf/dataset/train.csv" # split_csv.py で作成した train.csv
     #評価用の画像フォルダ
-    root: "conf/dataset/HDR_subdataset"
-    loader: #画像を読み込むためのloaderを追加
-      _target_: src.dataset.pil_loader
+    root: "conf/dataset/HDR_subdataset" 
       # 訓練時の変数処理パラメータ
     transform:
       random_resized_crop:
@@ -49,45 +48,34 @@ dataset:
 
   # --- 評価（試験）用のデータセット設定 ---
   test:
-    _target_: src.dataset.AnnotatedDatasetFolder
     #評価専用の画像フォルダ 変更必須←同じ画像群を用いているため。本来以上の精度が出る
     root: "conf/dataset/HDR_subdataset"
     # 評価専用のアノテーションCSV（ラベルなし予測のみならnull）
-    annotation_file: null
-    
-    loader:
-      _target_: src.dataset.pil_loader
+    csv_file: "conf/dataset/test.csv" # split_csv.py で作成した test.csv
     
     # 評価時にはデータ拡張を行わない
     transform:
       random_resized_crop:
         size: 224
-      random_horizontal_flip:
-        p: 0.5
-      random_rotation:
-        degrees: 15
-      random_vertical_flip:
-        p: 0.5
       normalize:
         mean: [0.485, 0.456, 0.406]
         std: [0.229, 0.224, 0.225]
-
   #---Optuna1とHydraの設定---
-optuna:
-  direction: maximize
-  n_trials: 100
-  sampler:
-    _target_: optuna.samplers.TPESampler
-hydra:
-  run:
-    dir: ./
-  output_subdir: null
-  job_logging:
-    version: 1
-    handlers:
-      console:
-        class: logging.StreamHandler
-        stream: ext://sys.stdout
-    root:
-      handlers: [console]
-    disable_existing_loggers: false
+#optuna:
+  #direction: maximize
+  #n_trials: 100
+  #sampler:
+    #_target_: optuna.samplers.TPESampler
+#hydra:
+  #run:
+    #dir: ./
+  #output_subdir: null
+  #job_logging:
+    #version: 1
+    #handlers:
+      #console:
+        #class: logging.StreamHandler
+        #stream: ext://sys.stdout
+    #root:
+      #handlers: [console]
+    ###disable_existing_loggers: false
