@@ -39,7 +39,8 @@ def main(cfg: DictConfig):
 #評価時においてはデータ拡張を行わない
     transform = v2.Compose([
         v2.ToImage(),
-        v2.Resize(size=cfg.dataset.test.transform.resize.size),
+        v2.Resize(256),
+        v2.CenterCrop(224),
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(mean=cfg.dataset.test.transform.normalize.mean,
                      std=cfg.dataset.test.transform.normalize.std),
@@ -98,7 +99,7 @@ def main(cfg: DictConfig):
     print(f"Validation RMSE: {result['loss/RMSE']:.4f}")
 
     # ログ保存 (GitHubで追跡されるディレクトリへ)
-    log_dir = Path("conf/dataset/results/test_results")
+    log_dir = Path("outputs/test_reg/results")
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / f"{cfg.args.train_id}_result.txt"
     with open(log_path, "w") as f:
@@ -108,7 +109,7 @@ def main(cfg: DictConfig):
         f.write(f"Validation RMSE: {result['loss/RMSE']:.4f}\n")
 
     # 予測結果保存
-    pred_dir = Path("conf/dataset/results/predictions")
+    pred_dir = Path("outputs/test_reg/predictions")
     pred_dir.mkdir(parents=True, exist_ok=True)
     csv_path = pred_dir / f"{cfg.args.train_id}_predictions.csv"
     with open(csv_path, "w", newline="") as f:

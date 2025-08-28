@@ -84,8 +84,11 @@ def main(cfg: DictConfig):
 
      # --- データ分割 ---
     master_df = pd.read_csv(cfg.dataset.train.csv_file)
-    train_df, val_df = train_test_split(master_df, test_size=cfg.dataset.split.val_size,
-                                        random_state=cfg.dataset.split.random_state)
+    train_df, val_df = train_test_split(
+        master_df, 
+        test_size=cfg.dataset.split.val_size,
+        random_state=cfg.dataset.split.random_state
+    )
     print(f"データ分割：訓練 {len(train_df)}, 検証 {len(val_df)} 件")
 
     # --- データセット ---
@@ -113,7 +116,7 @@ def main(cfg: DictConfig):
 
  # 損失関数、最適化手法、スケジューラ
     criterion = nn.MSELoss()
-       # Optimizer 選択 
+    # Optimizer 選択 
     if cfg.optimizer.name.lower() == "sgd":
         optimizer = optim.SGD(net.parameters(), **cfg.optimizer.params)
     elif cfg.optimizer.name.lower() == "adam":
