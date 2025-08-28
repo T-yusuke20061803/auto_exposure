@@ -95,6 +95,7 @@ def main(cfg: DictConfig):
     # ターミナルに分かりやすく表示 
     print("\n=== 最良モデルの検証結果 ===")
     print(f"Train ID: {cfg.args.train_id}")
+    print(f"Model:{cfg.model.name}")
     print(f"Validation MSE:  {result['loss/MSE']:.4f}")
     print(f"Validation RMSE: {result['loss/RMSE']:.4f}")
 
@@ -105,6 +106,7 @@ def main(cfg: DictConfig):
     with open(log_path, "w") as f:
         f.write(f"=== 最良モデルの検証結果 ===\n")
         f.write(f"Train ID: {cfg.args.train_id}\n")
+        f.write(f"Model:{cfg.model.name}")
         f.write(f"Validation MSE:  {result['loss/MSE']:.4f}\n")
         f.write(f"Validation RMSE: {result['loss/RMSE']:.4f}\n")
 
