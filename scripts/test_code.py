@@ -27,9 +27,18 @@ def main(cfg: DictConfig):
     set_random_seed(cfg.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Train ID を config.yaml から取得 
-    train_id = cfg.train_id
+    if "train_id" in cfg and cfg.train_id != "your_train_id_here":
+        train_id = cfg.train_id
+    else:
+        history_dir = Path("outputs/train_reg/history")
+        if not history_dir.exists():
+            raise FileNotFoundError("学習済みモデルが保存されていません")
+        latest = max(history_dir.iterdir(), key=lambda p: p.stat().st_mtime)
+        train_id = latest.name
+        print(f"[INFO] train_id が指定されていないため最新を使用します: {train_id}")
+
     model_path = Path("./outputs/train_reg/history") / train_id / "best_model.pth"
-    if not model_path.exisits():
+    if not model_path.exists():
         raise FileExistsError(f"error:最良モデルが見つからない{model_path}")
     #モデル読込
     if cfg.model.name.lower() == "simplecnn":
@@ -101,6 +110,7 @@ def main(cfg: DictConfig):
         raise KeyError(f"MSEが見つかりません: {result}")
 
     rmse_value = torch.sqrt(torch.tensor(result["loss/MSE"])).item()
+    result["loss/MSE"] = mse_value
     result["loss/RMSE"] = rmse_value
  
     # ターミナルに分かりやすく表示 
