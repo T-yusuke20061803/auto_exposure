@@ -26,8 +26,12 @@ def adjust_exposure(image_tensor, ev_value):
 def main(cfg: DictConfig):
     set_random_seed(cfg.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    model_path = Path("./outputs/train_reg/history") / cfg.args.train_id / "best_model.pth"
+# Train ID を config.yaml から取得 
+    train_id = cfg.train_id
+    model_path = Path("./outputs/train_reg/history") / train_id / "best_model.pth"
+    if not model_path.exisits():
+        raise FileExistsError(f"error:最良モデルが見つからない{model_path}")
+    #モデル読込
     if cfg.model.name.lower() == "simplecnn":
         net = SimpleCNN(**cfg.model.params).to(device)
     elif cfg.model.name.lower() == "resnet":
@@ -60,7 +64,7 @@ def main(cfg: DictConfig):
         shuffle=False,
         collate_fn=collate_fn_skip_none
     )
-
+    #評価
     criterion = torch.nn.MSELoss()
     evaluator = LossEvaluator(criterion, "MSE")
     evaluator.initialize()
@@ -89,16 +93,12 @@ def main(cfg: DictConfig):
 
     #  評価結果計算
     result = evaluator.finalize()
-    print("DEBUG: evaluator result =", result)
+    print("DEBUG: evaluator result =", result)#確認用
     #MSEのキーを柔軟に取得
-    if "loss/MSE" in result:
-        mse_value = result["loss/MSE"]
-    elif "loss" in result:
-        mse_value = result["loss"]
-    elif "MSE" in result:
-        mse_value = result["MSE"]
-    else:
-        raise KeyError(f"Evaluator result does not contain MSE key: {result}")
+    # MSE 取得（キーが "loss")
+    mse_value = result.get("loss", None)
+    if mse_value is None:
+        raise KeyError(f"MSEが見つかりません: {result}")
 
     rmse_value = torch.sqrt(torch.tensor(result["loss/MSE"])).item()
     result["loss/RMSE"] = rmse_value
