@@ -9,6 +9,14 @@ class AnnotatedDatasetFolder(torchdata.Dataset):
     画像フォルダパスと、アノテーション情報(CSVパス or データフレーム)を受け取りデータセットを作成するクラス
     """
     def __init__(self, root, loader, transform=None, csv_file=None, dataframe=None):
+        """
+        Args:
+            root (str): 画像フォルダのルートパス
+            dataframe (pd.DataFrame): "Filename", "Exposure" を含む DataFrame
+            loader (callable, optional): 画像を読み込む関数 (デフォルト: PIL)
+            transform (callable, optional): 前処理 (torchvision.transforms など)
+            extensions (list, optional): 許可する拡張子 (例: [".jpg", ".png", ".jpeg"])
+        """
         self.root = root
         self.loader = loader
         self.transform = transform
@@ -17,28 +25,21 @@ class AnnotatedDatasetFolder(torchdata.Dataset):
             if csv_file is None:
                 raise ValueError("annotation_fileまたはdataframeのどちらかが必要です。")
             try:
-                # annotation_fileは実行場所からの相対パス、または絶対パスです
+                #annotation_fileは実行場所からの相対パス、または絶対パスです
                 dataframe = pd.read_csv(csv_file)
             except FileNotFoundError:
                 raise RuntimeError(f"アノテーションファイルが見つかりません: {csv_file}")
         
         self.samples = []
-        possible_extensions = ['.png', '.jpg', '.jpeg', '.bmp']
         for _, row in dataframe.iterrows():
             filename = row['Filename']
             target = row['Exposure']
-            path = None
-            for ext in possible_extensions:
-                potential_path = os.path.join(self.root, f"{filename}.jpg")
-                if os.path.exists(potential_path):
-                    path = potential_path
-                    break
+            path = os.path.join(self.root, filename)
             
-            if path:
+            if os.path.exists(path):
                 self.samples.append((path, float(target), filename))
             else:
                 print(f"警告: 画像が見つかりません {path}")
-
     def __getitem__(self, index):
         path, target, filename = self.samples[index]
         try:
