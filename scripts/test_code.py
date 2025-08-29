@@ -89,6 +89,17 @@ def main(cfg: DictConfig):
 
     #  評価結果計算
     result = evaluator.finalize()
+    print("DEBUG: evaluator result =", result)
+    #MSEのキーを柔軟に取得
+    if "loss/MSE" in result:
+        mse_value = result["loss/MSE"]
+    elif "loss" in result:
+        mse_value = result["loss"]
+    elif "MSE" in result:
+        mse_value = result["MSE"]
+    else:
+        raise KeyError(f"Evaluator result does not contain MSE key: {result}")
+
     rmse_value = torch.sqrt(torch.tensor(result["loss/MSE"])).item()
     result["loss/RMSE"] = rmse_value
  

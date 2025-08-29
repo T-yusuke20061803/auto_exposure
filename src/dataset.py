@@ -38,8 +38,7 @@ class AnnotatedDatasetFolder(torchdata.Dataset):
             
             if os.path.exists(path):
                 self.samples.append((path, float(target), filename))
-            else:
-                print(f"警告: 画像が見つかりません {path}")
+                
     def __getitem__(self, index):
         path, target, filename = self.samples[index]
         try:
