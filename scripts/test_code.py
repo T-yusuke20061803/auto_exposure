@@ -82,7 +82,7 @@ def main(cfg: DictConfig):
     best_image_info = {"min_error": float("inf")}
 
     with torch.no_grad():
-        for inputs, targets, filenames in loader:
+        for batch_idx, (inputs, targets, filenames) in enumerate(loader):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
 
@@ -121,18 +121,18 @@ def main(cfg: DictConfig):
     print(f"Validation RMSE: {result['loss/RMSE']:.4f}")
 
     # ログ保存 (GitHubで追跡されるディレクトリへ)
-    log_dir = Path("outputs/test_reg/results")
+    log_dir = Path("outputs/train_reg/history") / train_id / "result"
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / f"{cfg.args.train_id}_result.txt"
     with open(log_path, "w") as f:
         f.write(f"=== 最良モデルの検証結果 ===\n")
-        f.write(f"Train ID: {cfg.args.train_id}\n")
+        f.write(f"Train ID: {train_id}\n")
         f.write(f"Model:{cfg.model.name}")
         f.write(f"Validation MSE:  {result['loss/MSE']:.4f}\n")
         f.write(f"Validation RMSE: {result['loss/RMSE']:.4f}\n")
 
     # 予測結果保存
-    pred_dir = Path("outputs/test_reg/predictions")
+    pred_dir = Path("outputs/train_reg/history") / train_id / "csv_result"
     pred_dir.mkdir(parents=True, exist_ok=True)
     csv_path = pred_dir / f"{cfg.args.train_id}_predictions.csv"
     with open(csv_path, "w", newline="") as f:
@@ -146,7 +146,7 @@ def main(cfg: DictConfig):
         denorm_img = denormalize(best_image_info["original"], mean, std)
         corrected_img = adjust_exposure(denorm_img, best_image_info["pred_ev"])
 
-        img_dir = Path("conf/dataset/results/best_predictions") / cfg.args.train_id
+        img_dir = Path("outputs/train_reg/history") / train_id / "best_predictions"
         img_dir.mkdir(parents=True, exist_ok=True)
         vutils.save_image(denorm_img, img_dir / f"{best_image_info['filename']}_original.png")
         vutils.save_image(corrected_img, img_dir / f"{best_image_info['filename']}_corrected.png")
