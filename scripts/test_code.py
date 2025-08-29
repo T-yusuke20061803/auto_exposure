@@ -105,11 +105,11 @@ def main(cfg: DictConfig):
     print("DEBUG: evaluator result =", result)#確認用
     #MSEのキーを柔軟に取得
     # MSE 取得（キーが "loss")
-    mse_value = result.get("loss", None)
+    mse_value = result.get("loss/MSE",result.get("loss", None))
     if mse_value is None:
         raise KeyError(f"MSEが見つかりません: {result}")
 
-    rmse_value = torch.sqrt(torch.tensor(result["loss/MSE"])).item()
+    rmse_value = float(torch.sqrt(torch.tensor(mse_value)))
     result["loss/MSE"] = mse_value
     result["loss/RMSE"] = rmse_value
  
