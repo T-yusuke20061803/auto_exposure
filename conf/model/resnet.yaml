@@ -2,4 +2,3 @@ name: resnet
 params:
  resnet_name: ResNet18
  num_classes: 1
- pretrained: false
