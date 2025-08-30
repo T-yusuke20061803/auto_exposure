@@ -1,0 +1,74 @@
+args:
+  history_dir: ./outputs/train_reg/history
+  train_id: your_train_id_here
+  seed: 42
+  skip_tested: false
+seed: 50
+epoch: 100
+dataloader:
+  batch_size: 64
+  num_workers: 2
+  pin_memory: true
+dataset:
+  train:
+    csv_file: conf/dataset/train.csv
+    root: conf/dataset/HDR_subdataset
+    transform:
+      random_resized_crop:
+        size: 224
+      random_horizontal_flip:
+        p: 0.5
+      random_vertical_flip:
+        p: 0.5
+      random_rotation:
+        degrees: 15
+      normalize:
+        mean:
+        - 0.485
+        - 0.456
+        - 0.406
+        std:
+        - 0.229
+        - 0.224
+        - 0.225
+  split:
+    val_size: 0.2
+    random_state: 42
+  test:
+    root: conf/dataset/HDR_subdataset
+    csv_file: conf/dataset/test.csv
+    transform:
+      random_resized_crop:
+        size: 224
+      normalize:
+        mean:
+        - 0.485
+        - 0.456
+        - 0.406
+        std:
+        - 0.229
+        - 0.224
+        - 0.225
+model:
+  name: resnet
+  params:
+    resnet_name: ResNet18
+    num_classes: 1
+    pretrained: false
+optimizer:
+  name: adam
+  params:
+    lr: 0.0001
+    betas:
+    - 0.9
+    - 0.999
+    eps: 1.0e-08
+    weight_decay: 0.0001
+    amsgrad: false
+lr_scheduler:
+  name: multi_step
+  params:
+    milestones:
+    - 0.5
+    - 0.75
+    gamma: 0.1
