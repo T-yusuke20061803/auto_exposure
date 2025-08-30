@@ -15,7 +15,7 @@ epoch: 100 # エポック数
 
 # データローダ設定
 dataloader: 
-  batch_size: 64  # SimpleCNN: 64, ResNet: 32
+  batch_size: 16  # SimpleCNN: 64, ResNet: 32
   num_workers: 2  # ← 16 から減らす 同様の理由
   pin_memory: true
 
