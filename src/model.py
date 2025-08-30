@@ -10,18 +10,27 @@ class SimpleCNN(nn.Module):
         super().__init__()
         self.num_classes = num_classes
         self.net = nn.Sequential(
-            nn.LazyConv2d(out_channels=16, kernel_size=3, padding=2, stride=2, bias=False),
-            nn.LazyBatchNorm2d(),
-            nn.ReLU(),
+            # Block 1
             nn.LazyConv2d(out_channels=32, kernel_size=3, padding=2, stride=2, bias=False),
             nn.LazyBatchNorm2d(),
             nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            # Block 2
             nn.LazyConv2d(out_channels=64, kernel_size=3, padding=2, stride=2, bias=False),
             nn.LazyBatchNorm2d(),
             nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            # Block 3
             nn.LazyConv2d(out_channels=128, kernel_size=3, padding=2, stride=2, bias=False),
             nn.LazyBatchNorm2d(),
             nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            # Block 4
+            nn.LazyConv2d(out_channels=256, kernel_size=3, padding=2, stride=2, bias=False),
+            nn.LazyBatchNorm2d(),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+
             nn.AdaptiveAvgPool2d(1)
         )
         self.classifier = nn.LazyLinear(out_features=num_classes)
