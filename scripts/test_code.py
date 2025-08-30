@@ -115,7 +115,7 @@ def main(cfg: DictConfig):
  
     # ターミナルに分かりやすく表示 
     print("\n=== 最良モデルの検証結果 ===")
-    print(f"Train ID: {cfg.args.train_id}")
+    print(f"Train ID: {train_id}")
     print(f"Model:{cfg.model.name}")
     print(f"Validation MSE:  {result['loss/MSE']:.4f}")
     print(f"Validation RMSE: {result['loss/RMSE']:.4f}")
