@@ -11,11 +11,11 @@ args:
   skip_tested: false
 
 seed: 50 #再現性確保のため、固定値を採用
-epoch: 100 # エポック数
+epoch: 120 # エポック数
 
 # データローダ設定
 dataloader: 
-  batch_size: 16  # SimpleCNN: 64, ResNet: 32
+  batch_size: 64  # SimpleCNN: 64, ResNet: 32
   num_workers: 2  # ← 16 から減らす 同様の理由
   pin_memory: true
 
@@ -31,8 +31,8 @@ dataset:
     transform:
       random_resized_crop: # 画像をランダムな位置・サイズで切り抜き、224x224にリサイズする
         size: 224
-        scale: [0.1, 0.8]  # 元画像の80%〜100%の範囲で切り抜く
-        ratio: [0.75, 1.33] 
+        scale: [0.7, 1.0] # 元画像の80%〜100%の範囲で切り抜く
+        ratio: [0.75, 1.33]
       random_horizontal_flip: # 画像を左右反転
         p: 0.5
       random_vertical_flip: # 画像を上下反転
