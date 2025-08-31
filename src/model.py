@@ -4,35 +4,36 @@ import torch.nn.functional as F
 
 
 class SimpleCNN(nn.Module):
-    def __init__(self, num_classes):
+    def __init__(self, num_classes, dropout_p = 0.5):
         """DNNの層を定義
         """
         super().__init__()
         self.num_classes = num_classes
         self.net = nn.Sequential(
             # Block 1
-            nn.LazyConv2d(out_channels=32, kernel_size=3, padding=2, stride=2, bias=False),
+            nn.LazyConv2d(out_channels=16, kernel_size=3, padding=2, stride=2, bias=False),
             nn.LazyBatchNorm2d(),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             # Block 2
-            nn.LazyConv2d(out_channels=64, kernel_size=3, padding=2, stride=2, bias=False),
+            nn.LazyConv2d(out_channels=32, kernel_size=3, padding=2, stride=2, bias=False),
             nn.LazyBatchNorm2d(),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             # Block 3
-            nn.LazyConv2d(out_channels=128, kernel_size=3, padding=2, stride=2, bias=False),
+            nn.LazyConv2d(out_channels=64, kernel_size=3, padding=2, stride=2, bias=False),
             nn.LazyBatchNorm2d(),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             # Block 4
-            nn.LazyConv2d(out_channels=256, kernel_size=3, padding=2, stride=2, bias=False),
+            nn.LazyConv2d(out_channels=128, kernel_size=3, padding=2, stride=2, bias=False),
             nn.LazyBatchNorm2d(),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
 
             nn.AdaptiveAvgPool2d(1)
         )
+        self.dropout = nn.Dropout(p=dropout_p)
         self.classifier = nn.LazyLinear(out_features=num_classes)
         
     
@@ -46,6 +47,8 @@ class SimpleCNN(nn.Module):
                (batch size, # of classes)
         """
         x = self.net(x)
+        x = x.view(x.size(0),-1)
+        x = self.dropout(x)
         y = self.classifier(x.view(x.size(0), -1))
         return y
 

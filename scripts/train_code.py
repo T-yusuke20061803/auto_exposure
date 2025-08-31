@@ -70,6 +70,8 @@ def main(cfg: DictConfig):
         v2.RandomHorizontalFlip(**cfg.dataset.train.transform.random_horizontal_flip),
         v2.RandomVerticalFlip(**cfg.dataset.train.transform.random_vertical_flip),
         v2.RandomRotation(**cfg.dataset.train.transform.random_rotation),
+        v2.ColorJitter(**cfg.dataset.train.transform.color_jitter), 
+        v2.RandomErasing(**cfg.dataset.train.transform.random_erasing),  
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(**cfg.dataset.train.transform.normalize),
     ])
