@@ -1,0 +1,4 @@
+=== 最良モデルの検証結果 ===
+Train ID: f812b27fd3
+Model:simplecnnValidation MSE:  0.3265
+Validation RMSE: 0.5714
