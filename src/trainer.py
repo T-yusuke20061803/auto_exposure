@@ -86,11 +86,9 @@ class Trainer(ABCTrainer):
                 self.history["validation"].append({'epoch':self.epoch, **vallosses})
                 if self.scheduler is not None:
                     if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                        # ReduceLROnPlateauの場合は、検証lossを渡す
                         self.scheduler.step(vallosses["loss"])
-                    else:
-                        # それ以外のスケジューラ（MultiStepLRなど）は引数なしで呼び出す
-                        self.scheduler.step()
+                else:
+                    self.scheduler.step()
 
             self.extend()
 
