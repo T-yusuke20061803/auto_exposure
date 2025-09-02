@@ -124,11 +124,19 @@ def main(cfg: DictConfig):
         optimizer = optim.Adam(net.parameters(), **cfg.optimizer.params)
     else:
         raise ValueError(f"未対応のoptimizerです: {cfg.optimizer.name}")
-    scheduler = optim.lr_scheduler.MultiStepLR(
-        optimizer,
-        [int(i * cfg.epoch) for i in cfg.lr_scheduler.params.milestones],
-        gamma=cfg.lr_scheduler.params.gamma
-    )
+    if cfg.lr_scheduler.name == "multi_step":
+        scheduler = optim.lr_scheduler.MultiStepLR(
+            optimizer,
+            [int(i * cfg.epoch) for i in cfg.lr_scheduler.params.milestones],
+            gamma=cfg.lr_scheduler.params.gamma
+        )
+     # ReduceLROnPlateau（性能が停滞したらLR変更）Trainer側で毎エポックの検証lossを渡す必要がある
+    elif cfg.lr_scheduler.name == "plateau":
+         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+             optimizer, **cfg.lr_scheduler.params)
+    else:
+        # スケジューラを使わない場合
+        scheduler = None
 
     # 評価指標と拡張
     evaluators = [LossEvaluator(criterion, criterion_name="MSE")]
