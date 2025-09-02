@@ -192,7 +192,7 @@ class ResNet(nn.Module):
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
-        out = F.avg_pool2d(out, 4)
+        out = F.adaptive_avg_pool2d(out, (1, 1)) # 常に 1x1 に要約する
         out = out.view(out.size(0), -1)
         out = self.linear(out)
         return out
