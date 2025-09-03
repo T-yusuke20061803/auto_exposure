@@ -139,6 +139,7 @@ def main(cfg: DictConfig):
         writer = csv.writer(f)
         writer.writerow(["filename", "true_ev", "pred_ev"])
         writer.writerows(predictions)
+    print(f"\n予測結果を {csv_path} に保存しました")
 
     # 補正画像保存
     if "original" in best_image_info:
@@ -148,8 +149,14 @@ def main(cfg: DictConfig):
 
         img_dir = Path("outputs/train_reg/history") / train_id / "best_predictions"
         img_dir.mkdir(parents=True, exist_ok=True)
-        vutils.save_image(denorm_img, img_dir / f"{best_image_info['filename']}_original.png")
-        vutils.save_image(corrected_img, img_dir / f"{best_image_info['filename']}_corrected.png")
+        # 元のファイル名から拡張子 (.jpgなど) を取り除く
+        base_filename = Path(best_image_info['filename']).stem
+
+        original_path = img_dir / f"{base_filename}_補正前.png"
+        corrected_path = img_dir / f"{base_filename}_補正後.png"
+
+        vutils.save_image(denorm_img, original_path)
+        vutils.save_image(corrected_img, corrected_path)
 
         print(f"補正前後の画像を {img_dir} に保存しました")
 
