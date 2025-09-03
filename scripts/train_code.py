@@ -130,13 +130,17 @@ def main(cfg: DictConfig):
             [int(i * cfg.epoch) for i in cfg.lr_scheduler.params.milestones],
             gamma=cfg.lr_scheduler.params.gamma
         )
+        scheduler_type = "multi_step"
      # ReduceLROnPlateau（性能が停滞したらLR変更）Trainer側で毎エポックの検証lossを渡す必要がある
     elif cfg.lr_scheduler.name == "plateau":
-         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-             optimizer, **cfg.lr_scheduler.params)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, **cfg.lr_scheduler.params
+        )
+        scheduler_type = "plateau"
     else:
         # スケジューラを使わない場合
         scheduler = None
+        scheduler_type = None
 
     # 評価指標と拡張
     evaluators = [LossEvaluator(criterion, criterion_name="MSE")]

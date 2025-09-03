@@ -81,12 +81,16 @@ class Trainer(ABCTrainer):
             self.history["train"].append({'epoch':self.epoch, 'loss':loss})
 
             # vallosses is a dictionary {str: value}
+            val_loss = None
             if val_loader is not None:
                 vallosses = self.eval(val_loader)
                 self.history["validation"].append({'epoch':self.epoch, **vallosses})
-                if self.scheduler is not None:
-                    if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                        self.scheduler.step(vallosses["loss"])
+                val_loss = vallosses["loss"]
+            # --- スケジューラ更新 ---
+            if self.scheduler is not None:
+                if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                    if val_loss is not None:
+                            self.scheduler.step(val_loss)
                 else:
                     self.scheduler.step()
 
@@ -113,8 +117,8 @@ class Trainer(ABCTrainer):
 
             loss_meter.update(loss.item(), number=inputs.size(0))
 
-        if self.scheduler is not None:
-            self.scheduler.step()
+        #if self.scheduler is not None:
+            #self.scheduler.step()
         self.epoch += 1
         ave_loss = loss_meter.average
 
