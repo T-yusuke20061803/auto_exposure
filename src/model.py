@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision.models as models
 
 
 class SimpleCNN(nn.Module):
@@ -196,3 +197,30 @@ class ResNet(nn.Module):
         out = out.view(out.size(0), -1)
         out = self.linear(out)
         return out
+
+class RegressionEfficientNet(nn.Module):
+    """
+    torchvisionの事前学習済みEfficientNet-B0を回帰タスク用にカスタマイズした、
+    軽量かつ高性能なモデル。
+    """
+    def __init__(self, out_features=1, freeze_base=True):
+        super().__init__()
+        
+        # 1. torchvisionから事前学習済みのEfficientNet-B0を読み込む
+        weights = models.EfficientNet_B0_Weights.DEFAULT
+        self.effnet = models.efficientnet_b0(weights=weights)
+        
+        # 2. ベースモデルの重みを凍結 (転移学習の定石)
+        if freeze_base:
+            for param in self.effnet.parameters():
+                param.requires_grad = False
+
+        # 3. 最終層を今回の回帰タスク用に差し替える
+        num_ftrs = self.effnet.classifier[1].in_features
+        self.effnet.classifier = nn.Sequential(
+            nn.Dropout(p=0.2, inplace=True),
+            nn.Linear(num_ftrs, out_features)
+        )
+
+    def forward(self, x):
+        return self.effnet(x)
