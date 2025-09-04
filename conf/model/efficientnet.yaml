@@ -1,0 +1,6 @@
+# EfficientNetモデル用の設定
+name: efficientnet
+
+params:
+  out_features: 1
+  freeze_base: true
