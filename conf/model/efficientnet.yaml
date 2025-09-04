@@ -3,4 +3,4 @@ name: efficientnet
 
 params:
   out_features: 1
-  freeze_base: true
+  freeze_base: false
