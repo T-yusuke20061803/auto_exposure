@@ -47,6 +47,7 @@ class Trainer(ABCTrainer):
                  optimizer,
                  criterion,
                  dataloader,
+                 cfg,
                  scheduler=None,
                  extensions=None,
                  evaluators=None,
@@ -57,6 +58,7 @@ class Trainer(ABCTrainer):
         self.optimizer = optimizer
         self.criterion = criterion
         self.dataloader = dataloader
+        self.cfg = cfg
         self.scheduler = scheduler
         self.extensions = extensions
         self.evaluators = evaluators
