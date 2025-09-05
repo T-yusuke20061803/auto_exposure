@@ -159,6 +159,7 @@ def main(cfg: DictConfig):
             optimizer, 
             criterion,
             train_loader, 
+            cfg = cfg,
             scheduler=scheduler,
             extensions=extensions,
             evaluators=evaluators,
