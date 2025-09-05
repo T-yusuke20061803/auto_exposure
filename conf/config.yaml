@@ -19,6 +19,9 @@ dataloader:
   num_workers: 2  # ← 16 から減らす 同様の理由
   pin_memory: true
 
+# 勾配累積：実質的なバッチサイズを 32 * 2 = 64 にする
+accumulation_steps: 2
+
 #---データセットの指定---
 dataset:
 #  評価（試験）用データセットの設定 
