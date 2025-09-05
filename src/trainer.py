@@ -104,19 +104,27 @@ class Trainer(ABCTrainer):
     def step(self):
         self.net.train()
         loss_meter = AverageMeter()
-        for inputs, targets, _ in self.dataloader:
-            inputs = inputs.to(self.device)
-            targets = targets.to(self.device)
+        # --- ▼▼▼ 勾配累積のために修正 ▼▼▼ ---
+        self.optimizer.zero_grad()
+        # configからaccumulation_stepsを取得。なければ1
+        accumulation_steps = self.cfg.get('accumulation_steps', 1) 
 
+        for i, (inputs, targets, _) in enumerate(self.dataloader):
+            inputs, targets = inputs.to(self.device), targets.to(self.device)
             outputs = self.net(inputs)
             loss = self.criterion(outputs, targets)
-
-            self.optimizer.zero_grad()
+            
+            # 勾配をステップ数で割って正規化
+            loss = loss / accumulation_steps
+            
             loss.backward()
-            self.optimizer.step()
+            
+            # 指定したステップ数に一回だけ、重みを更新する
+            if (i + 1) % accumulation_steps == 0:
+                self.optimizer.step()
+                self.optimizer.zero_grad()
 
-            loss_meter.update(loss.item(), number=inputs.size(0))
-
+            loss_meter.update(loss.item() * accumulation_steps, number=inputs.size(0))
         #if self.scheduler is not None:
             #self.scheduler.step()
         self.epoch += 1
