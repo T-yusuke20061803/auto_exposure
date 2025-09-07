@@ -231,10 +231,10 @@ class RegressionEfficientNet(nn.Module):
             for param in self.effnet.features[-1].parameters():
                 param.requires_grad = True
 
-        # 3. 最終層を今回の回帰タスク用に差し替える
+         #分類層は常に学習対象
         num_ftrs = self.effnet.classifier[1].in_features
         self.effnet.classifier = nn.Sequential(
-            nn.Dropout(p=0.2, inplace=True),
+            nn.Dropout(p=0.4, inplace=True),
             nn.Linear(num_ftrs, out_features)
         )
 
