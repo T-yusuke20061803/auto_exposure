@@ -214,27 +214,19 @@ class RegressionEfficientNet(nn.Module):
     torchvisionの事前学習済みEfficientNet-B0を回帰タスク用にカスタマイズした、
     軽量かつ高性能なモデル。
     """
-    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0):
+    def __init__(self, out_features=1, dropout_p=0.5):
         super().__init__()
         
         # 1. torchvisionから事前学習済みのEfficientNet-B0を読み込む
         weights = models.EfficientNet_B0_Weights.DEFAULT
         self.effnet = models.efficientnet_b0(weights=weights)
-        
-        # 2. ベースモデルの重みを凍結 (転移学習の定石)
-        if freeze_base:
-            for param in self.effnet.parameters():
+        # 最後の畳み込みブロック全体の凍結を解除
+        for param in self.effnet.features[-1].parameters():
                 param.requires_grad = False
 
-        if unfreeze_layers > 0:
-            # 最後の畳み込みブロック全体の凍結を解除
-            for param in self.effnet.features[-1].parameters():
-                param.requires_grad = True
-
-         #分類層は常に学習対象
         num_ftrs = self.effnet.classifier[1].in_features
         self.effnet.classifier = nn.Sequential(
-            nn.Dropout(p=0.5, inplace=True),
+            nn.Dropout(p=dropout_p), # ドロップアウト率をconfigから指定
             nn.Linear(num_ftrs, out_features)
         )
 

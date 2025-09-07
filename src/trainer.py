@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 from torch import autograd
 import torch.nn.functional as F
+from torch.cuda.amp import autocast, GradScaler #AMPを追加
 
 
 
@@ -67,6 +68,10 @@ class Trainer(ABCTrainer):
         self.total_epoch = None
         self.history = {}
 
+        #AMP scaler(GPUの場合のみ使用)
+        self.use_amp = device == "cuda"
+        self.scaler = GradScaler() if self.use_amp else None
+
     def train(self, epochs, val_loader=None):
         start_time = time.time()
         start_epoch = self.epoch
@@ -113,17 +118,26 @@ class Trainer(ABCTrainer):
 
         for i, (inputs, targets, _) in enumerate(self.dataloader):
             inputs, targets = inputs.to(self.device), targets.to(self.device)
-            outputs = self.net(inputs)
-            loss = self.criterion(outputs, targets)
-            
-            # 勾配をステップ数で割って正規化
-            loss = loss / accumulation_steps
-            
-            loss.backward()
+            if self.use_amp: #AMP利用
+                with autocast():
+                    outputs = self.net(inputs)
+                    loss = self.criterion(outputs, targets)
+                # 勾配をステップ数で割って正規化
+                loss = loss / accumulation_steps
+                self.scaler.scale(loss).backward()
+            else:#通常学習
+                outputs = self.net(inputs)
+                loss = self.criterion(outputs, targets)
+                loss = loss / accumulation_steps
+                loss.backward()
             
             # 指定したステップ数に一回だけ、重みを更新する
             if (i + 1) % accumulation_steps == 0:
-                self.optimizer.step()
+                if self.use_amp:
+                    self.optimizer.step()
+                    self.optimizer.zero_grad()
+                else:
+                    self.optimizer.step()
                 self.optimizer.zero_grad()
 
             loss_meter.update(loss.item() * accumulation_steps, number=inputs.size(0))
