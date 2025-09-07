@@ -11,16 +11,16 @@ args:
   skip_tested: false
 
 seed: 50 #再現性確保のため、固定値を採用
-epoch: 100 # エポック数
+epoch: 120 # エポック数
 
 # データローダ設定
 dataloader: 
   batch_size: 32 # SimpleCNN: 64, ResNet: 32
-  num_workers: 2  # ← 16 から減らす 同様の理由
+  num_workers: 4  # ← 16 から減らす 同様の理由
   pin_memory: true
 
 # 勾配累積：実質的なバッチサイズを 32 * 2 = 64 にする(※無しの場合：デフォルトの１となる)
-accumulation_steps: 4
+accumulation_steps: 2
 
 #---データセットの指定---
 dataset:
@@ -34,19 +34,19 @@ dataset:
     transform:
       random_resized_crop: # 画像をランダムな位置・サイズで切り抜き、224x224にリサイズする
         size: 224
-        scale: [0.1, 0.8] # 元画像の80%〜100%の範囲で切り抜く
+        scale: [0.5, 1.0] # 元画像を指定の範囲で切り抜く
         ratio: [0.75, 1.33]
       random_horizontal_flip: # 画像を左右反転
         p: 0.5
       random_vertical_flip: # 画像を上下反転
         p: 0.2
       random_rotation: # -15度から+15度の範囲で画像をランダムに回転
-        degrees: 15
+        degrees: 10
       color_jitter:  # 明るさ、コントラスト、彩度、色相をランダムに変化させる
-        brightness: 0.3
-        contrast: 0.3
-        saturation: 0.3
-        hue: 0.1
+        brightness: 0.4
+        contrast: 0.4
+        saturation: 0.4
+        hue: 0.2
         # 正規化:学習を安定させるための必須の前処理
       normalize:
         mean: [0.485, 0.456, 0.406]
