@@ -234,7 +234,7 @@ class RegressionEfficientNet(nn.Module):
          #分類層は常に学習対象
         num_ftrs = self.effnet.classifier[1].in_features
         self.effnet.classifier = nn.Sequential(
-            nn.Dropout(p=0.4, inplace=True),
+            nn.Dropout(p=0.5, inplace=True),
             nn.Linear(num_ftrs, out_features)
         )
 

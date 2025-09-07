@@ -4,10 +4,10 @@
 name: adam
 
 params:
-  lr: 0.00005 #変更前：0.001
+  lr: 0.0003 #変更前：0.001
   betas:
     - 0.9
     - 0.999
   eps: 1e-08
-  weight_decay: 0.01
+  weight_decay: 0.001
   amsgrad: false
