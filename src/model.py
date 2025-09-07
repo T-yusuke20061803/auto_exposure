@@ -34,8 +34,13 @@ class SimpleCNN(nn.Module):
 
             nn.AdaptiveAvgPool2d(1)
         )
-        self.dropout = nn.Dropout(p=dropout_p)
-        self.classifier = nn.LazyLinear(out_features=num_classes)
+        self.classifier = nn.Sequential(
+            nn.Flatten(),
+            nn.Dropout(p=dropout_p),
+            nn.LazyLinear(out_features=128),
+            nn.ReLU(),
+            nn.LazyLinear(out_features=num_classes)
+        )
         
     
     def forward(self, x):
@@ -47,11 +52,17 @@ class SimpleCNN(nn.Module):
             y: torch.Tensor whose size of
                (batch size, # of classes)
         """
-        x = self.net(x)
-        x = x.view(x.size(0),-1)
-        x = self.dropout(x)
-        y = self.classifier(x.view(x.size(0), -1))
-        return y
+        #変更前
+        #x = self.net(x)
+        #x = x.view(x.size(0),-1)
+        #x = self.dropout(x)
+        #y = self.classifier(x.view(x.size(0), -1))
+        #return y
+        #変更後
+        # 畳み込み部分で特徴抽出
+        features = self.net(x)
+        # 最終判断部分に渡す（中で自動的にFlattenされる）
+        return self.classifier(features)
 
 
 class ResNet(nn.Module):
@@ -203,7 +214,7 @@ class RegressionEfficientNet(nn.Module):
     torchvisionの事前学習済みEfficientNet-B0を回帰タスク用にカスタマイズした、
     軽量かつ高性能なモデル。
     """
-    def __init__(self, out_features=1, freeze_base=True):
+    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0):
         super().__init__()
         
         # 1. torchvisionから事前学習済みのEfficientNet-B0を読み込む
@@ -214,6 +225,11 @@ class RegressionEfficientNet(nn.Module):
         if freeze_base:
             for param in self.effnet.parameters():
                 param.requires_grad = False
+
+        if unfreeze_layers > 0:
+            # 最後の畳み込みブロック全体の凍結を解除
+            for param in self.effnet.features[-1].parameters():
+                param.requires_grad = True
 
         # 3. 最終層を今回の回帰タスク用に差し替える
         num_ftrs = self.effnet.classifier[1].in_features
