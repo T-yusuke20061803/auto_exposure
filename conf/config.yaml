@@ -34,7 +34,7 @@ dataset:
     transform:
       random_resized_crop: # 画像をランダムな位置・サイズで切り抜き、224x224にリサイズする
         size: 224
-        scale: [0.5, 1.0] # 元画像を指定の範囲で切り抜く
+        scale: [0.2, 0.9] # 元画像を指定の範囲で切り抜く
         ratio: [0.75, 1.33]
       random_horizontal_flip: # 画像を左右反転
         p: 0.5
