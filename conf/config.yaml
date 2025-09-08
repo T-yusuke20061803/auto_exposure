@@ -1,8 +1,8 @@
 defaults:
   - _self_
-  - model: resnet  # モデル切替（simplecnn / resnet/ efficientnet）
+  - model: simplecnn  # モデル切替（simplecnn / resnet/ efficientnet）
   - optimizer: adam    # Optimizer切替（adam / sgd）
-  - lr_scheduler: plateau #plateau or multi_step 
+  - lr_scheduler: multi_step  #plateau or multi_step 
 
 args:
   history_dir: "./outputs/train_reg/history"
@@ -15,12 +15,12 @@ epoch: 150 # エポック数
 
 # データローダ設定
 dataloader: 
-  batch_size: 4 # SimpleCNN: 64, ResNet: 32
+  batch_size: 32 # SimpleCNN: 64, ResNet: 32
   num_workers: 1  # ← 16 から減らす 同様の理由
   pin_memory: true
 
 # 勾配累積：実質的なバッチサイズを 32 * 2 = 64 にする(※無しの場合：デフォルトの１となる)
-accumulation_steps: 4
+accumulation_steps: 2
 
 #---データセットの指定---
 dataset:
