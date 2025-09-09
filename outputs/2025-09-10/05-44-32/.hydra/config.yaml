@@ -1,7 +1,7 @@
 args:
   history_dir: ./outputs/train_reg/history
   train_id: your_train_id_here
-  seed: 42
+  seed: 50
   skip_tested: false
 seed: 50
 epoch: 150
@@ -62,13 +62,15 @@ dataset:
         - 0.224
         - 0.225
 model:
-  name: simplecnn
+  name: efficientnet
   params:
-    num_classes: 1
+    out_features: 1
+    freeze_base: true
+    unfreeze_layers: 1
 optimizer:
   name: adam
   params:
-    lr: 1.0e-05
+    lr: 0.0003
     betas:
     - 0.9
     - 0.999
