@@ -15,25 +15,25 @@ class SimpleCNN(nn.Module):
             nn.LazyConv2d(out_channels=32, kernel_size=3, padding=1, stride=1, bias=False),
             nn.LazyBatchNorm2d(),
             nn.ReLU(),
-            #nn.Dropout2d(p=conv_dropout_p),
+            nn.Dropout2d(p=conv_dropout_p),
             nn.MaxPool2d(kernel_size=2, stride=2),
             # Block 2
             nn.LazyConv2d(out_channels=64, kernel_size=3, padding=1, stride=1, bias=False),
             nn.LazyBatchNorm2d(),
             nn.ReLU(),
-            #nn.Dropout2d(p=conv_dropout_p),
+            nn.Dropout2d(p=conv_dropout_p),
             nn.MaxPool2d(kernel_size=2, stride=2),
             # Block 3
             nn.LazyConv2d(out_channels=128, kernel_size=3, padding=1, stride=1, bias=False),
             nn.LazyBatchNorm2d(),
             nn.ReLU(),
-            #nn.Dropout2d(p=conv_dropout_p),
+            nn.Dropout2d(p=conv_dropout_p),
             nn.MaxPool2d(kernel_size=2, stride=2),
             # Block 4
             nn.LazyConv2d(out_channels=256, kernel_size=3, padding=1, stride=1, bias=False),
             nn.LazyBatchNorm2d(),
             nn.ReLU(),
-            #nn.Dropout2d(p=conv_dropout_p),
+            nn.Dropout2d(p=conv_dropout_p),
             nn.MaxPool2d(kernel_size=2, stride=2),
 
             nn.AdaptiveAvgPool2d(1)
@@ -218,15 +218,27 @@ class RegressionEfficientNet(nn.Module):
     torchvisionの事前学習済みEfficientNet-B0を回帰タスク用にカスタマイズした、
     軽量かつ高性能なモデル。
     """
-    def __init__(self, out_features=1, dropout_p=0.5):
+    def __init__(self, version='b1', out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p =0.5):
         super().__init__()
+
+        if version.lower() == 'b0':
+            weights = models.EfficientNet_B0_Weights.DEFAULT
+            self.effnet = models.efficientnet_b0(weights=weights)
+        elif version.lower() == 'b1':
+            weights = models.EfficientNet_B1_Weights.DEFAULT
+            self.effnet = models.efficientnet_b1(weights=weights)
+        else:
+            raise ValueError("対応しているバージョンは 'b0' または 'b1' です。")
         
-        # 1. torchvisionから事前学習済みのEfficientNet-B0を読み込む
-        weights = models.EfficientNet_B0_Weights.DEFAULT
-        self.effnet = models.efficientnet_b0(weights=weights)
-        # 最後の畳み込みブロック全体の凍結を解除
-        for param in self.effnet.features[-1].parameters():
+        if freeze_base:
+            for param in self.effnet.parameters():
                 param.requires_grad = False
+        
+        if unfreeze_layers > 0:
+            # 最後の畳み込みブロック全体の凍結を解除
+            # requires_grad を True にすることで学習対象にする
+            for param in self.effnet.features[-1].parameters():
+                param.requires_grad = True
 
         num_ftrs = self.effnet.classifier[1].in_features
         self.effnet.classifier = nn.Sequential(
