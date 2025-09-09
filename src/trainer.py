@@ -111,7 +111,7 @@ class Trainer(ABCTrainer):
     def step(self):
         self.net.train()
         loss_meter = AverageMeter()
-        # --- ▼▼▼ 勾配累積のために修正 ▼▼▼ ---
+        # 最初に勾配をゼロにする
         self.optimizer.zero_grad()
         # configからaccumulation_stepsを取得。なければ1
         accumulation_steps = self.cfg.get('accumulation_steps', 1) 
