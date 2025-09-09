@@ -1,5 +1,0 @@
-=== 最良モデルの検証結果 ===
-Train ID: da3df7ad40
-Model:simplecnn
-Validation MSE:  0.3225
-Validation RMSE: 0.5679
