@@ -7,7 +7,7 @@ defaults:
 args:
   history_dir: "./outputs/train_reg/history"
   train_id: "your_train_id_here"  # 実行時に自動上書き
-  seed: 42
+  seed: 50
   skip_tested: false
 
 seed: 50 #再現性確保のため、固定値を採用
