@@ -35,6 +35,12 @@ class SimpleCNN(nn.Module):
             nn.ReLU(),
             nn.Dropout2d(p=conv_dropout_p),
             nn.MaxPool2d(kernel_size=2, stride=2),
+            # Block 5
+            nn.LazyConv2d(out_channels=512, kernel_size=3, padding=1, stride=1, bias=False),
+            nn.LazyBatchNorm2d(),
+            nn.ReLU(),
+            nn.Dropout2d(p=conv_dropout_p),
+            nn.MaxPool2d(kernel_size=2, stride=2),
 
             nn.AdaptiveAvgPool2d(1)
         )
