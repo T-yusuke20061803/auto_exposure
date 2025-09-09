@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - model: simplecnn  # モデル切替（simplecnn / resnet/ efficientnet）
+  - model: efficientnet  # モデル切替（simplecnn / resnet/ efficientnet）
   - optimizer: adam    # Optimizer切替（adam / sgd）
   - lr_scheduler: plateau  #plateau or multi_step 
 
