@@ -4,7 +4,7 @@
 name: adam
 
 params:
-  lr: 0.0005 #学習率
+  lr: 0.0003 #学習率
   betas:
     - 0.9
     - 0.999
