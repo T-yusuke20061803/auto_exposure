@@ -6,10 +6,10 @@ args:
 seed: 50
 epoch: 150
 dataloader:
-  batch_size: 64
+  batch_size: 32
   num_workers: 2
   pin_memory: true
-accumulation_steps: 1
+accumulation_steps: 2
 dataset:
   train:
     csv_file: conf/dataset/train.csv
