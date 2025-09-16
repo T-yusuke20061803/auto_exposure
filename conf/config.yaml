@@ -20,7 +20,7 @@ dataloader:
   pin_memory: true
 
 # 勾配累積：実質的なバッチサイズを 32 * 2 = 64 にする(※無しの場合：デフォルトの１となる)
-accumulation_steps: 2
+accumulation_steps: 1
 
 #---データセットの指定---
 dataset:
