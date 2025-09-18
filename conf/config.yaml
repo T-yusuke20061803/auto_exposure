@@ -43,9 +43,9 @@ dataset:
       random_rotation: # -15度から+15度の範囲で画像をランダムに回転
         degrees: 15
       color_jitter:  # 明るさ、コントラスト、彩度、色相をランダムに変化させる
-        brightness: 0.3
-        contrast: 0.3
-        saturation: 0.3
+        brightness: 0.2
+        contrast: 0.2
+        saturation: 0.2
         hue: 0.1
         # 正規化:学習を安定させるための必須の前処理
       normalize:
