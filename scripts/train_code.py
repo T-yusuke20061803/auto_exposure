@@ -73,7 +73,7 @@ def main(cfg: DictConfig):
         v2.ColorJitter(**cfg.dataset.train.transform.color_jitter), 
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(**cfg.dataset.train.transform.normalize),
-        v2.RandomErasing(**cfg.dataset.train.transform.random_erasing),
+        v2.RandomErasing(p=0.25, scale=(0.02, 0.1), ratio=(0.3, 3.3))
     ])
 
     val_transforms = v2.Compose([
