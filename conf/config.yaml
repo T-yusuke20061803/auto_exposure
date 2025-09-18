@@ -37,9 +37,9 @@ dataset:
         scale: [0.1, 0.8] # 元画像を指定の範囲で切り抜く
         ratio: [0.75, 1.33]
       random_horizontal_flip: # 画像を左右反転
-        p: 0.5
+        p: 0.3
       random_vertical_flip: # 画像を上下反転
-        p: 0.2
+        p: 0.3
       random_rotation: # -15度から+15度の範囲で画像をランダムに回転
         degrees: 15
       color_jitter:  # 明るさ、コントラスト、彩度、色相をランダムに変化させる
@@ -54,7 +54,7 @@ dataset:
 
 # 訓練/検証の自動分割設定 (80%を訓練、20%を検証に使用)
   split:
-    val_size: 0.1
+    val_size: 0.2
     random_state: 42
 
   # --- 評価（試験）用のデータセット設定 ---
