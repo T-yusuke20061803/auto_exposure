@@ -46,7 +46,7 @@ dataset:
         brightness: 0.25
         contrast: 0.25
         saturation: 0.25
-        hue: 0.1
+        hue: 0.2
         # 強力な正則化手法「RandomErasing」を追加
       random_erasing:
         p: 0.2            # 25%の確率で実行

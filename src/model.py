@@ -5,7 +5,7 @@ import torchvision.models as models
 
 
 class SimpleCNN(nn.Module):
-    def __init__(self, num_classes, dropout_p = 0.5, conv_dropout_p = 0.3):#大きすぎると過学習、小さすぎると学習不足の影響があるため、調整が必要
+    def __init__(self, num_classes, dropout_p = 0.5, conv_dropout_p = 0.2):#大きすぎると過学習、小さすぎると学習不足の影響があるため、調整が必要
         """DNNの層を定義
         """
         super().__init__()
