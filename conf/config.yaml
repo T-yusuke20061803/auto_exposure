@@ -2,7 +2,7 @@ defaults:
   - _self_
   - model: simplecnn  # モデル切替（simplecnn / resnet/ efficientnet）
   - optimizer: adam    # Optimizer切替（adam / sgd）
-  - lr_scheduler: multi_step    #plateau or multi_step 
+  - lr_scheduler: plateau    #plateau or multi_step 
 
 args:
   history_dir: "./outputs/train_reg/history"
