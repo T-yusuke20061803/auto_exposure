@@ -64,7 +64,7 @@ def main(cfg: DictConfig):
 # test.csv を読み込む
     dataset = AnnotatedDatasetFolder(
         root=cfg.dataset.test.root,
-        csv_file=cfg.dataset.test.csv_file,#cfg.dataset.test.annotation_file,(変更前)
+        csv_file=cfg.dataset.test.csv_file,
         loader=pil_loader,
         transform=transform
     )
