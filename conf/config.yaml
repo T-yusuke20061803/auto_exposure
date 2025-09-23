@@ -43,10 +43,10 @@ dataset:
       random_rotation: # -15度から+15度の範囲で画像をランダムに回転
         degrees: 10
       color_jitter:  # 明るさ、コントラスト、彩度、色相をランダムに変化させる
-        brightness: 0.3
-        contrast: 0.3
-        saturation: 0.3
-        hue: 0.2
+        brightness: 0.2
+        contrast: 0.2
+        saturation: 0.2
+        hue: 0.1
         # 強力な正則化手法「RandomErasing」を追加
       random_erasing:
         p: 0.2            # 25%の確率で実行
