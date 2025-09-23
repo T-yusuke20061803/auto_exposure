@@ -34,7 +34,7 @@ dataset:
     transform:
       random_resized_crop: # 画像をランダムな位置・サイズで切り抜き、224x224にリサイズする
         size: 224
-        scale: [0.5, 1.0] # 元画像を指定の範囲で切り抜く
+        scale: [0.3, 1.0] # 元画像を指定の範囲で切り抜く
         ratio: [0.75, 1.33]
       random_horizontal_flip: # 画像を左右反転
         p: 0.5
@@ -43,9 +43,9 @@ dataset:
       random_rotation: # -15度から+15度の範囲で画像をランダムに回転
         degrees: 10
       color_jitter:  # 明るさ、コントラスト、彩度、色相をランダムに変化させる
-        brightness: 0.25
-        contrast: 0.25
-        saturation: 0.25
+        brightness: 0.3
+        contrast: 0.3
+        saturation: 0.3
         hue: 0.2
         # 強力な正則化手法「RandomErasing」を追加
       random_erasing:
