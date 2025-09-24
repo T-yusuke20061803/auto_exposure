@@ -7,7 +7,7 @@ import argparse
 def split_annotations(
         input_csv="conf/dataset/annotations.csv", 
         output_dir="conf/dataset", 
-        test_size=0.2,  #← デフォルトは 0.2 (＝8:2 に分割
+        test_size=0.25,  #← デフォルトは 0.2 (＝8:2 に分割
         random_state=42,
         filename_col="Filename", 
         target_col="Exposure"
