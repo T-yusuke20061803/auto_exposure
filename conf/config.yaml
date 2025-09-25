@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - model: resnet  # モデル切替（simplecnn / resnet/ efficientnet/ mobilenet）
+  - model: efficientnet  # モデル切替（simplecnn / resnet/ efficientnet/ mobilenet）
   - optimizer: adam    # Optimizer切替（adam / sgd）
   - lr_scheduler: multi_step    #plateau or multi_step 
 
@@ -15,7 +15,7 @@ epoch: 150 # エポック数
 
 # データローダ設定
 dataloader: 
-  batch_size: 4 # SimpleCNN: 64, ResNet: 32
+  batch_size: 8 # SimpleCNN: 64, ResNet: 32
   num_workers: 1  # ← 16 から減らす 同様の理由
   pin_memory: true
 
