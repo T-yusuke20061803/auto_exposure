@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 
 
-from src.model import SimpleCNN, ResNet, RegressionEfficientNet
+from src.model import SimpleCNN, ResNet, RegressionEfficientNet, RegressionMobileNet
 from src.trainer import Trainer, LossEvaluator
 from src.train_id import print_config, generate_train_id, is_same_config
 from src.extension import ModelSaver, HistorySaver, HistoryLogger, IntervalTrigger, LearningCurvePlotter, MinValueTrigger
@@ -108,6 +108,8 @@ def main(cfg: DictConfig):
         net = ResNet(**cfg.model.params).to(device)
     elif cfg.model.name.lower() == "efficientnet":
         net = RegressionEfficientNet(**cfg.model.params).to(device)
+    elif cfg.model.name.lower() == "mobilenet":
+        net = RegressionMobileNet(**cfg.model.params).to(device)
     else:
         raise ValueError(f"未対応のモデルです: {cfg.model.name}")
     

@@ -1,0 +1,4 @@
+name: mobilenet
+params:
+  out_features: 1
+  freeze_base: true

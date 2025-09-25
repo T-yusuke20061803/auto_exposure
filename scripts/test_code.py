@@ -8,7 +8,7 @@ import hydra
 from omegaconf import DictConfig
 
 from src.dataset import AnnotatedDatasetFolder, pil_loader, collate_fn_skip_none
-from src.model import SimpleCNN, ResNet, RegressionEfficientNet
+from src.model import SimpleCNN, ResNet, RegressionEfficientNet, RegressionMobileNet
 from src.trainer import LossEvaluator
 from src.util import set_random_seed
 
@@ -47,6 +47,8 @@ def main(cfg: DictConfig):
         net = ResNet(**cfg.model.params).to(device)
     elif cfg.model.name.lower() == "efficientnet":
         net = RegressionEfficientNet(**cfg.model.params).to(device)
+    elif cfg.model.name.lower() == "mobilenet":
+        net = RegressionMobileNet(**cfg.model.params).to(device)
     else:
         raise ValueError(f"未対応のモデルです: {cfg.model.name}")
     net.load_state_dict(torch.load(model_path, map_location=device))

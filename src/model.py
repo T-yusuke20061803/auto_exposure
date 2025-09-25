@@ -254,3 +254,19 @@ class RegressionEfficientNet(nn.Module):
 
     def forward(self, x):
         return self.effnet(x)
+
+class RegressionMobileNet(nn.Module):
+    def __init__(self, out_features=1, freeze_base=True):
+        super().__init__()
+        weights = models.MobileNet_V2_Weights.DEFAULT
+        self.mobilenet = models.mobilenet_v2(weights=weights)
+        if freeze_base:
+            for param in self.mobilenet.parameters():
+                param.requires_grad = False
+        num_ftrs = self.mobilenet.classifier[1].in_features
+        self.mobilenet.classifier = nn.Sequential(
+            nn.Dropout(p=0.2),
+            nn.Linear(num_ftrs, out_features)
+        )
+    def forward(self, x):
+        return self.mobilenet(x)
