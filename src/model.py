@@ -256,17 +256,26 @@ class RegressionEfficientNet(nn.Module):
         return self.effnet(x)
 
 class RegressionMobileNet(nn.Module):
-    def __init__(self, out_features=1, freeze_base=True):
+    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0):
         super().__init__()
+        
         weights = models.MobileNet_V2_Weights.DEFAULT
         self.mobilenet = models.mobilenet_v2(weights=weights)
+        
         if freeze_base:
             for param in self.mobilenet.parameters():
                 param.requires_grad = False
+        
+        if unfreeze_layers > 0:
+            # MobileNetV2ではfeaturesの最後のブロックが[-1]
+            for param in self.mobilenet.features[-1].parameters():
+                param.requires_grad = True
+
         num_ftrs = self.mobilenet.classifier[1].in_features
         self.mobilenet.classifier = nn.Sequential(
             nn.Dropout(p=0.2),
             nn.Linear(num_ftrs, out_features)
         )
+
     def forward(self, x):
         return self.mobilenet(x)
