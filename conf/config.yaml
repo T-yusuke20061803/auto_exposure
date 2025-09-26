@@ -10,8 +10,16 @@ args:
   seed: 50
   skip_tested: false
 
+
 seed: 50 #再現性確保のため、固定値を採用
-epoch: 150 # エポック数
+# --- 基本設定 (ステップ1用) ---
+# ステップ2では、この値はコマンドラインから '100' などに上書きされる
+epoch: 30
+
+# --- ステップ2で使うための項目 ---
+# 普段は 'null' (何もしない) にしておく。
+# ステップ2を実行する時だけ、コマンドラインから "latest" に上書きされる
+load_weights_from: null
 
 # データローダ設定
 dataloader: 
@@ -20,7 +28,7 @@ dataloader:
   pin_memory: true
 
 # 勾配累積：実質的なバッチサイズを 32 * 2 = 64 にする(※無しの場合：デフォルトの１となる)
-accumulation_steps: 2
+accumulation_steps: 4
 
 #---データセットの指定---
 dataset:

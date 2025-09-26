@@ -108,8 +108,18 @@ def main(cfg: DictConfig):
         net = ResNet(**cfg.model.params).to(device)
     elif cfg.model.name.lower() == "efficientnet":
         net = RegressionEfficientNet(**cfg.model.params).to(device)
+        if "load_weights_from" in cfg:
+            model_path = cfg.load_weights_from
+        if Path(model_path).exists():
+            print(f"[INFO] 重みを読み込みます: {model_path}")
+            net.load_state_dict(torch.load(model_path, map_location=device))
     elif cfg.model.name.lower() == "mobilenet":
         net = RegressionMobileNet(**cfg.model.params).to(device)
+        if "load_weights_from" in cfg:
+            model_path = cfg.load_weights_from
+        if Path(model_path).exists():
+            print(f"[INFO] 重みを読み込みます: {model_path}")
+            net.load_state_dict(torch.load(model_path, map_location=device))
     else:
         raise ValueError(f"未対応のモデルです: {cfg.model.name}")
     
