@@ -69,8 +69,11 @@ class Trainer(ABCTrainer):
         self.history = {}
 
         #AMP scaler(GPUの場合のみ使用)
-        self.use_amp = device == "cuda"
-        self.scaler = GradScaler() if self.use_amp else None
+        # deviceが'cuda'であることと、configで有効になっているかを確認
+        self.use_amp = (self.device.type == 'cuda') and self.cfg.get('amp', False)
+        self.scaler = GradScaler(enabled=self.use_amp)
+        if self.use_amp:
+            print("[INFO] AMP (自動混合精度) :有効")
 
     def train(self, epochs, val_loader=None):
         start_time = time.time()
@@ -98,6 +101,8 @@ class Trainer(ABCTrainer):
                 if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                     if val_loss is not None:
                             self.scheduler.step(val_loss)
+                elif not getattr(self.scheduler, 'is_warmup_scheduler', False): # warmup以外
+                    self.scheduler.step()
                 else:
                     self.scheduler.step()
 
@@ -116,14 +121,20 @@ class Trainer(ABCTrainer):
         # configからaccumulation_stepsを取得。なければ1
         accumulation_steps = self.cfg.get('accumulation_steps', 1) 
 
-        for i, (inputs, targets, _) in enumerate(self.dataloader):
-            inputs, targets = inputs.to(self.device), targets.to(self.device)
+        for i, batch in enumerate(self.dataloader):
+            # collate_fnによってNoneが返される場合を考慮
+            if batch is None: continue
+            inputs , targets , _ = batch
+            inputs = inputs.to(self.device)
+            targets = targets.to(self.device)
             if self.use_amp: #AMP利用
-                with autocast():
+                with autocast(enabled = self.use_amp):
                     outputs = self.net(inputs)
                     loss = self.criterion(outputs, targets)
-                # 勾配をステップ数で割って正規化
-                loss = loss / accumulation_steps
+                    if accumulation_steps > 1:
+                        # 勾配をステップ数で割って正規化
+                        loss = loss / accumulation_steps
+                #scalerを利用して勾配をスケーリングし、逆伝播　←なぜ9月27日
                 self.scaler.scale(loss).backward()
             else:#通常学習
                 outputs = self.net(inputs)
@@ -134,11 +145,11 @@ class Trainer(ABCTrainer):
             # 指定したステップ数に一回だけ、重みを更新する
             if (i + 1) % accumulation_steps == 0:
                 if self.use_amp:
-                    self.optimizer.step()
+                    # scalerを使ってoptimizer.step()を呼び出す
+                    self.scaler.step(self.optimizer)
+                # 次のイテレーションのためにscalerを更新
+                    self.scaler.update()
                     self.optimizer.zero_grad()
-                else:
-                    self.optimizer.step()
-                self.optimizer.zero_grad()
 
             loss_meter.update(loss.item() * accumulation_steps, number=inputs.size(0))
         #if self.scheduler is not None:

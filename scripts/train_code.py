@@ -108,21 +108,37 @@ def main(cfg: DictConfig):
         net = ResNet(**cfg.model.params).to(device)
     elif cfg.model.name.lower() == "efficientnet":
         net = RegressionEfficientNet(**cfg.model.params).to(device)
-        if "load_weights_from" in cfg:
-            model_path = cfg.load_weights_from
-        if Path(model_path).exists():
-            print(f"[INFO] 重みを読み込みます: {model_path}")
-            net.load_state_dict(torch.load(model_path, map_location=device))
     elif cfg.model.name.lower() == "mobilenet":
         net = RegressionMobileNet(**cfg.model.params).to(device)
-        if "load_weights_from" in cfg:
-            model_path = cfg.load_weights_from
-        if Path(model_path).exists():
-            print(f"[INFO] 重みを読み込みます: {model_path}")
-            net.load_state_dict(torch.load(model_path, map_location=device))
     else:
         raise ValueError(f"未対応のモデルです: {cfg.model.name}")
     
+    #  重み読み込み 
+    if "load_weights_from" in cfg and cfg.load_weights_from is not None:
+        model_path_str = cfg.load_weights_from
+        # 'latest'が指定された場合、自動で最新のモデルを探す
+        if model_path_str.lower() == 'latest':
+            # Hydraの出力は outputs/YYYY-MM-DD/HH-MM-SS 形式なので、その親ディレクトリを探す
+            base_history_dir = Path("./outputs/train_reg/history")
+            if not base_history_dir.exists():
+                raise FileNotFoundError("学習履歴ディレクトリ：無し")
+            
+            # 更新日時が最新のディレクトリ（自分自身を除く）を探す
+            run_dirs = sorted([d for d in base_history_dir.iterdir() if d.is_dir()], key=lambda p: p.stat().st_mtime, reverse=True)
+            if not run_dirs:
+                raise FileExistsError("学習結果：無し")
+            
+            latest_train_dir = run_dirs[0]
+            model_path = latest_train_dir / "best_model.pth"
+            print(f"[INFO] 'latest'が指定されたため、最新のモデルを読み込みます: {model_path}")
+        else:
+            # 具体的なパスが指定された場合は、そのまま使う
+            model_path = Path(model_path_str)
+
+        if model_path.exists():
+            net.load_state_dict(torch.load(model_path, map_location=device))
+        else:
+            print(f"警告: 指定された重みファイルが見つかりません: {model_path}")  
     # サマリー表示
     sample_batch = next(iter(train_loader))
     if sample_batch[0] is not None:
