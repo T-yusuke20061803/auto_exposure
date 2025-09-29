@@ -123,14 +123,17 @@ def main(cfg: DictConfig):
             if not base_history_dir.exists():
                 raise FileNotFoundError("学習履歴ディレクトリ：無し")
             
-            # 更新日時が最新のディレクトリ（自分自身を除く）を探す
-            run_dirs = sorted([d for d in base_history_dir.iterdir() if d.is_dir()], key=lambda p: p.stat().st_mtime, reverse=True)
-            if not run_dirs:
-                raise FileExistsError("学習結果：無し")
+             # 現在の実行ディレクトリを取得
+            current_run_dir = Path(os.getcwd())
             
-            latest_train_dir = run_dirs[0]
-            model_path = latest_train_dir / "best_model.pth"
-            print(f"[INFO] 'latest'が指定されたため、最新のモデルを読み込みます: {model_path}")
+            # 自分自身のディレクトリを除外して、更新日時が最新のディレクトリを探す
+            other_run_dirs = [d for d in base_history_dir.iterdir() if d.is_dir() and d.resolve() != current_run_dir.resolve()]
+            if not other_run_dirs:
+                raise FileExistsError("学習履歴：無し")
+            else:
+                latest_train_dir = max(other_run_dirs, key=lambda p: p.stat().st_mtime)
+                model_path = latest_train_dir / "best_model.pth"
+                print(f"[INFO] 'latest'が指定されたため、最新のモデルを読み込みます: {model_path}")
         else:
             # 具体的なパスが指定された場合は、そのまま使う
             model_path = Path(model_path_str)
