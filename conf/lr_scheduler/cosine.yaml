@@ -1,0 +1,4 @@
+name: cosine
+params:
+  T_max: ${epoch}
+  eta_min: 0.000001
