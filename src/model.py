@@ -237,7 +237,7 @@ class RegressionEfficientNet(nn.Module):
             weights = models.EfficientNet_B2_Weights.DEFAULT
             self.effnet = models.efficientnet_b2(weights=weights)
         elif version.lower() == 'b3':
-            weights = models.EfficientNet_B5_Weights.DEFAULT
+            weights = models.EfficientNet_B3_Weights.DEFAULT
             self.effnet = models.efficientnet_b3(weights=weights)
         elif version.lower() == 'b4':
             weights = models.EfficientNet_B4_Weights.DEFAULT
