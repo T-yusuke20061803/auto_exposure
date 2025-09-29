@@ -17,16 +17,16 @@ epoch: 150
 # ステップ2で "latest" を指定して上書きするための項目
 load_weights_from: null
 
-amp: true #AMP
+amp: false #AMP
 
 # データローダ設定
 dataloader: 
-  batch_size: 4 # SimpleCNN: 64, ResNet: 32
-  num_workers: 0  # ← 16 から減らす 同様の理由
+  batch_size: 16 # SimpleCNN: 64, ResNet: 32
+  num_workers: 1  # ← 16 から減らす 同様の理由
   pin_memory: true
 
 # 勾配累積：実質的なバッチサイズを 32 * 2 = 64 にする(※無しの場合：デフォルトの１となる)
-accumulation_steps: 8
+accumulation_steps: 2
 
 #---データセットの指定---
 dataset:

@@ -1,0 +1,4 @@
+- epoch=150
+- model.params.freeze_base=false
+- optimizer.params.lr=0.00001
+- load_weights_from=latest

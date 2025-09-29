@@ -2,4 +2,4 @@ name: mobilenet
 params:
   out_features: 1
   freeze_base: true
-  unfreeze_layers: 1
+  unfreeze_layers: 0
