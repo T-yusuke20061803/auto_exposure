@@ -233,8 +233,26 @@ class RegressionEfficientNet(nn.Module):
         elif version.lower() == 'b1':
             weights = models.EfficientNet_B1_Weights.DEFAULT
             self.effnet = models.efficientnet_b1(weights=weights)
+        elif version.lower() == 'b2':
+            weights = models.EfficientNet_B2_Weights.DEFAULT
+            self.effnet = models.efficientnet_b2(weights=weights)
+        elif version.lower() == 'b3':
+            weights = models.EfficientNet_B1_Weights.DEFAULT
+            self.effnet = models.efficientnet_b3(weights=weights)
+        elif version.lower() == 'b4':
+            weights = models.EfficientNet_B4_Weights.DEFAULT
+            self.effnet = models.efficientnet_b4(weights=weights)
+        elif version.lower() == 'b5':
+            weights = models.EfficientNet_B5_Weights.DEFAULT
+            self.effnet = models.efficientnet_b5(weights=weights)
+        elif version.lower() == 'b6':
+            weights = models.EfficientNet_B1_Weights.DEFAULT
+            self.effnet = models.efficientnet_b6(weights=weights)
+        elif version.lower() == 'b7':
+            weights = models.EfficientNet_B7_Weights.DEFAULT
+            self.effnet = models.efficientnet_b7(weights=weights)
         else:
-            raise ValueError("対応しているバージョンは 'b0' または 'b1' です。")
+            raise ValueError("対応しているバージョンは 'b0~7' です。")
         
         if freeze_base:
             for param in self.effnet.parameters():
