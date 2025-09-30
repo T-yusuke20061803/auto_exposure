@@ -26,7 +26,7 @@ dataloader:
   pin_memory: true
 
 # 勾配累積：実質的なバッチサイズを 32 * 2 = 64 にする(※無しの場合：デフォルトの１となる)
-accumulation_steps: 2
+accumulation_steps: 4
 
 #---データセットの指定---
 dataset:
@@ -40,12 +40,12 @@ dataset:
     transform:
       random_resized_crop: # 画像をランダムな位置・サイズで切り抜き、224x224にリサイズする
         size: 224
-        scale: [0.9, 1.0] # 元画像を指定の範囲で切り抜く
+        scale: [0.8, 1.0] # 元画像を指定の範囲で切り抜く
         ratio: [0.75, 1.33]
       random_horizontal_flip: # 画像を左右反転
-        p: 0.3
+        p: 0.4
       random_vertical_flip: # 画像を上下反転
-        p: 0.3
+        p: 0.4
       random_rotation: # -15度から+15度の範囲で画像をランダムに回転
         degrees: 10
       #color_jitter:  # 明るさ、コントラスト、彩度、色相をランダムに変化させる
