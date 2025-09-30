@@ -266,15 +266,17 @@ class RegressionEfficientNet(nn.Module):
 
         num_ftrs = self.effnet.classifier[1].in_features
         self.effnet.classifier = nn.Sequential(
-            nn.Dropout(p=dropout_p), # ドロップアウト率をconfigから指定
-            nn.Linear(num_ftrs, out_features)
+            nn.Linear(num_ftrs, 256),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_p),
+            nn.Linear(256, out_features)
         )
 
     def forward(self, x):
         return self.effnet(x)
 
 class RegressionMobileNet(nn.Module):
-    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0):
+    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.5):
         super().__init__()
         
         weights = models.MobileNet_V2_Weights.DEFAULT
@@ -289,10 +291,13 @@ class RegressionMobileNet(nn.Module):
             for param in self.mobilenet.features[-1].parameters():
                 param.requires_grad = True
 
+        #分類層を強化
         num_ftrs = self.mobilenet.classifier[1].in_features
         self.mobilenet.classifier = nn.Sequential(
-            nn.Dropout(p=0.2),
-            nn.Linear(num_ftrs, out_features)
+            nn.Linear(num_ftrs,256),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_p),
+            nn.Linear(256, out_features)
         )
 
     def forward(self, x):
