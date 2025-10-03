@@ -1,0 +1,5 @@
+=== 最良モデルの検証結果 ===
+Train ID: 9a114e3e8f
+Model:mobilenet
+Validation MSE:  0.2624
+Validation RMSE: 0.5123
