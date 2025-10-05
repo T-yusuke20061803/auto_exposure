@@ -1,5 +1,7 @@
 name: mobilenet
 params:
   out_features: 1
+  #学習中の重みが変更するか否か（true:変更しない）
   freeze_base: true
+  #凍結されたベースモデルのうち、最後から何ブロックを解凍（再学習）するかの数
   unfreeze_layers: 1
