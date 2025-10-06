@@ -266,10 +266,10 @@ class RegressionEfficientNet(nn.Module):
 
         num_ftrs = self.effnet.classifier[1].in_features
         self.effnet.classifier = nn.Sequential(
-            nn.Linear(num_ftrs, 256),
+            nn.Linear(num_ftrs, 128),
             nn.ReLU(),
             nn.Dropout(p=dropout_p),
-            nn.Linear(256, out_features)
+            nn.Linear(128, out_features)
         )
 
     def forward(self, x):
@@ -294,10 +294,10 @@ class RegressionMobileNet(nn.Module):
         #分類層を強化
         num_ftrs = self.mobilenet.classifier[1].in_features
         self.mobilenet.classifier = nn.Sequential(
-            nn.Linear(num_ftrs,256),
+            nn.Linear(num_ftrs,128),
             nn.ReLU(),
             nn.Dropout(p=dropout_p),
-            nn.Linear(256, out_features)
+            nn.Linear(128, out_features)
         )
 
     def forward(self, x):
