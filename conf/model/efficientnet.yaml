@@ -1,4 +1,3 @@
-# EfficientNetモデル用の設定
 name: efficientnet
 
 params:

@@ -224,7 +224,7 @@ class RegressionEfficientNet(nn.Module):
     torchvisionの事前学習済みEfficientNet-B0を回帰タスク用にカスタマイズした、
     軽量かつ高性能なモデル。
     """
-    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p =0.5):
+    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p =0.5):#versonでモデルの種類を指定
         super().__init__()
 
         if version.lower() == 'b0':
