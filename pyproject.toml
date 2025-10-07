@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "pytorch-template"
+name = "auto_exposure"
 version = "0.1.1"
 description = ""
 authors = ["Yuma Kinoshita <ykinoshita@tokai.ac.jp>"]
@@ -19,6 +19,7 @@ torch = {version = "^2.3.1+cu121", source = "torch_cu121"}
 torchvision = {version = "^0.18.1+cu121", source = "torch_cu121"}
 torchaudio = {version = "^2.3.1+cu121", source = "torch_cu121"}
 torchinfo = "^1.8.0"
+omegaconf = "^2.3.0"
 
 
 [tool.poetry.group.dev.dependencies]
