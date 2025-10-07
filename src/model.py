@@ -224,7 +224,7 @@ class RegressionEfficientNet(nn.Module):
     torchvisionの事前学習済みEfficientNet-B0を回帰タスク用にカスタマイズした、
     軽量かつ高性能なモデル。
     """
-    def __init__(self, version='b1', out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p =0.5):
+    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p =0.5):
         super().__init__()
 
         if version.lower() == 'b0':
@@ -266,10 +266,10 @@ class RegressionEfficientNet(nn.Module):
 
         num_ftrs = self.effnet.classifier[1].in_features
         self.effnet.classifier = nn.Sequential(
-            nn.Linear(num_ftrs, 32),
+            nn.Linear(num_ftrs, 16),
             nn.ReLU(),
             nn.Dropout(p=dropout_p),
-            nn.Linear(32, out_features)
+            nn.Linear(16, out_features)
         )
 
     def forward(self, x):
@@ -294,10 +294,10 @@ class RegressionMobileNet(nn.Module):
         #分類層を強化
         num_ftrs = self.mobilenet.classifier[1].in_features
         self.mobilenet.classifier = nn.Sequential(
-            nn.Linear(num_ftrs,32),
+            nn.Linear(num_ftrs,16),
             nn.ReLU(),
             nn.Dropout(p=dropout_p),
-            nn.Linear(32, out_features)
+            nn.Linear(16, out_features)
         )
 
     def forward(self, x):
