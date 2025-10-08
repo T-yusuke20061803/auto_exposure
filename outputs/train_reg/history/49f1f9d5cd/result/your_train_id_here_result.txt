@@ -1,0 +1,5 @@
+=== 最良モデルの検証結果 ===
+Train ID: 49f1f9d5cd
+Model:efficientnet
+Validation MSE:  0.5492
+Validation RMSE: 0.7411
