@@ -301,7 +301,7 @@ class RegressionMobileNet(nn.Module):
     MobileNetV2をベースにした軽量回帰モデル
     小型かつ高汎化（過学習抑制・正則化強化）
     """
-    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.5):
+    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.3):
         super().__init__()
         
         weights = models.MobileNet_V2_Weights.DEFAULT
