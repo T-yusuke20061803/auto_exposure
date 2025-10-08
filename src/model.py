@@ -239,7 +239,7 @@ class RegressionEfficientNet(nn.Module):
     EfficientNet-B0をベースに、露出値回帰用にカスタマイズした軽量モデル
     （過学習抑制と汎化性能向上を重視）
     """
-    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p =0.3):#versonでモデルの種類を指定 
+    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=2, dropout_p =0.2):#versonでモデルの種類を指定 
         super().__init__() 
         if version.lower() == 'b0': 
             weights = models.EfficientNet_B0_Weights.DEFAULT 
@@ -301,7 +301,7 @@ class RegressionMobileNet(nn.Module):
     MobileNetV2をベースにした軽量回帰モデル
     小型かつ高汎化（過学習抑制・正則化強化）
     """
-    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.3):
+    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.2):
         super().__init__()
         
         weights = models.MobileNet_V2_Weights.DEFAULT
