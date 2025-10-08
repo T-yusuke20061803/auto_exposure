@@ -239,7 +239,7 @@ class RegressionEfficientNet(nn.Module):
     EfficientNet-B0をベースに、露出値回帰用にカスタマイズした軽量モデル
     （過学習抑制と汎化性能向上を重視）
     """
-    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_blocks=1, dropout_p=0.5):
+    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=1, dropout_p=0.5):
         super().__init__()
 
         # --- モデル選択 ---
