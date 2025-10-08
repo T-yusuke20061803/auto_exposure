@@ -266,9 +266,9 @@ class RegressionEfficientNet(nn.Module):
             for param in self.effnet.features.parameters():
                 param.requires_grad = False
 
-        # unfreeze_blocks の指定分だけ後ろから解凍
-        if unfreeze_blocks > 0:
-            for block in range(-unfreeze_blocks, 0):
+        # unfreeze_layers の指定分だけ後ろから解凍
+        if unfreeze_layers > 0:
+            for block in range(-unfreeze_layers, 0):
                 for param in self.effnet.features[block].parameters():
                     param.requires_grad = True
 
@@ -294,7 +294,7 @@ class RegressionMobileNet(nn.Module):
     MobileNetV2をベースにした軽量回帰モデル
     小型かつ高汎化（過学習抑制・正則化強化）
     """
-    def __init__(self, out_features=1, freeze_base=True, unfreeze_blocks=1, dropout_p=0.5):
+    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=1, dropout_p=0.5):
         super().__init__()
         
         weights = models.MobileNet_V2_Weights.DEFAULT
@@ -305,9 +305,9 @@ class RegressionMobileNet(nn.Module):
             for param in self.mobilenet.features.parameters():
                 param.requires_grad = False
 
-        # unfreeze_blocks分だけ後方からアンフリーズ
-        if unfreeze_blocks > 0:
-            for block in range(-unfreeze_blocks, 0):
+        # unfreeze_layers分だけ後方からアンフリーズ
+        if unfreeze_layers > 0:
+            for block in range(-unfreeze_layers, 0):
                 for param in self.mobilenet.features[block].parameters():
                     param.requires_grad = True
 
