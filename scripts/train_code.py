@@ -156,6 +156,8 @@ def main(cfg: DictConfig):
         optimizer = optim.SGD(net.parameters(), **cfg.optimizer.params)
     elif cfg.optimizer.name.lower() == "adam":
         optimizer = optim.Adam(net.parameters(), **cfg.optimizer.params)
+    elif cfg.optimizer.name.lower() == "adamw":
+        optimizer = optim.Adamw(net.parameters(), **cfg.optimizer.params)
     else:
         raise ValueError(f"未対応のoptimizerです: {cfg.optimizer.name}")
     if cfg.lr_scheduler.name == "multi_step":
