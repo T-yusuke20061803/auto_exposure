@@ -282,11 +282,11 @@ class RegressionEfficientNet(nn.Module):
         # --- 分類層の再構築（Dropout強化・BatchNorm追加） ---
         num_ftrs = self.effnet.classifier[1].in_features
         self.effnet.classifier = nn.Sequential(
-            nn.Linear(num_ftrs, 16),
+            nn.Linear(num_ftrs, 8),
             nn.ReLU(),
-            nn.BatchNorm1d(16),
+            nn.BatchNorm1d(8),
             nn.Dropout(p=dropout_p), 
-            nn.Linear(16, 8),
+            nn.Linear(8, 8),
             nn.ReLU(),
             nn.Dropout(p=dropout_p * 0.6),  # 本来のドロップアウトより少し弱めに
             nn.Linear(8, out_features)

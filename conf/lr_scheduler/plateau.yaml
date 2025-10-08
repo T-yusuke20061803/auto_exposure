@@ -15,5 +15,5 @@ params:
   factor: 0.2
 
   # 何エポック改善が見られなかったら学習率を下げるかの我慢回数
-  patience: 5
-  min_lr: 1e-6
+  patience: 3
+  min_lr: 1e-7
