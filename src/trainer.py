@@ -6,12 +6,13 @@ import typing
 
 import torch
 import torch.nn as nn
+import torch.nn.utils as nn_utils
 from torch import autograd
 import torch.nn.functional as F
-from torch.cuda.amp import autocast, GradScaler #AMPを追加
+from torch.cuda.amp import autocast, GradScaler #AMP対応
 
 
-
+# Utility: 平均値を取るクラス
 class AverageMeter(object):
     def __init__(self):
         self.sum = 0
@@ -24,6 +25,7 @@ class AverageMeter(object):
         self.average = self.sum / self.count
 
 
+# 抽象トレーナークラス
 class ABCTrainer(ABC):
     @abstractmethod
     def train(self):
@@ -41,7 +43,7 @@ class ABCTrainer(ABC):
     def extend(self):
         raise NotImplementedError()
 
-
+#トレーナー本体
 class Trainer(ABCTrainer):
     def __init__(self,
                  net,
@@ -87,16 +89,17 @@ class Trainer(ABCTrainer):
         for epoch in range(start_epoch, epochs):  # loop over the dataset multiple times
             # loss is a scalar and self.epoch is incremented in the step function
             # (i.e. self.epoch = epoch + 1)
+            #1エポックの学習処理
             loss = self.step()
             self.history["train"].append({'epoch':self.epoch, 'loss':loss})
 
-            # vallosses is a dictionary {str: value}
+            # 検証処理
             val_loss = None
             if val_loader is not None:
                 vallosses = self.eval(val_loader)
                 self.history["validation"].append({'epoch':self.epoch, **vallosses})
                 val_loss = vallosses["loss"]
-            # --- スケジューラ更新 ---
+            # スケジューラ更新
             if self.scheduler is not None:
                 if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                     if val_loss is not None:
@@ -145,11 +148,21 @@ class Trainer(ABCTrainer):
             # 指定したステップ数に一回だけ、重みを更新する
             if (i + 1) % accumulation_steps == 0:
                 if self.use_amp:
+                    # 勾配をスケーリング解除してからclip
+                    self.scaler.unscale_(self.optimizer)
+                    nn_utils.clip_grad_norm_(self.net.parameters(), max_norm=1.0)
+                     # 勾配適用
+                    # optimizerを更新
                     # scalerを使ってoptimizer.step()を呼び出す
                     self.scaler.step(self.optimizer)
                 # 次のイテレーションのためにscalerを更新
                     self.scaler.update()
-                    self.optimizer.zero_grad()
+                else:
+                    # AMPを使わない場合もclipしてから更新
+                    nn_utils.clip_grad_norm_(self.net.parameters(), max_norm=1.0)
+                    self.optimizer.step()
+                # 次のイテレーションのために勾配をリセット
+                self.optimizer.zero_grad()
 
             loss_meter.update(loss.item() * accumulation_steps, number=inputs.size(0))
         #if self.scheduler is not None:

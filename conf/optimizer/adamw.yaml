@@ -1,0 +1,11 @@
+# configs/optimizer/adamw.yaml
+name: adamw
+
+params:
+  lr: 0.00005         # 学習率を5e-5に（低すぎたため10倍に）
+  betas:
+    - 0.9
+    - 0.999
+  eps: 1e-08
+  weight_decay: 0.0001  # 正則化を弱め、学習を止めない
+  amsgrad: false

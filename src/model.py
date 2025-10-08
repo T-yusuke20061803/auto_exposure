@@ -239,28 +239,35 @@ class RegressionEfficientNet(nn.Module):
     EfficientNet-B0をベースに、露出値回帰用にカスタマイズした軽量モデル
     （過学習抑制と汎化性能向上を重視）
     """
-    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=1, dropout_p=0.5):
-        super().__init__()
-
-        # --- モデル選択 ---
-        effnet_versions = {
-            'b0': models.efficientnet_b0,
-            'b1': models.efficientnet_b1,
-            'b2': models.efficientnet_b2,
-            'b3': models.efficientnet_b3,
-            'b4': models.efficientnet_b4,
-            'b5': models.efficientnet_b5,
-            'b6': models.efficientnet_b6,
-            'b7': models.efficientnet_b7,
-        }
-
-        version = version.lower()
-        if version not in effnet_versions:
-            raise ValueError("対応しているバージョンは 'b0~b7' です。")
-
-        weights = getattr(models, f"EfficientNet_{version.upper()}_Weights").DEFAULT
-        self.effnet = effnet_versions[version](weights=weights)
-
+    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p =0.3):#versonでモデルの種類を指定 
+        super().__init__() 
+        if version.lower() == 'b0': 
+            weights = models.EfficientNet_B0_Weights.DEFAULT 
+            self.effnet = models.efficientnet_b0(weights=weights) 
+        elif version.lower() == 'b1': 
+            weights = models.EfficientNet_B1_Weights.DEFAULT 
+            self.effnet = models.efficientnet_b1(weights=weights) 
+        elif version.lower() == 'b2': 
+            weights = models.EfficientNet_B2_Weights.DEFAULT 
+            self.effnet = models.efficientnet_b2(weights=weights) 
+        elif version.lower() == 'b3': 
+            weights = models.EfficientNet_B3_Weights.DEFAULT 
+            self.effnet = models.efficientnet_b3(weights=weights) 
+        elif version.lower() == 'b4': 
+            weights = models.EfficientNet_B4_Weights.DEFAULT 
+            self.effnet = models.efficientnet_b4(weights=weights) 
+        elif version.lower() == 'b5': 
+            weights = models.EfficientNet_B5_Weights.DEFAULT 
+            self.effnet = models.efficientnet_b5(weights=weights) 
+        elif version.lower() == 'b6': 
+            weights = models.EfficientNet_B6_Weights.DEFAULT 
+            self.effnet = models.efficientnet_b6(weights=weights) 
+        elif version.lower() == 'b7': 
+            weights = models.EfficientNet_B7_Weights.DEFAULT 
+            self.effnet = models.efficientnet_b7(weights=weights) 
+        else: 
+            raise ValueError(f"Unsupported EfficientNet version: {version}")
+        
         # --- 特徴抽出部の凍結 ---
         if freeze_base:
             for param in self.effnet.features.parameters():
@@ -278,10 +285,10 @@ class RegressionEfficientNet(nn.Module):
             nn.Linear(num_ftrs, 16),
             nn.ReLU(),
             nn.BatchNorm1d(16),
-            nn.Dropout(p=dropout_p),
+            nn.Dropout(p=dropout_p), 
             nn.Linear(16, 8),
             nn.ReLU(),
-            nn.Dropout(p=dropout_p * 0.6),  # 少し弱めに
+            nn.Dropout(p=dropout_p * 0.6),  # 本来のドロップアウトより少し弱めに
             nn.Linear(8, out_features)
         )
 
