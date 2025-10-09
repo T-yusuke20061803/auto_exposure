@@ -207,14 +207,24 @@ class ResNet(nn.Module):
         self.layer4 = self._make_layer(block, 256, num_blocks[3], stride=2)
         # 全結合層を小さくして過学習抑制
         self.linear = nn.Sequential(
-            nn.Dropout(p=dropout_p),
             nn.Linear(256 * block.expansion, 128),
+            nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Dropout(p=dropout_p),
-            nn.Linear(128 * block.expansion, 32),
+            nn.Dropout(p=self.dropout_p),
+
+            nn.Linear(128* block.expansion, 64),
+            nn.BatchNorm1d(64),
             nn.ReLU(),
+            nn.Dropout(p=self.dropout_p * 0.5),
+
+            nn.Linear(64* block.expansion, 32),
+            nn.BatchNorm1d(32),
+            nn.ReLU(),
+            nn.Dropout(p=self.dropout_p * 0.5),
+
             nn.Linear(32, num_classes)
         )
+
 
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
@@ -243,7 +253,7 @@ class RegressionEfficientNet(nn.Module):
     EfficientNet-B0をベースに、露出値回帰用にカスタマイズした軽量モデル
     （過学習抑制と汎化性能向上を重視）
     """
-    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=2, dropout_p =0.5):#versonでモデルの種類を指定 
+    def __init__(self, version='b1', out_features=1, freeze_base=True, unfreeze_layers=2, dropout_p =0.5):#versonでモデルの種類を指定 
         super().__init__() 
         if version.lower() == 'b0': 
             weights = models.EfficientNet_B0_Weights.DEFAULT 
@@ -286,10 +296,14 @@ class RegressionEfficientNet(nn.Module):
         # --- 分類層の再構築（Dropout強化・BatchNorm追加） ---
         num_ftrs = self.effnet.classifier[1].in_features
         self.effnet.classifier = nn.Sequential(
-            nn.Linear(num_ftrs, 8),
+            nn.Linear(num_ftrs, 32),
+            nn.ReLU(),
+            nn.BatchNorm1d(32),
+            nn.Dropout(p=dropout_p),
+            nn.Linear(32, 8),
             nn.ReLU(),
             nn.BatchNorm1d(8),
-            nn.Dropout(p=dropout_p),
+            nn.Dropout(p=dropout_p*0.6),
             nn.Linear(8, out_features)
         )
 
@@ -322,10 +336,14 @@ class RegressionMobileNet(nn.Module):
         # --- classifierの再構築 ---
         num_ftrs = self.mobilenet.classifier[1].in_features
         self.mobilenet.classifier = nn.Sequential(
-            nn.Linear(num_ftrs, 8),
+            nn.Linear(num_ftrs, 32),
+            nn.ReLU(),
+            nn.BatchNorm1d(32),
+            nn.Dropout(p=dropout_p),
+            nn.Linear(32, 8),
             nn.ReLU(),
             nn.BatchNorm1d(8),
-            nn.Dropout(p=dropout_p),
+            nn.Dropout(p=dropout_p*0.6),
             nn.Linear(8, out_features)
         )
 
