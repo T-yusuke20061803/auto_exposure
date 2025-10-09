@@ -173,6 +173,11 @@ def main(cfg: DictConfig):
             optimizer, **cfg.lr_scheduler.params
         )
         scheduler_type = "plateau"
+    elif cfg.lr_scheduler.name == "cosine":
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, **cfg.lr_scheduler.params
+        )
+        scheduler_type = "cosine"
     else:
         # スケジューラを使わない場合
         scheduler = None

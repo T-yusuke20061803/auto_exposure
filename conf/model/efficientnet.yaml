@@ -3,4 +3,4 @@ name: efficientnet
 params:
   out_features: 1
   freeze_base: true
-  unfreeze_layers: 2
+  unfreeze_layers: 0
