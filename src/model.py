@@ -85,7 +85,7 @@ class ResNet(nn.Module):
         expansion = 1
 
         def __init__(self, in_planes, planes, stride=1,
-                     down_sampling_layer=nn.Conv2d, dropout_p=0.1):
+                     down_sampling_layer=nn.Conv2d, dropout_p=0.2):
             super(ResNet.BasicBlock, self).__init__()
             if stride != 1:
                 self.conv1 = down_sampling_layer(
@@ -130,7 +130,7 @@ class ResNet(nn.Module):
         expansion = 4
 
         def __init__(self, in_planes, planes, stride=1,
-                     down_sampling_layer=nn.Conv2d, dropout_p=0.1):
+                     down_sampling_layer=nn.Conv2d, dropout_p=0.2):
             super(ResNet.Bottleneck, self).__init__()
             self.conv1 = nn.Conv2d(in_planes, planes,
                                    kernel_size=1, bias=False)
@@ -174,7 +174,7 @@ class ResNet(nn.Module):
             return out
 
     def __init__(self, resnet_name, num_classes=1,
-                 down_sampling_layer=nn.Conv2d):
+                 down_sampling_layer=nn.Conv2d, dropout_p=0.2):
         super(ResNet, self).__init__()
         if resnet_name == "ResNet18":
             block = ResNet.BasicBlock
@@ -196,6 +196,7 @@ class ResNet(nn.Module):
 
         self.in_planes = 16
         self.down_sampling_layer = down_sampling_layer
+        self.dropout_p = dropout_p
 
         self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1,
                                padding=1, bias=False)
@@ -212,13 +213,13 @@ class ResNet(nn.Module):
             nn.Linear(32, num_classes)
         )
 
-    def _make_layer(self, block, planes, num_blocks, stride, dropout_p):
+    def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
         layers = []
         for stride in strides:
             layers.append(block(self.in_planes, planes, stride,
                                 down_sampling_layer=self.down_sampling_layer,
-                                dropout_p=dropout_p))
+                                dropout_p=self.dropout_p))
             self.in_planes = planes * block.expansion
         return nn.Sequential(*layers)
 
