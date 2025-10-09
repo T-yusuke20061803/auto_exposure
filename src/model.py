@@ -243,7 +243,7 @@ class RegressionEfficientNet(nn.Module):
     EfficientNet-B0をベースに、露出値回帰用にカスタマイズした軽量モデル
     （過学習抑制と汎化性能向上を重視）
     """
-    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=2, dropout_p =0.2):#versonでモデルの種類を指定 
+    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=2, dropout_p =0.4):#versonでモデルの種類を指定 
         super().__init__() 
         if version.lower() == 'b0': 
             weights = models.EfficientNet_B0_Weights.DEFAULT 
@@ -286,10 +286,14 @@ class RegressionEfficientNet(nn.Module):
         # --- 分類層の再構築（Dropout強化・BatchNorm追加） ---
         num_ftrs = self.effnet.classifier[1].in_features
         self.effnet.classifier = nn.Sequential(
-            nn.Linear(num_ftrs, 8),
+            nn.Linear(num_ftrs, 32),
+            nn.ReLU(),
+            nn.BatchNorm1d(32),
+            nn.Dropout(p=dropout_p), 
+            nn.Linear(32, 8),
             nn.ReLU(),
             nn.BatchNorm1d(8),
-            nn.Dropout(p=dropout_p), 
+            nn.Dropout(p=dropout_p*0.6),
             nn.Linear(8, out_features)
         )
 
