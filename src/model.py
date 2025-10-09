@@ -286,9 +286,6 @@ class RegressionEfficientNet(nn.Module):
             nn.ReLU(),
             nn.BatchNorm1d(8),
             nn.Dropout(p=dropout_p), 
-            nn.Linear(8, 8),
-            nn.ReLU(),
-            nn.Dropout(p=dropout_p * 0.6),  # 本来のドロップアウトより少し弱めに
             nn.Linear(8, out_features)
         )
 
@@ -321,13 +318,10 @@ class RegressionMobileNet(nn.Module):
         # --- classifierの再構築 ---
         num_ftrs = self.mobilenet.classifier[1].in_features
         self.mobilenet.classifier = nn.Sequential(
-            nn.Linear(num_ftrs, 16),
+            nn.Linear(num_ftrs, 8),
             nn.ReLU(),
-            nn.BatchNorm1d(16),
+            nn.BatchNorm1d(8),
             nn.Dropout(p=dropout_p),
-            nn.Linear(16, 8),
-            nn.ReLU(),
-            nn.Dropout(p=dropout_p * 0.6),
             nn.Linear(8, out_features)
         )
 
