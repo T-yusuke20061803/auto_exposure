@@ -85,7 +85,7 @@ class ResNet(nn.Module):
         expansion = 1
 
         def __init__(self, in_planes, planes, stride=1,
-                     down_sampling_layer=nn.Conv2d, dropout_p=0.2):
+                     down_sampling_layer=nn.Conv2d, dropout_p=0.3):
             super(ResNet.BasicBlock, self).__init__()
             if stride != 1:
                 self.conv1 = down_sampling_layer(
@@ -130,7 +130,7 @@ class ResNet(nn.Module):
         expansion = 4
 
         def __init__(self, in_planes, planes, stride=1,
-                     down_sampling_layer=nn.Conv2d, dropout_p=0.2):
+                     down_sampling_layer=nn.Conv2d, dropout_p=0.3):
             super(ResNet.Bottleneck, self).__init__()
             self.conv1 = nn.Conv2d(in_planes, planes,
                                    kernel_size=1, bias=False)
@@ -174,7 +174,7 @@ class ResNet(nn.Module):
             return out
 
     def __init__(self, resnet_name, num_classes=1,
-                 down_sampling_layer=nn.Conv2d, dropout_p=0.2):
+                 down_sampling_layer=nn.Conv2d, dropout_p=0.3):
         super(ResNet, self).__init__()
         if resnet_name == "ResNet18":
             block = ResNet.BasicBlock
@@ -194,20 +194,23 @@ class ResNet(nn.Module):
         else:
             raise NotImplementedError()
 
-        self.in_planes = 16
+        self.in_planes = 32
         self.down_sampling_layer = down_sampling_layer
         self.dropout_p = dropout_p
 
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1,
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1,
                                padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(16)
-        self.layer1 = self._make_layer(block, 16, num_blocks[0], stride=1)
-        self.layer2 = self._make_layer(block, 32, num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(block, 64, num_blocks[2], stride=2)
-        self.layer4 = self._make_layer(block, 128, num_blocks[3], stride=2)
+        self.layer1 = self._make_layer(block, 32, num_blocks[0], stride=1)
+        self.layer2 = self._make_layer(block, 64, num_blocks[1], stride=2)
+        self.layer3 = self._make_layer(block, 128, num_blocks[2], stride=2)
+        self.layer4 = self._make_layer(block, 256, num_blocks[3], stride=2)
         # 全結合層を小さくして過学習抑制
         self.linear = nn.Sequential(
-            nn.Dropout(p=0.3),
+            nn.Dropout(p=dropout_p),
+            nn.Linear(256 * block.expansion, 128),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_p),
             nn.Linear(128 * block.expansion, 32),
             nn.ReLU(),
             nn.Linear(32, num_classes)
