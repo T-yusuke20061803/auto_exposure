@@ -218,7 +218,7 @@ class ResNet(nn.Module):
             nn.Dropout(p=self.dropout_p * 0.7),
 
             nn.Linear(128* block.expansion, 64),
-            nn.BatchNorm1d(32),
+            nn.BatchNorm1d(64),
             nn.ReLU(),
             nn.Dropout(p=self.dropout_p * 0.5),
 
