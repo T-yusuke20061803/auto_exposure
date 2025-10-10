@@ -160,13 +160,16 @@ def main(cfg: DictConfig):
         optimizer = optim.AdamW(net.parameters(), **cfg.optimizer.params)
     else:
         raise ValueError(f"未対応のoptimizerです: {cfg.optimizer.name}")
+    
+    # === Scheduler 設定 ===
     if cfg.lr_scheduler.name == "multi_step":
         scheduler = optim.lr_scheduler.MultiStepLR(
             optimizer,
-            [int(i * cfg.epoch) for i in cfg.lr_scheduler.params.milestones],
+            milestones=[int(i * cfg.epoch) for i in cfg.lr_scheduler.params.milestones],
             gamma=cfg.lr_scheduler.params.gamma
         )
-        scheduler_type = "multi_step"
+        scheduler_type = "epoch"
+
      # ReduceLROnPlateau（性能が停滞したらLR変更）Trainer側で毎エポックの検証lossを渡す必要がある
     elif cfg.lr_scheduler.name == "plateau":
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
@@ -175,9 +178,12 @@ def main(cfg: DictConfig):
         scheduler_type = "plateau"
     elif cfg.lr_scheduler.name == "cosine":
         scheduler = optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, **cfg.lr_scheduler.params
+            optimizer,
+            T_max=cfg.lr_scheduler.params.T_max,
+            eta_min=cfg.lr_scheduler.params.eta_min
         )
-        scheduler_type = "cosine"
+        scheduler_type = "epoch"
+
     else:
         # スケジューラを使わない場合
         scheduler = None
