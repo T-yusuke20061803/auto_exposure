@@ -1,0 +1,5 @@
+=== 最良モデルの検証結果 ===
+Train ID: a7a722b40c
+Model:resnet
+Validation MSE:  0.3813
+Validation RMSE: 0.6175
