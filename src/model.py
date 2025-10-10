@@ -215,7 +215,7 @@ class ResNet(nn.Module):
             nn.Linear(256* block.expansion, 128),
             nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Dropout(p=self.dropout_p * 0.5),
+            nn.Dropout(p=self.dropout_p * 0.7),
 
             nn.Linear(128* block.expansion, 64),
             nn.BatchNorm1d(32),
@@ -225,7 +225,7 @@ class ResNet(nn.Module):
             nn.Linear(64* block.expansion, 32),
             nn.BatchNorm1d(32),
             nn.ReLU(),
-            nn.Dropout(p=self.dropout_p * 0.5),
+            nn.Dropout(p=self.dropout_p * 0.3),
 
             nn.Linear(32, num_classes)
         )
@@ -302,17 +302,17 @@ class RegressionEfficientNet(nn.Module):
         num_ftrs = self.effnet.classifier[1].in_features
         self.effnet.classifier = nn.Sequential(
             nn.Linear(num_ftrs, 128),
-            nn.ReLU(),
             nn.BatchNorm1d(128),
+            nn.ReLU(),
             nn.Dropout(p=dropout_p),
             nn.Linear(128, 32),
-            nn.ReLU(),
             nn.BatchNorm1d(32),
+            nn.ReLU(),
             nn.Dropout(p=dropout_p*0.5),
             nn.Linear(32, 8),
-            nn.ReLU(),
             nn.BatchNorm1d(8),
-            nn.Dropout(p=dropout_p*0.5),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_p*0.3),
             
             nn.Linear(8, out_features)
         )
@@ -347,17 +347,17 @@ class RegressionMobileNet(nn.Module):
         num_ftrs = self.mobilenet.classifier[1].in_features
         self.mobilenet.classifier = nn.Sequential(
             nn.Linear(num_ftrs, 128),
-            nn.ReLU(),
             nn.BatchNorm1d(128),
+            nn.ReLU(),
             nn.Dropout(p=dropout_p),
             nn.Linear(128, 32),
-            nn.ReLU(),
             nn.BatchNorm1d(32),
+            nn.ReLU(),
             nn.Dropout(p=dropout_p*0.5),
             nn.Linear(32, 8),
-            nn.ReLU(),
             nn.BatchNorm1d(8),
-            nn.Dropout(p=dropout_p*0.5),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_p*0.3),
             nn.Linear(8, out_features)
         )
 
