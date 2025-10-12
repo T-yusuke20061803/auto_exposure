@@ -1,7 +1,6 @@
 # 評価用コード
 from pathlib import Path
-import torch
-import csv
+import torch, csv, datetime, shutil
 import torchvision.utils as vutils
 from torchvision.transforms import v2
 import hydra
@@ -26,6 +25,7 @@ def adjust_exposure(image_tensor, ev_value):
 def main(cfg: DictConfig):
     set_random_seed(cfg.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 # Train ID を config.yaml から取得 
     if "train_id" in cfg and cfg.train_id != "your_train_id_here":
         train_id = cfg.train_id
@@ -37,9 +37,17 @@ def main(cfg: DictConfig):
         train_id = latest.name
         print(f"[INFO] train_id が指定されていないため最新を使用します: {train_id}")
 
+    #モデルとパス
     model_path = Path("./outputs/train_reg/history") / train_id / "best_model.pth"
+    config_path = Path("./outputs/train_reg/history")/ train_id / "config.yaml"
+
     if not model_path.exists():
-        raise FileExistsError(f"error:最良モデルが見つからない{model_path}")
+        raise FileNotFoundError(f"最良モデルが見つかりません: {model_path}")
+    if not config_path.exists():
+        print("[WARN] config.yaml が見つかりません。train_id のみで識別します。")
+    
+    print(f"[INFO] 使用モデル: {model_path}")
+
     #モデル読込
     if cfg.model.name.lower() == "simplecnn":
         net = SimpleCNN(**cfg.model.params).to(device)
@@ -51,8 +59,10 @@ def main(cfg: DictConfig):
         net = RegressionMobileNet(**cfg.model.params).to(device)
     else:
         raise ValueError(f"未対応のモデルです: {cfg.model.name}")
+    
     net.load_state_dict(torch.load(model_path, map_location=device))
     net.eval()
+
 #評価時においてはデータ拡張を行わない
     transform = v2.Compose([
         v2.ToImage(),
@@ -77,7 +87,7 @@ def main(cfg: DictConfig):
         shuffle=False,
         collate_fn=collate_fn_skip_none
     )
-    #評価
+    #評価処理
     criterion = torch.nn.MSELoss()
     evaluator = LossEvaluator(criterion, "MSE")
     evaluator.initialize()
@@ -116,29 +126,47 @@ def main(cfg: DictConfig):
     rmse_value = float(torch.sqrt(torch.tensor(mse_value)))
     result["loss/MSE"] = mse_value
     result["loss/RMSE"] = rmse_value
- 
-    # ターミナルに分かりやすく表示 
+
+     # ターミナルに分かりやすく表示 
     print("\n=== 最良モデルの検証結果 ===")
     print(f"Train ID: {train_id}")
     print(f"Model:{cfg.model.name}")
     print(f"Validation MSE:  {result['loss/MSE']:.4f}")
     print(f"Validation RMSE: {result['loss/RMSE']:.4f}")
 
+
+    #保存処理
+    timestamp = datetime.datatime.now().strftime("%Y%m%d_%H%M%S")
+    # モデル別フォルダ構造に整理
+    model_name = cfg.model.name
+    output_root = Path(f"outputs/train_reg/outputs/ {model_name} / {train_id}_{timestamp}")
+    result_dir = output_root / "result"
+    csv_dir = output_root/ "csv_result"
+    bestpred_dir = output_root/ "best_predictions"
+
+    result_dir.mkdir(parents=True, exist_ok=True)
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    bestpred_dir.mkdir(parents=True, exist_ok=True)
+ 
+    shutil.copy(model_path, output_root / "best_model.pth")
+    if config_path.exists():
+        shutil.copy(config_path, output_root / "config.yaml")
+    
     # ログ保存 (GitHubで追跡されるディレクトリへ)
-    log_dir = Path("outputs/train_reg/history") / train_id / "result"
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_path = log_dir / f"{cfg.args.train_id}_result.txt"
-    with open(log_path, "w") as f:
+    #log_dir = Path("outputs/train_reg/history") / train_id / "result"
+    #log_dir.mkdir(parents=True, exist_ok=True)
+    result_path = result_dir / f"{cfg.argtrain_id}_result.txt"
+    with open(result_path, "w") as f:
         f.write(f"=== 最良モデルの検証結果 ===\n")
         f.write(f"Train ID: {train_id}\n")
         f.write(f"Model:{cfg.model.name}\n")
-        f.write(f"Validation MSE:  {result['loss/MSE']:.4f}\n")
-        f.write(f"Validation RMSE: {result['loss/RMSE']:.4f}\n")
+        f.write(f"Validation MSE:  {result['loss/MSE']:.5f}\n")
+        f.write(f"Validation RMSE: {result['loss/RMSE']:.5f}\n")
 
     # 予測結果保存
-    pred_dir = Path("outputs/train_reg/history") / train_id / "csv_result"
-    pred_dir.mkdir(parents=True, exist_ok=True)
-    csv_path = pred_dir / f"{cfg.args.train_id}_predictions.csv"
+    #pred_dir = Path("outputs/train_reg/history") / train_id / "csv_result"
+    #pred_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = csv_dir / f"{cfg.args.train_id}_predictions.csv"
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["filename", "true_ev", "pred_ev"])
@@ -151,18 +179,18 @@ def main(cfg: DictConfig):
         denorm_img = denormalize(best_image_info["original"], mean, std)
         corrected_img = adjust_exposure(denorm_img, best_image_info["pred_ev"])
 
-        img_dir = Path("outputs/train_reg/history") / train_id / "best_predictions"
-        img_dir.mkdir(parents=True, exist_ok=True)
+        #img_dir = Path("outputs/train_reg/history") / train_id / "best_predictions"
+        #img_dir.mkdir(parents=True, exist_ok=True)
         # 元のファイル名から拡張子 (.jpgなど) を取り除く
         base_filename = Path(best_image_info['filename']).stem
 
-        original_path = img_dir / f"{base_filename}_補正前.png"
-        corrected_path = img_dir / f"{base_filename}_補正後.png"
+        original_path = bestpred_dir / "best_predictions"/ f"{base_filename}_補正前.png"
+        corrected_path = bestpred_dir / "best_predictions"/ f"{base_filename}_補正後.png"
 
         vutils.save_image(denorm_img, original_path)
         vutils.save_image(corrected_img, corrected_path)
 
-        print(f"補正前後の画像を {img_dir} に保存しました")
+        print(f"補正前後の画像を {output_root} に保存しました")
 
 if __name__ == "__main__":
     main()

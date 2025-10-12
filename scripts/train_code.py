@@ -3,6 +3,7 @@ from pathlib import Path
 import os
 import csv
 import torch
+import datetime
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
@@ -52,9 +53,10 @@ def main(cfg: DictConfig):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # 保存先を conf/dataset/results に変更
-    output_dir = Path("outputs/train_reg")
+    output_dir = Path("outputs/train_reg/history") / cfg.model.name
     train_id = generate_train_id(cfg)
-    history_path = output_dir / "history" / train_id
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    history_path = output_dir / f"{train_id}_{timestamp}"
     history_path.mkdir(parents=True, exist_ok=True)
 
     print_config(cfg)
