@@ -53,9 +53,9 @@ def main(cfg: DictConfig):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # 保存先を conf/dataset/results に変更
-    output_dir = Path("outputs/train_reg/history") / cfg.model.name
     train_id = generate_train_id(cfg)
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_dir = Path("outputs/train_reg/history") / cfg.model.name
     history_path = output_dir / f"{train_id}_{timestamp}"
     history_path.mkdir(parents=True, exist_ok=True)
 
@@ -98,7 +98,6 @@ def main(cfg: DictConfig):
     # --- データセット ---
     train_set = AnnotatedDatasetFolder(cfg.dataset.train.root, dataframe=train_df, loader=pil_loader, transform=train_transforms)
     val_set   = AnnotatedDatasetFolder(cfg.dataset.train.root, dataframe=val_df, loader=pil_loader, transform=val_transforms)
-
     # データセット読み込み
     train_loader = DataLoader(train_set, shuffle=True, **cfg.dataloader)
     val_loader = DataLoader(val_set, shuffle=False, **cfg.dataloader)
@@ -214,9 +213,8 @@ def main(cfg: DictConfig):
         )
     trainer.train(cfg.epoch, val_loader)
 
-    model_output_dir = Path("./outputs/model")
-    model_output_dir.mkdir(parents=True, exist_ok=True)
-    torch.save(net.state_dict(), model_output_dir / "final_model.pth")
+    # 最終モデル保存
+    torch.save(net.state_dict(), history_path / "final_model.pth")
 
 
 if __name__ == "__main__":

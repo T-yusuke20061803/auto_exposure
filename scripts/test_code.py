@@ -25,21 +25,33 @@ def adjust_exposure(image_tensor, ev_value):
 def main(cfg: DictConfig):
     set_random_seed(cfg.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #モデル別の最新の学習結果を探す
+    model_name = cfg.model.name
+    history_dir = Path(f"outputs/train_reg/history/{model_name}")
 
 # Train ID を config.yaml から取得 
+ # Train ID 自動検出 or 指定
     if "train_id" in cfg and cfg.train_id != "your_train_id_here":
         train_id = cfg.train_id
     else:
-        history_dir = Path("outputs/train_reg/history")
         if not history_dir.exists():
-            raise FileNotFoundError("学習済みモデルが保存されていません")
-        latest = max(history_dir.iterdir(), key=lambda p: p.stat().st_mtime)
-        train_id = latest.name
+            raise FileNotFoundError(f"モデル '{model_name}' の学習履歴ディレクトリが見つかりません。")
+        # best_model.pthが存在するディレクトリの中から、更新日時が最新のものを探す
+        run_dirs = [d for d in history_dir.iterdir() if d.is_dir() and (d / "best_model.pth").exists()]
+        if not run_dirs:
+            raise FileNotFoundError(f"モデル '{model_name}' の学習済みモデル（best_model.pth）が見つかりません。")
+
+
+        latest_model_dir = max((p for p in history_dir.glob("*") if p.is_dir()), key=lambda p: p.stat().st_mtime)
+        train_id = latest_model_dir.name
+
         print(f"[INFO] train_id が指定されていないため最新を使用します: {train_id}")
 
     #モデルとパス
-    model_path = Path("./outputs/train_reg/history") / train_id / "best_model.pth"
-    config_path = Path("./outputs/train_reg/history")/ train_id / "config.yaml"
+    #model_dir = next(Path("outputs/train_reg/history").rglob(f"{train_id}"))
+    model_path = history_dir / train_id / "best_model.pth"
+    config_path = history_dir / train_id / "config.yaml"
+
 
     if not model_path.exists():
         raise FileNotFoundError(f"最良モデルが見つかりません: {model_path}")
@@ -48,7 +60,7 @@ def main(cfg: DictConfig):
     
     print(f"[INFO] 使用モデル: {model_path}")
 
-    #モデル読込
+    #モデル構築
     if cfg.model.name.lower() == "simplecnn":
         net = SimpleCNN(**cfg.model.params).to(device)
     elif cfg.model.name.lower() == "resnet":
@@ -136,10 +148,12 @@ def main(cfg: DictConfig):
 
 
     #保存処理
-    timestamp = datetime.datatime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     # モデル別フォルダ構造に整理
     model_name = cfg.model.name
-    output_root = Path(f"outputs/train_reg/outputs/ {model_name} / {train_id}_{timestamp}")
+    output_root = Path("outputs/train_reg/history") / model_name / f"{train_id}"
+    output_root.mkdir(parents=True, exist_ok=True)
+
     result_dir = output_root / "result"
     csv_dir = output_root/ "csv_result"
     bestpred_dir = output_root/ "best_predictions"
@@ -148,14 +162,19 @@ def main(cfg: DictConfig):
     csv_dir.mkdir(parents=True, exist_ok=True)
     bestpred_dir.mkdir(parents=True, exist_ok=True)
  
-    shutil.copy(model_path, output_root / "best_model.pth")
-    if config_path.exists():
-        shutil.copy(config_path, output_root / "config.yaml")
-    
+    # --- 学習済みモデルや設定ファイルは既に存在しているためコピー不要 ---
+    # shutil.copy(model_path, output_root / "best_model.pth")
+    # shutil.copy(config_path, output_root / "config.yaml")
+
+    # --- learning_curve.png も学習時に生成済みなのでコピー不要 ---
+    # learning_curve_src = output_root / "learning_curve.png"
+    # if not learning_curve_src.exists():
+    #     print(f"learning_curve.png が見つかりません: {learning_curve_src}")
+
     # ログ保存 (GitHubで追跡されるディレクトリへ)
     #log_dir = Path("outputs/train_reg/history") / train_id / "result"
     #log_dir.mkdir(parents=True, exist_ok=True)
-    result_path = result_dir / f"{cfg.argtrain_id}_result.txt"
+    result_path = result_dir / f"{train_id}_result.txt"
     with open(result_path, "w") as f:
         f.write(f"=== 最良モデルの検証結果 ===\n")
         f.write(f"Train ID: {train_id}\n")
@@ -166,7 +185,7 @@ def main(cfg: DictConfig):
     # 予測結果保存
     #pred_dir = Path("outputs/train_reg/history") / train_id / "csv_result"
     #pred_dir.mkdir(parents=True, exist_ok=True)
-    csv_path = csv_dir / f"{cfg.args.train_id}_predictions.csv"
+    csv_path = csv_dir / f"{train_id}_predictions.csv"
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["filename", "true_ev", "pred_ev"])
@@ -184,8 +203,8 @@ def main(cfg: DictConfig):
         # 元のファイル名から拡張子 (.jpgなど) を取り除く
         base_filename = Path(best_image_info['filename']).stem
 
-        original_path = bestpred_dir / "best_predictions"/ f"{base_filename}_補正前.png"
-        corrected_path = bestpred_dir / "best_predictions"/ f"{base_filename}_補正後.png"
+        original_path = bestpred_dir / f"{base_filename}_補正前.png"
+        corrected_path = bestpred_dir / f"{base_filename}_補正後.png"
 
         vutils.save_image(denorm_img, original_path)
         vutils.save_image(corrected_img, corrected_path)
