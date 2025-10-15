@@ -32,8 +32,11 @@ accumulation_steps: 2
 dataset:
   name: HDR_subdataset
   split_root: conf/dataset/${dataset.name}_split
-  HDR_subdataset_split:
-    train:
+
+  normalize_mean: [6.2634, 5.7611, 5.6148]  #mean: [0.485, 0.456, 0.406],std: [0.229, 0.224, 0.225]変更前
+  normalize_std: [3.4507, 3.325, 3.4992]  #値が0～1の範囲に収まらなければならない
+
+  train:
       csv_file: ${dataset.split_root}/train_labels.csv
       root: ${dataset.split_root}/train 
       transform:
@@ -42,9 +45,9 @@ dataset:
           scale: [0.7, 1.0] # 元画像を指定の範囲で切り抜く
           ratio: [0.75, 1.33]
         random_horizontal_flip: # 画像を左右反転
-          p: 0.4
+          p: 0.5
         random_vertical_flip: # 画像を上下反転
-          p: 0.4
+          p: 0.5
         random_rotation: # -15度から+15度の範囲で画像をランダムに回転
           degrees: 10
         #color_jitter:  # 明るさ、コントラスト、彩度、色相をランダムに変化させる
@@ -54,33 +57,34 @@ dataset:
           #hue: 0.1
           # 強力な正則化手法「RandomErasing」を追加
         random_erasing:
-          p: 0.3            # 25%の確率で実行
+          p: 0.2           # 25%の確率で実行
           scale: [0.02, 0.1]
           ratio: [0.3, 3.3]
           # 正規化:学習を安定させるための必須の前処理
         normalize:
-          mean: [6.2634, 5.7611, 5.6148]
-          std: [3.4507, 3.325, 3.4992]
+          mean: ${dataset.normalize_mean} 
+          std: ${dataset.normalize_std} 
 
   #検証用データ
-    val:
-      csv_file: ${dataset.split_root}/val_labels.csv
-      root: ${dataset.split_root}/val
-      transform:
-        resize: 224
-        normalize:
-          mean: [6.2634, 5.7611, 5.6148]
-          std: [3.4507, 3.325, 3.4992]
+  val:
+    csv_file: ${dataset.split_root}/val_labels.csv
+    root: ${dataset.split_root}/val
+    transform:
+      resize: 256
+      center_crop: 224
+      normalize:
+        mean: ${dataset.normalize_mean} # ◀ 共通の値を参照
+        std: ${dataset.normalize_std} 
 
   # --- 評価（試験）用のデータセット設定 ---
-    test:
-      csv_file: ${dataset.split_root}/test_labels.csv
-      root: ${dataset.split_root}/test
+  test:
+    csv_file: ${dataset.split_root}/test_labels.csv
+    root: ${dataset.split_root}/test
     
-      # 評価時にはデータ拡張を行わない
-      transform:
-        random_resized_crop:
-          size: 224
-        normalize:
-          mean: [6.2634, 5.7611, 5.6148]
-          std: [3.4507, 3.325, 3.4992]
+    # 評価時にはデータ拡張を行わない
+    transform:
+      resize: 256
+      center_crop: 224
+      normalize:
+        mean: ${dataset.normalize_mean} # ◀ 共通の値を参照
+        std: ${dataset.normalize_std} 
