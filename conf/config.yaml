@@ -33,8 +33,8 @@ dataset:
   name: HDR_subdataset
   split_root: conf/dataset/${dataset.name}_split
 
-  normalize_mean: [6.2634, 5.7611, 5.6148]  #mean: [0.485, 0.456, 0.406],std: [0.229, 0.224, 0.225]変更前
-  normalize_std: [3.4507, 3.325, 3.4992]  #値が0～1の範囲に収まらなければならない
+  normalize_mean: [0.4094, 0.3765, 0.367]  #mean: [0.485, 0.456, 0.406],std: [0.229, 0.224, 0.225]変更前
+  normalize_std: [0.2477, 0.2397, 0.2685]  #値が0～1の範囲に収まらなければならない
 
   train:
       csv_file: ${dataset.split_root}/train_labels.csv
