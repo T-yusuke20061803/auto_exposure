@@ -52,7 +52,7 @@ def main(cfg: DictConfig):
     set_random_seed(cfg.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # 保存先を conf/dataset/results に変更
+    # 保存先
     train_id = generate_train_id(cfg)
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir = Path("outputs/train_reg/history") / cfg.model.name
