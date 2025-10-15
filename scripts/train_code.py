@@ -87,20 +87,20 @@ def main(cfg: DictConfig):
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(**cfg.dataset.val.transform.normalize),
     ])
-     # --- データ分割 ---
-    train_df = pd.read_csv(cfg.dataset.HDR_subdataset_split.train.csv_file)
-    val_df = pd.read_csv(cfg.dataset.HDR_subdataset_split.val.csv_file)
+     # データ分割 
+    train_df = pd.read_csv(cfg.dataset.train.csv_file)
+    val_df = pd.read_csv(cfg.dataset.val.csv_file)
     print(f"データ分割：訓練 {len(train_df)}, 検証 {len(val_df)} 件")
 
-    # --- データセット ---
+    # データセット
     train_set = AnnotatedDatasetFolder(
-        root=cfg.dataset.HDR_subdataset_split.train.root,
+        root=cfg.dataset.train.root,
         dataframe=train_df,
         loader=pil_loader,
         transform=train_transforms
     )
     val_set = AnnotatedDatasetFolder(
-        root=cfg.dataset.HDR_subdataset_split.val.root,
+        root=cfg.dataset.val.root,
         dataframe=val_df,
         loader=pil_loader,
         transform=val_transforms

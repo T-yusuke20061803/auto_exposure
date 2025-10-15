@@ -89,8 +89,8 @@ def main(cfg: DictConfig):
 
 # test.csv を読み込む　質問2
     dataset = AnnotatedDatasetFolder(
-        root=cfg.dataset.HDR_subdataset_split.test.root,
-        csv_file=cfg.dataset.HDR_subdataset_split.test.csv_file,
+        root=cfg.dataset.test.root,
+        csv_file=cfg.dataset.test.csv_file,
         loader=pil_loader,
         transform=transform
     )
