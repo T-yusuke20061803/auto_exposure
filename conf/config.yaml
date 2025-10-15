@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 defaults:
   - _self_
   - model: mobilenet # モデル（simplecnn / resnet/ efficientnet/ mobilenet）
@@ -101,3 +102,72 @@ dataset:
     #root:
       #handlers: [console]
     ###disable_existing_loggers: false
+=======
+defaults:
+- _self_
+- model: mobilenet
+- optimizer: adam
+- lr_scheduler: plateau
+args:
+  history_dir: ./outputs/train_reg/history
+  train_id: your_train_id_here
+  seed: 50
+  skip_tested: false
+seed: 50
+epoch: 150
+load_weights_from: null
+amp: true
+dataloader:
+  batch_size: 32
+  num_workers: 2
+  pin_memory: true
+accumulation_steps: 2
+dataset:
+  train:
+    csv_file: conf/dataset/train.csv
+    root: conf/dataset/HDR_subdataset
+    transform:
+      random_resized_crop:
+        size: 224
+        scale:
+        - 0.7
+        - 1.0
+        ratio:
+        - 0.75
+        - 1.33
+      random_horizontal_flip:
+        p: 0.4
+      random_vertical_flip:
+        p: 0.4
+      random_rotation:
+        degrees: 10
+      random_erasing:
+        p: 0.3
+        scale:
+        - 0.02
+        - 0.1
+        ratio:
+        - 0.3
+        - 3.3
+      normalize:
+        mean: &id001
+        - 6.2634
+        - 5.7611
+        - 5.6148
+        std: &id002
+        - 3.4507
+        - 3.325
+        - 3.4992
+  split:
+    val_size: 0.2
+    random_state: 42
+  test:
+    root: conf/dataset/HDR_subdataset
+    csv_file: conf/dataset/test.csv
+    transform:
+      random_resized_crop:
+        size: 224
+      normalize:
+        mean: *id001
+        std: *id002
+>>>>>>> 902b6cf75beeb796d123915049442bb20490bea0
