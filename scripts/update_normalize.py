@@ -8,6 +8,28 @@ import argparse
 from PIL import Image
 import os
 
+class FlatImageDataset(Dataset):
+    """
+    クラス別のサブフォルダがない、フラットな画像フォルダ用のデータセットクラス。
+    """
+    def __init__(self, root_dir, transform=None):
+        self.root_dir = Path(root_dir)
+        self.transform = transform
+        self.image_paths = sorted([
+            p for p in self.root_dir.iterdir() 
+            if p.is_file() and p.suffix.lower() in [".jpg", ".jpeg", ".png"]
+        ])
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def __getitem__(self, idx):
+        img_path = self.image_paths[idx]
+        image = Image.open(img_path).convert("RGB")
+        if self.transform:
+            image = self.transform(image)
+        return image, 0 # ラベルは使わないのでダミーで0を返す
+
 # 設定
 dataset_root = Path("conf/dataset/HDR_subdataset/")  # データセットを変更する場合ここ
 config_path = Path("conf/config.yaml")               # 更新対象のconfig.yamlパス
@@ -20,7 +42,7 @@ def calculate_mean_std(dataset_root, batch_size, num_workrs):
         transforms.ToTensor(), #0~1にスケール
 
     ])
-    dataset = dataset.ImageFolder(dataset_root, transform=transform)
+    dataset = FlatImageDataset(dataset_root, transform=transform)
     loader = DataLoader(dataset, batch_size = batch_size, num_workrs = num_workrs, shuffle= False)
 
     mean = torch.zeros(3)
