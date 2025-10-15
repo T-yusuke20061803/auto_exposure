@@ -1,13 +1,15 @@
 import yaml
 import torch
-from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
+from torchvision import transforms
+from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 from pathlib import Path
 import argparse
+from PIL import Image
+import os
 
 # 設定
-dataset_root = Path("conf/dataset/HDR_subdataset")  # データセットを変更する場合ここ
+dataset_root = Path("conf/dataset/HDR_subdataset/")  # データセットを変更する場合ここ
 config_path = Path("conf/config.yaml")               # 更新対象のconfig.yamlパス
 batch_size=32 
 num_workers=2
@@ -18,7 +20,7 @@ def calculate_mean_std(dataset_root, batch_size, num_workrs):
         transforms.ToTensor(), #0~1にスケール
 
     ])
-    dataset = datasets.ImageFolder(dataset_root, transform=transform)
+    dataset = dataset.ImageFolder(dataset_root, transform=transform)
     loader = DataLoader(dataset, batch_size = batch_size, num_workrs = num_workrs, shuffle= False)
 
     mean = torch.zeros(3)

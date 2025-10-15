@@ -8,9 +8,9 @@ from tqdm import tqdm
 
 
 def split_dataset(
-    dataset_name = "HDR_subdataset",
-    input_dir=None,
-    output_dir=None,
+    dataset_name = "HDR_subdataset"  # データセット名
+    input_dir = f"conf/dataset/{dataset_name}"
+    output_dir = f"conf/dataset/{dataset_name}_split"
     train_size=0.7,
     val_size=0.15,
     test_size=0.15,
@@ -30,11 +30,6 @@ def split_dataset(
     """
 
     # パス設定
-    if input_dir is None:
-        input_dir = f"conf/dataset/{dataset_name}"
-    if output_dir is None:
-        output_dir = f"conf/dataset/{dataset_name}_split"
-    
     input_dir = Path(input_dir)
     output_dir = Path(output_dir)
 
@@ -63,9 +58,9 @@ def split_dataset(
 
     # データを分割
     train_val_imgs, test_imgs = train_test_split(
-        image_paths,
-        test_size=test_size,
-        random_state=seed,
+        image_paths, 
+        test_size=test_size, 
+        random_state=seed, 
         shuffle=True
     )
     val_ratio_adjusted = val_size / (1 - test_size)
@@ -93,26 +88,5 @@ def split_dataset(
     print(f"  テスト画像: {len(test_imgs)} → {test_dir}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="画像フォルダを train/val/test に分割するスクリプト（CSVはコピーしない）")
-    parser.add_argument("--dataset_name", type=str, default="HDR_subdataset", help="データセット名")
-    parser.add_argument("--input_dir", type=str, default=None, help="元の画像フォルダパス")
-    parser.add_argument("--output_dir", type=str, default=None, help="分割後の保存フォルダ")
-    parser.add_argument("--train_size", type=float, default=0.7, help="訓練データの割合 (例: 0.7)")
-    parser.add_argument("--val_size", type=float, default=0.15, help="検証データの割合 (例: 0.15)")
-    parser.add_argument("--test_size", type=float, default=0.15, help="テストデータの割合 (例: 0.15)")
-    parser.add_argument("--seed", type=int, default=42, help="乱数シード")
-
-    args = parser.parse_args()
-    total = args.train_size + args.val_size + args.test_size
-    if abs(total - 1.0) > 1e-6:
-        raise ValueError(f"分割比率の合計が1.0ではありません（現在: {total}）")
-    
-    split_dataset(
-        dataset_name=args.dataset_name,
-        input_dir=args.input_dir,
-        output_dir=args.output_dir,
-        train_size=args.train_size,
-        val_size=args.val_size,
-        test_size=args.test_size,
-        seed=args.seed
-    )
+    if __name__ == "__main__":
+    split_dataset()
