@@ -86,6 +86,9 @@ def main(cfg: DictConfig):
             std=cfg.dataset.test.transform.normalize.std
         ),
     ])
+    
+    print(f"[INFO] テストCSV: {cfg.dataset.test.csv_file}")
+    print(f"[INFO] テスト画像ルート: {cfg.dataset.test.root}")
 
 # test.csv を読み込む　質問2
     dataset = AnnotatedDatasetFolder(
