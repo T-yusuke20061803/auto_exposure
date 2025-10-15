@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 
 def split_dataset(
-    dataset_name="HDR_subdataset",
+    dataset_name="HDR_subdataset", #データセットを変更する場合は、ここを変更する
     annotations_csv="conf/dataset/annotations.csv",
     train_size=0.7,
     val_size=0.15,
@@ -71,7 +71,7 @@ def split_dataset(
     filter_and_save(df, val_imgs, output_dir / "val_labels.csv")
     filter_and_save(df, test_imgs, output_dir / "test_labels.csv")
 
-    print("\n✅ データセット分割および対応CSV作成:完了。")
+    print("\nデータセット分割および対応CSV作成:完了。")
     print(f"  訓練: {len(train_imgs)}枚 / 検証: {len(val_imgs)}枚 / テスト: {len(test_imgs)}枚")
     print(f"  出力先: {output_dir}")
 

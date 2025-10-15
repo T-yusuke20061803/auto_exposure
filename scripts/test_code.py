@@ -78,17 +78,19 @@ def main(cfg: DictConfig):
 #評価時においてはデータ拡張を行わない
     transform = v2.Compose([
         v2.ToImage(),
-        v2.Resize(256),
-        v2.CenterCrop(224),
+        v2.Resize(cfg.dataset.test.transform.resize),
+        v2.CenterCrop(cfg.dataset.test.transform.resize),
         v2.ToDtype(torch.float32, scale=True),
-        v2.Normalize(mean=cfg.dataset.test.transform.normalize.mean,
-                     std=cfg.dataset.test.transform.normalize.std),
+        v2.Normalize(
+            mean=cfg.dataset.test.transform.normalize.mean,
+            std=cfg.dataset.test.transform.normalize.std
+        ),
     ])
 
-# test.csv を読み込む
+# test.csv を読み込む　質問2
     dataset = AnnotatedDatasetFolder(
-        root=cfg.dataset.test.root,
-        csv_file=cfg.dataset.test.csv_file,
+        root=cfg.dataset.HDR_subdataset_split.test.root,
+        csv_file=cfg.dataset.HDR_subdataset_split.test.csv_file,
         loader=pil_loader,
         transform=transform
     )
@@ -143,8 +145,8 @@ def main(cfg: DictConfig):
     print("\n=== 最良モデルの検証結果 ===")
     print(f"Train ID: {train_id}")
     print(f"Model:{cfg.model.name}")
-    print(f"Validation MSE:  {result['loss/MSE']:.4f}")
-    print(f"Validation RMSE: {result['loss/RMSE']:.4f}")
+    print(f"MSE:  {result['loss/MSE']:.5f}")
+    print(f"RMSE: {result['loss/RMSE']:.5f}")
 
 
     #保存処理

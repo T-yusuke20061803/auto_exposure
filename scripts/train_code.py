@@ -70,34 +70,41 @@ def main(cfg: DictConfig):
         v2.ToImage(),
         v2.RandomResizedCrop(**cfg.dataset.train.transform.random_resized_crop),
         v2.RandomHorizontalFlip(**cfg.dataset.train.transform.random_horizontal_flip),
-        #v2.RandomVerticalFlip(**cfg.dataset.train.transform.random_vertical_flip),
         v2.RandomRotation(**cfg.dataset.train.transform.random_rotation),
-        #v2.ColorJitter(**cfg.dataset.train.transform.color_jitter), 
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(**cfg.dataset.train.transform.normalize),
-        v2.RandomErasing(p=0.2, scale=(0.02, 0.1), ratio=(0.3, 3.3)),
+        v2.RandomErasing(**cfg.dataset.train.transform.random_erasing),
     ])
+    #採用しなかったデータ拡張
+        #v2.RandomVerticalFlip(**cfg.dataset.train.transform.random_vertical_flip),
+        #v2.ColorJitter(**cfg.dataset.train.transform.color_jitter), 
+        #v2.RandomErasing(p=0.2, scale=(0.02, 0.1), ratio=(0.3, 3.3)),
 
     val_transforms = v2.Compose([
         v2.ToImage(),
-        v2.Resize(256),
-        v2.CenterCrop(224),
+        v2.Resize(cfg.dataset.val.transform.resize),
+        v2.CenterCrop(cfg.dataset.val.transform.resize),
         v2.ToDtype(torch.float32, scale=True),
-        v2.Normalize(**cfg.dataset.train.transform.normalize),
+        v2.Normalize(**cfg.dataset.val.transform.normalize),
     ])
-
      # --- データ分割 ---
-    master_df = pd.read_csv(cfg.dataset.train.csv_file)
-    train_df, val_df = train_test_split(
-        master_df, 
-        test_size=cfg.dataset.split.val_size,
-        random_state=cfg.dataset.split.random_state
-    )
+    train_df = pd.read_csv(cfg.dataset.HDR_subdataset_split.train.csv_file)
+    val_df = pd.read_csv(cfg.dataset.HDR_subdataset_split.val.csv_file)
     print(f"データ分割：訓練 {len(train_df)}, 検証 {len(val_df)} 件")
 
     # --- データセット ---
-    train_set = AnnotatedDatasetFolder(cfg.dataset.train.root, dataframe=train_df, loader=pil_loader, transform=train_transforms)
-    val_set   = AnnotatedDatasetFolder(cfg.dataset.train.root, dataframe=val_df, loader=pil_loader, transform=val_transforms)
+    train_set = AnnotatedDatasetFolder(
+        root=cfg.dataset.HDR_subdataset_split.train.root,
+        dataframe=train_df,
+        loader=pil_loader,
+        transform=train_transforms
+    )
+    val_set = AnnotatedDatasetFolder(
+        root=cfg.dataset.HDR_subdataset_split.val.root,
+        dataframe=val_df,
+        loader=pil_loader,
+        transform=val_transforms
+    )
     # データセット読み込み
     train_loader = DataLoader(train_set, shuffle=True, **cfg.dataloader)
     val_loader = DataLoader(val_set, shuffle=False, **cfg.dataloader)
@@ -153,17 +160,19 @@ def main(cfg: DictConfig):
  # 損失関数、最適化手法、スケジューラ
     criterion = nn.MSELoss()
     # Optimizer 選択 
-    if cfg.optimizer.name.lower() == "sgd":
+    opt_name = cfg.optimizer.name.lower()
+    if opt_name == "sgd":
         optimizer = optim.SGD(net.parameters(), **cfg.optimizer.params)
-    elif cfg.optimizer.name.lower() == "adam":
+    elif opt_name == "adam":
         optimizer = optim.Adam(net.parameters(), **cfg.optimizer.params)
-    elif cfg.optimizer.name.lower() == "adamw":
+    elif opt_name == "adamw":
         optimizer = optim.AdamW(net.parameters(), **cfg.optimizer.params)
     else:
-        raise ValueError(f"未対応のoptimizerです: {cfg.optimizer.name}")
+        raise ValueError(f"未対応のoptimizer: {opt_name}")
     
-    # === Scheduler 設定 ===
-    if cfg.lr_scheduler.name == "multi_step":
+    # Scheduler 設定
+    sched_name = cfg.lr_scheduler.name.lower()
+    if sched_name == "multi_step":
         scheduler = optim.lr_scheduler.MultiStepLR(
             optimizer,
             milestones=[int(i * cfg.epoch) for i in cfg.lr_scheduler.params.milestones],
@@ -172,12 +181,13 @@ def main(cfg: DictConfig):
         scheduler_type = "epoch"
 
      # ReduceLROnPlateau（性能が停滞したらLR変更）Trainer側で毎エポックの検証lossを渡す必要がある
-    elif cfg.lr_scheduler.name == "plateau":
+    elif sched_name == "plateau":
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, **cfg.lr_scheduler.params
         )
         scheduler_type = "plateau"
-    elif cfg.lr_scheduler.name == "cosine":
+
+    elif sched_name == "cosine":
         scheduler = optim.lr_scheduler.CosineAnnealingLR(
             optimizer,
             T_max=cfg.lr_scheduler.params.T_max,
@@ -211,8 +221,8 @@ def main(cfg: DictConfig):
             evaluators=evaluators,
             device=device
         )
+    #学習開始
     trainer.train(cfg.epoch, val_loader)
-
     # 最終モデル保存
     torch.save(net.state_dict(), history_path / "final_model.pth")
 
