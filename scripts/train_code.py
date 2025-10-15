@@ -83,7 +83,7 @@ def main(cfg: DictConfig):
     val_transforms = v2.Compose([
         v2.ToImage(),
         v2.Resize(cfg.dataset.val.transform.resize),
-        v2.CenterCrop(cfg.dataset.val.transform.resize),
+        v2.CenterCrop(cfg.dataset.val.transform.center_crop),
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(**cfg.dataset.val.transform.normalize),
     ])
