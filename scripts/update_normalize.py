@@ -48,7 +48,7 @@ def calculate_mean_std(dataset_root, batch_size, num_workrs):
     mean = torch.zeros(3)
     std = torch.zeros(3)
 
-    print(f"\n{len(dataset)}枚の画像から平均・標準偏差を計算中・・・\n")
+    print(f"\n{len(dataset)}枚の画像から平均・標準偏差を計算中\n")
 
     for images, _ in tqdm(loader):
         batch_samples = images.size(0)
