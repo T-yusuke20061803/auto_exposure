@@ -1,4 +1,6 @@
+import os
 import shutil
+import random
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 import argparse
@@ -6,32 +8,48 @@ from tqdm import tqdm
 
 
 def split_dataset(
-    input_dir="conf/dataset/HDR_subdataset",
-    output_dir="conf/dataset/HDR_subdataset_split",
-    test_size=0.2,
-    random_state=42,
+    dataset_name = "HDR_subdataset",
+    input_dir=None,
+    output_dir=None,
+    train_size=0.7,
+    val_size=0.15,
+    test_size=0.15,
+    seed=42
 ):
     """
     画像データセットを train/test に分割してコピーする。
 
     Args:
+        dataset_name (str): データセット名（例: "HDR_subdataset"）
         input_dir (str): 元の画像ディレクトリ
-        output_dir (str): train/test を出力するルートディレクトリ
-        test_size (float): テストデータの割合 (0~1)
-        random_state (int): 再現性のためのシード
+        output_dir (str): 分割後の出力ルートディレクトリ
+        train_size (float): 訓練データの割合
+        val_size (float): 検証データの割合
+        test_size (float): テストデータの割合
+        seed (int): 再現性確保のための乱数シード
     """
+
+    # パス設定
+    if input_dir is None:
+        input_dir = f"conf/dataset/{dataset_name}"
+    if output_dir is None:
+        output_dir = f"conf/dataset/{dataset_name}_split"
+    
     input_dir = Path(input_dir)
     output_dir = Path(output_dir)
+
+    # 出力先ディレクトリ構造を作成
     train_dir = output_dir / "train"
+    val_dir = output_dir / "val"
     test_dir = output_dir / "test"
 
     # 入力画像の存在確認
     if not input_dir.exists():
         raise FileNotFoundError(f"入力ディレクトリが存在しません: {input_dir}")
 
-    # 出力ディレクトリを作成
-    train_dir.mkdir(parents=True, exist_ok=True)
-    test_dir.mkdir(parents=True, exist_ok=True)
+    # 出力フォルダ作成 
+    for d in [train_dir, val_dir, test_dir]:
+        d.mkdir(parents=True, exist_ok=True)
 
     # 対象画像を取得（jpg, png, jpeg対応）
     image_paths = sorted([
@@ -39,38 +57,62 @@ def split_dataset(
     ])
 
     if len(image_paths) == 0:
-        raise FileNotFoundError(f"該当する画像無し: {input_dir}")
+        raise FileNotFoundError(f"該当する画像ファイル無し: {input_dir}")
 
     print(f"総画像数: {len(image_paths)}枚検出")
 
     # データを分割
-    train_imgs, test_imgs = train_test_split(
+    train_val_imgs, test_imgs = train_test_split(
         image_paths,
         test_size=test_size,
-        random_state=random_state,
+        random_state=seed,
+        shuffle=True
+    )
+    val_ratio_adjusted = val_size / (1 - test_size)
+    train_imgs, val_imgs = train_test_split(
+        train_val_imgs,
+        test_size=val_ratio_adjusted,
+        random_state=seed,
         shuffle=True
     )
 
-    # ファイルをコピー
-    print(f"\n訓練用画像をコピー中 ({len(train_imgs)}枚)")
-    for p in tqdm(train_imgs):
-        shutil.copy(p, train_dir / p.name)#コピーではなく移動（容量制約）にする場合は　shutil.move(p, train_dir / p.name)
+    # ファイルをコピー(用量制約がある場合には、'shutil.move` に変更可能）
+    def copy_images(img_list, dest_dir, label):
+        print(f"\n[{label}] 画像をコピー中 ({len(img_list)} 枚)")
+        for p in tqdm(img_list, desc=f"{label}"):
+            shutil.copy(p, dest_dir / p.name)
 
-    print(f"\nテスト用画像をコピー中 ({len(test_imgs)}枚)")
-    for p in tqdm(test_imgs):
-        shutil.copy(p, test_dir / p.name)
+
+    copy_images(train_imgs, train_dir, "train")
+    copy_images(val_imgs, val_dir, "val")
+    copy_images(test_imgs, test_dir, "test")
 
     print("\nデータ分割完了")
     print(f"  訓練画像: {len(train_imgs)} → {train_dir}")
+    print(f"  テスト画像: {len(val_imgs)} → {val_dir}")
     print(f"  テスト画像: {len(test_imgs)} → {test_dir}")
 
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="画像フォルダを train/test に分割するスクリプト")
-    parser.add_argument("--input_dir", type=str, default="conf/dataset/HDR_subdataset", help="元の画像フォルダパス")
-    parser.add_argument("--output_dir", type=str, default="conf/dataset/HDR_subdataset_split", help="分割後の保存フォルダ")
-    parser.add_argument("--test_size", type=float, default=0.2, help="テストデータの割合 (例: 0.2)")
-    parser.add_argument("--random_state", type=int, default=42, help="乱数シード")
+    parser = argparse.ArgumentParser(description="画像フォルダを train/val/test に分割するスクリプト（CSVはコピーしない）")
+    parser.add_argument("--dataset_name", type=str, default="HDR_subdataset", help="データセット名")
+    parser.add_argument("--input_dir", type=str, default=None, help="元の画像フォルダパス")
+    parser.add_argument("--output_dir", type=str, default=None, help="分割後の保存フォルダ")
+    parser.add_argument("--train_size", type=float, default=0.7, help="訓練データの割合 (例: 0.7)")
+    parser.add_argument("--val_size", type=float, default=0.15, help="検証データの割合 (例: 0.15)")
+    parser.add_argument("--test_size", type=float, default=0.15, help="テストデータの割合 (例: 0.15)")
+    parser.add_argument("--seed", type=int, default=42, help="乱数シード")
 
     args = parser.parse_args()
-    split_dataset(args.input_dir, args.output_dir, args.test_size, args.random_state)
+    total = args.train_size + args.val_size + args.test_size
+    if abs(total - 1.0) > 1e-6:
+        raise ValueError(f"分割比率の合計が1.0ではありません（現在: {total}）")
+    
+    split_dataset(
+        dataset_name=args.dataset_name,
+        input_dir=args.input_dir,
+        output_dir=args.output_dir,
+        train_size=args.train_size,
+        val_size=args.val_size,
+        test_size=args.test_size,
+        seed=args.seed
+    )
