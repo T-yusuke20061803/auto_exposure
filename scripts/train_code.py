@@ -75,7 +75,7 @@ def main(cfg: DictConfig):
         v2.Normalize(**cfg.dataset.train.transform.normalize),
         v2.RandomErasing(p=0.2, scale=(0.02, 0.1), ratio=(0.3, 3.3)),
     ])
-    #採用しなかったデータ拡張
+    #採用しなかったデータ拡張及び正規化
         #v2.RandomVerticalFlip(**cfg.dataset.train.transform.random_vertical_flip),
         #v2.ColorJitter(**cfg.dataset.train.transform.color_jitter), 
         #v2.RandomErasing(p=0.2, scale=(0.02, 0.1), ratio=(0.3, 3.3)),
