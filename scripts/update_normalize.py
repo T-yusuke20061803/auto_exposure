@@ -43,7 +43,7 @@ def calculate_mean_std(dataset_root, batch_size, num_workrs):
 
     ])
     dataset = FlatImageDataset(dataset_root, transform=transform)
-    loader = DataLoader(dataset, batch_size = batch_size, num_workrs = num_workrs, shuffle= False)
+    loader = DataLoader(dataset, batch_size = batch_size, num_workers = num_workers, shuffle= False)
 
     mean = torch.zeros(3)
     std = torch.zeros(3)
