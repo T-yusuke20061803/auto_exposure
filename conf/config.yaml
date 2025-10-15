@@ -1,103 +1,67 @@
 defaults:
-  - _self_
-  - model: mobilenet # モデル（simplecnn / resnet/ efficientnet/ mobilenet）
-  - optimizer: adam  # Optimizer（adam / sgd/ adamw）
-  - lr_scheduler: plateau  #スケジューラー（plateau or multi_step or cosine）
-
+- _self_
+- model: mobilenet
+- optimizer: adam
+- lr_scheduler: plateau
 args:
-  history_dir: "./outputs/train_reg/history"
-  train_id: "your_train_id_here"  # 実行時に自動上書き
+  history_dir: ./outputs/train_reg/history
+  train_id: your_train_id_here
   seed: 50
   skip_tested: false
-
-
-seed: 50 #再現性確保のため、固定値を採用
+seed: 50
 epoch: 150
-
-# ステップ2で "latest" を指定して上書きするための項目
 load_weights_from: null
-
-amp: true #AMP
-
-# データローダ設定
-dataloader: 
-  batch_size: 32 # SimpleCNN: 64, ResNet: 32
-  num_workers: 2  # ← 16 から減らす 同様の理由
+amp: true
+dataloader:
+  batch_size: 32
+  num_workers: 2
   pin_memory: true
-
-# 勾配累積：実質的なバッチサイズを 32 * 2 = 64 にする(※無しの場合：デフォルトの１となる)
 accumulation_steps: 2
-
-#---データセットの指定---
 dataset:
-#  評価（試験）用データセットの設定 
   train:
-    #評価用のアノテーションCSVファイル（ない場合は null を指定）
-    csv_file: "conf/dataset/train.csv" # split_annotations.py で作成した train.csv
-    #評価用の画像フォルダ
-    root: "conf/dataset/HDR_subdataset" 
-      # 訓練時の変数処理パラメータ
+    csv_file: conf/dataset/train.csv
+    root: conf/dataset/HDR_subdataset
     transform:
-      random_resized_crop: # 画像をランダムな位置・サイズで切り抜き、224x224にリサイズする
+      random_resized_crop:
         size: 224
-        scale: [0.7, 1.0] # 元画像を指定の範囲で切り抜く
-        ratio: [0.75, 1.33]
-      random_horizontal_flip: # 画像を左右反転
+        scale:
+        - 0.7
+        - 1.0
+        ratio:
+        - 0.75
+        - 1.33
+      random_horizontal_flip:
         p: 0.4
-      random_vertical_flip: # 画像を上下反転
+      random_vertical_flip:
         p: 0.4
-      random_rotation: # -15度から+15度の範囲で画像をランダムに回転
+      random_rotation:
         degrees: 10
-      #color_jitter:  # 明るさ、コントラスト、彩度、色相をランダムに変化させる
-        #brightness: 0.2
-        #contrast: 0.2
-        #saturation: 0.2
-        #hue: 0.1
-        # 強力な正則化手法「RandomErasing」を追加
       random_erasing:
-        p: 0.3            # 25%の確率で実行
-        scale: [0.02, 0.1]
-        ratio: [0.3, 3.3]
-        # 正規化:学習を安定させるための必須の前処理
+        p: 0.3
+        scale:
+        - 0.02
+        - 0.1
+        ratio:
+        - 0.3
+        - 3.3
       normalize:
-        mean: [0.485, 0.456, 0.406]
-        std: [0.229, 0.224, 0.225]
-
-# 訓練/検証の自動分割設定 (80%を訓練、20%を検証に使用)
+        mean: &id001
+        - 6.2634
+        - 5.7611
+        - 5.6148
+        std: &id002
+        - 3.4507
+        - 3.325
+        - 3.4992
   split:
     val_size: 0.2
     random_state: 42
-
-  # --- 評価（試験）用のデータセット設定 ---
   test:
-    #評価専用の画像フォルダ 変更必須←同じ画像群を用いているため。本来以上の精度が出る
-    root: "conf/dataset/HDR_subdataset"
-    # 評価専用のアノテーションCSV（ラベルなし予測のみならnull）
-    csv_file: "conf/dataset/test.csv" # split_csv.py で作成した test.csv
-    
-    # 評価時にはデータ拡張を行わない
+    root: conf/dataset/HDR_subdataset
+    csv_file: conf/dataset/test.csv
     transform:
       random_resized_crop:
         size: 224
       normalize:
-        mean: [0.485, 0.456, 0.406]
-        std: [0.229, 0.224, 0.225]
-  #---Optuna1とHydraの設定---
-#optuna:
-  #direction: maximize
-  #n_trials: 100
-  #sampler:
-    #_target_: optuna.samplers.TPESampler
-#hydra:
-  #run:
-    #dir: ./
-  #output_subdir: null
-  #job_logging:
-    #version: 1
-    #handlers:
-      #console:
-        #class: logging.StreamHandler
-        #stream: ext://sys.stdout
-    #root:
-      #handlers: [console]
-    ###disable_existing_loggers: false
+        mean: *id001
+        std: *id002
