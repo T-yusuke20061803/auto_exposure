@@ -33,8 +33,8 @@ class FlatImageDataset(Dataset):
 # 設定
 dataset_root = Path("conf/dataset/HDR_subdataset/")  # データセットを変更する場合ここ
 config_path = Path("conf/config.yaml")               # 更新対象のconfig.yamlパス
-batch_size=32 
-num_workers=2
+batch_size=16
+num_workers=0
 
 def calculate_mean_std(dataset_root, batch_size, num_workrs):
      # 画像をTensor化（正規化前）
