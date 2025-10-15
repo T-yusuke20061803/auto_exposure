@@ -39,6 +39,10 @@ num_workers=0
 def calculate_mean_std(dataset_root, batch_size, num_workrs):
      # 画像をTensor化（正規化前）
     transform = transforms.Compose([
+        # 1. 画像の短辺を256ピクセルにリサイズ
+        transforms.Resize(256),
+        # 2. 画像の中央部分を224x224ピクセルで切り抜く
+        transforms.CenterCrop(224),
         transforms.ToTensor(), #0~1にスケール
 
     ])
