@@ -51,7 +51,7 @@ def calculate_mean_std(dataset_root, batch_size, num_workrs):
 
     n_pixels = 0
     mean = torch.zeros(3)
-    std = torch.zeros(3)
+    sum_sq = torch.zeros(3)
 
     print(f"\n{len(dataset)}枚の画像から平均・標準偏差を計算中\n")
 
@@ -74,11 +74,11 @@ def calculate_mean_std(dataset_root, batch_size, num_workrs):
     std = torch.sqrt(var)
 
     mean_list = [round(m.item(),4) for m in mean]
-    std_list = [round(m.item(),4) for m in std]
+    std_list = [round(s.item(),4) for s in std]
 
     print(f"計算結果\n")
     print(f"mean:{mean_list}\n")
-    print(f"std:{std_list}\n")
+    print(f" std:{std_list}\n")
 
     return mean_list, std_list
 
