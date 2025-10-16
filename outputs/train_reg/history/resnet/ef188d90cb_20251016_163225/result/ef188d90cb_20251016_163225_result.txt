@@ -1,0 +1,5 @@
+=== 最良モデルの検証結果 ===
+Train ID: ef188d90cb_20251016_163225
+Model:resnet
+Validation MSE:  0.13860
+Validation RMSE: 0.37230
