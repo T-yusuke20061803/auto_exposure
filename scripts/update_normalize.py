@@ -49,6 +49,10 @@ def calculate_mean_std(dataset_root, batch_size, num_workrs):
     dataset = FlatImageDataset(dataset_root, transform=transform)
     loader = DataLoader(dataset, batch_size = batch_size, num_workers = num_workers, shuffle= False)
 
+    #mean: 各チャンネル（R,G,B）ごとの合計値を保持。
+    #sum_sq: 各チャンネルごとのピクセル値の2乗の合計を保持。
+    # n_pixels: 全ピクセルの数をカウント。
+
     n_pixels = 0
     mean = torch.zeros(3)
     sum_sq = torch.zeros(3)
@@ -56,14 +60,11 @@ def calculate_mean_std(dataset_root, batch_size, num_workrs):
     print(f"\n{len(dataset)}枚の画像から平均・標準偏差を計算中\n")
 
     for images, _ in tqdm(loader):
-        # images の形状: (batch, channels, height, width)
-        
+        # images の形状: (batch, channels, height, width) 
         # ピクセル数を加算
         n_pixels += images.shape[0] * images.shape[2] * images.shape[3]
-        
         # 全ピクセル値の合計をチャンネルごとに加算 (平均計算用)
         mean += images.sum(dim=(0, 2, 3))
-        
         # 全ピクセル値の2乗の合計を加算 (標準偏差計算用)
         sum_sq += (images ** 2).sum(dim=(0, 2, 3))
 
