@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 
 def split_dataset(
-    dataset_name="HDR+burst", #データセットを変更する場合は、ここを変更する
+    dataset_name="HDR+burst/20171106/results_20171023", #データセットを変更する場合は、ここを変更する
     annotations_csv="conf/dataset/annotations.csv",
     train_size=0.7,
     val_size=0.15,
@@ -83,3 +83,7 @@ def split_dataset(
 
 if __name__ == "__main__":
     split_dataset()
+
+#学習用のデータを記録したパスを作る
+#results_20171023の中にある画像を採用する（連射した画像を除いた綺麗な画像のみのフォルダ）
+#ytomita@oit:~/auto_exposure$ ls conf/dataset/HDR+burst/20171106/bursts/ -l | wc -l でファイルの総数を調べるコマンド
