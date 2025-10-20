@@ -35,7 +35,7 @@ class FlatImageDataset(Dataset):
         return image, 0 # ラベルは使わないのでダミーで0を返す
 
 # 設定
-dataset_root = Path("conf/dataset/HDR+burst/")  # データセットを変更する場合ここ
+dataset_root = Path("conf/dataset/HDR+burst/20171106/results_20171023")  # データセットを変更する場合ここ
 config_path = Path("conf/config.yaml")               # 更新対象のconfig.yamlパス
 batch_size=16
 num_workers=0
