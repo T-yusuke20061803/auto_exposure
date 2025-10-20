@@ -35,9 +35,14 @@ def split_dataset(
         d.mkdir(parents=True, exist_ok=True)
 
     # 画像一覧を取得
-    image_paths = sorted([p for p in input_dir.glob("*") if p.suffix.lower() in [".jpg", ".jpeg", ".png"]])
-    if not image_paths:
-        raise FileNotFoundError(f"該当画像ファイル無し: {input_dir}")
+    image_exts = [".jpg", ".jpeg", ".png", ".tiff", ".tif", ".dng", ".hdr", ".exr"]
+    image_paths = sorted([p for p in input_dir.glob("*") if p.suffix.lower() in image_exts])
+
+    if len(image_paths) == 0:
+        # 下層に画像がある場合に再帰検索
+        image_paths = sorted([p for p in input_dir.glob("**/*") if p.suffix.lower() in image_exts])
+        if len(image_paths) == 0:
+            raise FileNotFoundError(f"該当画像ファイルが見つかりません: {input_dir}")
 
     print(f"総画像数: {len(image_paths)} 枚検出")
 
@@ -48,7 +53,7 @@ def split_dataset(
 
     # 分割結果をコピー
     def copy_images(img_list, dest_dir, label):
-        print(f"\n[{label}] 画像をコピー中 ({len(img_list)} 枚)")
+        print(f"\n[{label}] コピー中 ({len(img_list)} 枚)")
         for p in tqdm(img_list, desc=label):
             shutil.copy(p, dest_dir / p.name)
 
@@ -72,8 +77,8 @@ def split_dataset(
     filter_and_save(df, test_imgs, output_dir / "test_labels.csv")
 
     print("\nデータセット分割および対応CSV作成:完了。")
-    print(f"  訓練: {len(train_imgs)}枚 / 検証: {len(val_imgs)}枚 / テスト: {len(test_imgs)}枚")
-    print(f"  出力先: {output_dir}")
+    print(f" 訓練(train): {len(train_imgs)}枚 / 検証(val): {len(val_imgs)}枚 / テスト(test): {len(test_imgs)}枚")
+    print(f" 出力先: {output_dir}")
 
 
 if __name__ == "__main__":

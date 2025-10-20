@@ -15,11 +15,15 @@ class FlatImageDataset(Dataset):
     def __init__(self, root_dir, transform=None):
         self.root_dir = Path(root_dir)
         self.transform = transform
-        self.image_paths = sorted([
-            p for p in self.root_dir.iterdir() 
-            if p.is_file() and p.suffix.lower() in [".jpg", ".jpeg", ".png", ".tif", ".tiff", ".hdr", ".exr"]
-        ])
+        self.image_exts = [".jpg", ".jpeg", ".png", ".tiff", ".tif", ".hdr", ".exr", ".dng"]
 
+        self.image_paths = sorted([p for p in self.root_dir.glob("*")
+                                   if p.is_file() and p.suffix.lower() in self.image_exts])
+
+        # 直下になければ再帰探索
+        if len(self.image_paths) == 0:
+            self.image_paths = sorted([p for p in self.root_dir.glob("**/*")
+                                       if p.is_file() and p.suffix.lower() in self.image_exts])
     def __len__(self):
         return len(self.image_paths)
 
