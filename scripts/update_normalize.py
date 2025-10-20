@@ -17,7 +17,7 @@ class FlatImageDataset(Dataset):
         self.transform = transform
         self.image_paths = sorted([
             p for p in self.root_dir.iterdir() 
-            if p.is_file() and p.suffix.lower() in [".jpg", ".jpeg", ".png"]
+            if p.is_file() and p.suffix.lower() in [".jpg", ".jpeg", ".png", ".tif", ".tiff", ".hdr", ".exr"]
         ])
 
     def __len__(self):

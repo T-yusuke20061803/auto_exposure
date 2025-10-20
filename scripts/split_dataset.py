@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 
 def split_dataset(
-    dataset_name="HDR_subdataset", #データセットを変更する場合は、ここを変更する
+    dataset_name="HDR+burst", #データセットを変更する場合は、ここを変更する
     annotations_csv="conf/dataset/annotations.csv",
     train_size=0.7,
     val_size=0.15,
