@@ -15,24 +15,30 @@ class FlatImageDataset(Dataset):
     def __init__(self, root_dir, transform=None):
         self.root_dir = Path(root_dir)
         self.transform = transform
-        self.ALLOWED_EXT = {".jpg", ".jpeg", ".png"}
+        self.image_exts = [".jpg", ".jpeg", ".png"]
         
-        self.image_paths = [
+        self.image_paths = sorted([
             p for p in self.root_dir.rglob("*")
-            if p.is_file() and p.suffix.lower() in self.ALLOWED_EXT
-        ]
+            if p.is_file() and p.suffix.lower() in self.image_exts
+        ])
 
         if len(self.image_paths) == 0:
-            print(f"有効な画像が見つかりません: {self.root_dir} (拡張子={self.ALLOWED_EXT})")
+            print(f"有効な画像が見つかりません: {self.root_dir} (拡張子={self.image_exts})")
+    
     def __len__(self):
         return len(self.image_paths)
 
     def __getitem__(self, idx):
         img_path = self.image_paths[idx]
-        image = Image.open(img_path).convert("RGB")
+        try:
+            image = Image.open(img_path).convert("RGB")
+        except Exception as e:
+            print(f" 画像読み込み失敗: {img_path} ({e})")
+            # 破損画像対策: ダミー画像で代替
+            image = Image.new("RGB", (224, 224), (0, 0, 0))
         if self.transform:
             image = self.transform(image)
-        return image, 0 # ラベルは使わないのでダミーで0を返す
+        return image, 0
 
 # 設定
 dataset_root = Path("conf/dataset/HDR+burst/20171106/results_20171023")  # データセットを変更する場合ここ
@@ -40,7 +46,7 @@ config_path = Path("conf/config.yaml")               # 更新対象のconfig.yam
 batch_size=16
 num_workers=0
 
-def calculate_mean_std(dataset_root, batch_size, num_workrs):
+def calculate_mean_std(dataset_root, batch_size, num_workers):
      # 画像をTensor化（正規化前）
     transform = transforms.Compose([
         # 1. 画像の短辺を256ピクセルにリサイズ
