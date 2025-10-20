@@ -15,15 +15,15 @@ class FlatImageDataset(Dataset):
     def __init__(self, root_dir, transform=None):
         self.root_dir = Path(root_dir)
         self.transform = transform
-        self.image_exts = [".jpg", ".jpeg", ".png", ".tiff", ".tif", ".hdr", ".exr", ".dng"]
+        self.ALLOWED_EXT = {".jpg", ".jpeg", ".png"}
+        
+        self.image_paths = [
+            p for p in self.root_dir.rglob("*")
+            if p.is_file() and p.suffix.lower() in self.ALLOWED_EXT
+        ]
 
-        self.image_paths = sorted([p for p in self.root_dir.glob("*")
-                                   if p.is_file() and p.suffix.lower() in self.image_exts])
-
-        # 直下になければ再帰探索
         if len(self.image_paths) == 0:
-            self.image_paths = sorted([p for p in self.root_dir.glob("**/*")
-                                       if p.is_file() and p.suffix.lower() in self.image_exts])
+            print(f"有効な画像が見つかりません: {self.root_dir} (拡張子={self.ALLOWED_EXT})")
     def __len__(self):
         return len(self.image_paths)
 

@@ -35,13 +35,13 @@ def split_dataset(
         d.mkdir(parents=True, exist_ok=True)
 
     # 画像一覧を取得
-    image_exts = [".jpg", ".jpeg", ".png", ".tiff", ".tif", ".dng", ".hdr", ".exr"]
-    image_paths = sorted([p for p in input_dir.glob("*") if p.suffix.lower() in image_exts])
+    ALLOWED_EXT = {".jpg", ".jpeg", ".png"}  # 必要に応じて .tiff, .dng を追加
 
-    if len(image_paths) == 0:
-        # 下層に画像がある場合に再帰検索
-        image_paths = sorted([p for p in input_dir.glob("**/*") if p.suffix.lower() in image_exts])
-        if len(image_paths) == 0:
+    image_paths = sorted([
+        p for p in input_dir.rglob("*")
+        if p.is_file() and p.suffix.lower() in ALLOWED_EXT
+    ])
+    if not image_paths:
             raise FileNotFoundError(f"該当画像ファイルが見つかりません: {input_dir}")
 
     print(f"総画像数: {len(image_paths)} 枚検出")
