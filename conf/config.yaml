@@ -12,7 +12,7 @@ args:
 
 
 seed: 50 #再現性確保のため、固定値を採用
-epoch: 150
+epoch: 100
 
 # ステップ2で "latest" を指定して上書きするための項目
 load_weights_from: null
