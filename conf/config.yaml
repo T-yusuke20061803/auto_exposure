@@ -30,7 +30,7 @@ accumulation_steps: 2
 
 #---データセットの指定---
 dataset:
-  name: HDR_subdataset
+  name: HDR+burst
   split_root: conf/dataset/${dataset.name}_split
 
   normalize_mean: [0.3925, 0.3757, 0.3692]  #mean: [0.4094, 0.3765, 0.367],std: [0.2477, 0.2397, 0.2685]変更前
