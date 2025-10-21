@@ -93,43 +93,13 @@ def calculate_mean_std(dataset_root, batch_size, num_workers):
 
     return mean_list, std_list
 
-def update_config(config_path, mean, std):
-    "config.yaml の normalize を自動更新"
-    with open(config_path, 'r', encoding='utf-8') as f:
-        cfg = yaml.safe_load(f)
-
-    # normalize部分を安全に更新
-    #train側
-    if "dataset" in cfg and "train" in cfg["dataset"]:
-        if "transform" in cfg["dataset"]["train"]:
-            cfg["dataset"]["train"]["transform"]["normalize"] = {
-                "mean": mean,
-                "std": std
-            }
-    #test側
-    if "dataset" in cfg and "test" in cfg["dataset"]:
-        if "transform" in cfg["dataset"]["test"]:
-            cfg["dataset"]["test"]["transform"]["normalize"] = {
-                "mean": mean,
-                "std": std
-            }
-
-    #上書き保存
-    with open(config_path, "w", encoding="utf-8") as f:
-        yaml.dump(cfg, f, allow_unicode=True, sort_keys=False)
-
-    print(f"{config_path}を更新\n")
-    print(f"mean:{mean}\n")
-    print(f"std :{std}\n")
-
 def main():
     if not dataset_root.exists():
         raise FileNotFoundError(f" 指定されたデータセットフォルダが見つかりません: {dataset_root}")
     if not config_path.exists():
         raise FileNotFoundError(f"config.yaml が見つかりません: {config_path}")
 
-    mean, std = calculate_mean_std(dataset_root, batch_size, num_workers)
-    update_config(config_path, mean, std)
+    calculate_mean_std(dataset_root, batch_size, num_workers)
 
 
 if __name__ == "__main__":
