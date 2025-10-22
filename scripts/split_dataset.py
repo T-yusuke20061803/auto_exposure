@@ -40,8 +40,7 @@ def split_dataset(
     if "Filename" not in df_ann.columns or "Exposure" not in df_ann.columns:
         raise ValueError("annotations.csv に 'Filename' および 'Exposure' 列が必要です。")
 
-    # 拡張子付きファイル名（例：0006_20160721_123456.jpg）を作成
-    df_ann["Filename_ext"] = df_ann["Filename"].astype(str) + ".jpg"
+    df_ann["Filename_ext"] = df_ann["Filename"].astype(str)
 
     # 画像ファイル情報をDataFrame化
     df_imgs = pd.DataFrame({
