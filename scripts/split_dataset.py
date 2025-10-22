@@ -48,6 +48,11 @@ def split_dataset(
         "Filename_ext": [p.name for p in image_paths]
     })
 
+    print("\n--- CSV (df_ann) の Filename_ext (先頭5件) ---")
+    print(df_ann["Filename_ext"].head())
+    print("\n--- Folder (df_imgs) の Filename_ext (先頭5件) ---")
+    print(df_imgs["Filename_ext"].head())
+
     # アノテーション情報とマージ 
     df_merged = pd.merge(df_imgs, df_ann, on="Filename_ext", how="inner")
 
