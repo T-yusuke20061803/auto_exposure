@@ -1,98 +1,110 @@
 import os
-import shutil
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 import pandas as pd
-from tqdm import tqdm
-
-
-
 
 
 def split_dataset(
     dataset_name="HDR+burst",
-    subset_name="20171106/results_20171023", #データセットを変更する場合は、ここを変更する
+    subset_name="20171106/results_20171023",  # ← 使用フォルダをここで変更
     annotations_csv="conf/dataset/annotations.csv",
     train_size=0.7,
     val_size=0.15,
     test_size=0.15,
     seed=42
-
 ):
+    """
+    HDR+burst データセットを train / val / test に分割し、
+    annotations.csv に記録された露出値（Exposure）を統合。
+    拡張子自動判定 & 欠損チェック対応。
+    """
 
-    # ディレクトリ設定
+    # === ディレクトリ設定 ===
     input_dir = Path(f"conf/dataset/{dataset_name}/{subset_name}")
     output_dir = Path(f"conf/dataset/{dataset_name}_split")
-    train_dir, val_dir, test_dir = [output_dir / x for x in ("train", "val", "test")]
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    # 存在確認
-
+    # 入力確認
     if not input_dir.exists():
-        raise FileNotFoundError(f"入力ディレクトリ：無し: {input_dir}")
+        raise FileNotFoundError(f"入力ディレクトリが存在しません: {input_dir}")
     if not Path(annotations_csv).exists():
-        raise FileNotFoundError(f"CSVファイル：無し: {annotations_csv}")
+        raise FileNotFoundError(f"アノテーションCSVが存在しません: {annotations_csv}")
 
-
-
-    # 出力フォルダ作成
-
-    for d in [train_dir, val_dir, test_dir]:
-        d.mkdir(parents=True, exist_ok=True)
-
-    # 画像一覧を取得
-
-    image_exts = [".jpg", ".jpeg", ".png"]  # 必要に応じて .tiff, .dng を追加
-    image_paths = sorted([
-        p for p in input_dir.rglob("*")
-        if p.is_file() and p.suffix.lower() in image_exts
-    ])
+    # 対象拡張子
+    image_paths = sorted(list(input_dir.rglob("final.jpg")))
+    if not image_paths:
+        raise RuntimeError(f"final.jpg が見つかりません: {input_dir}")
 
     if not image_paths:
-            raise FileNotFoundError(f"該当画像ファイルが見つかりません: {input_dir}")
-    print(f"総画像数: {len(image_paths)} 枚検出({input_dir})")
+        raise RuntimeError(f"画像が見つかりません: {input_dir}")
+
+    print(f"総画像数: {len(image_paths)} 枚検出 ({input_dir})")
+
+    # annotations.csv 読み込み
+    df_ann = pd.read_csv(annotations_csv)
+    if "Filename" not in df_ann.columns or "Exposure" not in df_ann.columns:
+        raise ValueError("annotations.csv に 'Filename' + 'Exposure' 列が必要です。")
+
+    # Exposure欠損チェック
+    missing_expo = df_ann["Exposure"].isna().sum()
+    if missing_expo > 0:
+        print(f"警告: Exposure が欠損している行が {missing_expo} 件あります")
+
+    # 画像ファイル情報をDataFrame化
+    # 各画像の親フォルダ名（例：0006_20160721_163256_525）をキーとして利用
+    df_imgs = pd.DataFrame({
+        # input_dir からの相対パスを保存する
+        "filepath": [str(p.relative_to(input_dir)) for p in image_paths],
+        "Filename": [p.parent.name for p in image_paths], # 親フォルダ名
+        "extension": [p.suffix.lower() for p in image_paths]
+    })
+
+    #マージ（Filenameベース）
+    df_merged = pd.merge(df_imgs, df_ann, on="Filename", how="inner")
+
+    # 一致・不一致数を報告
+    print(f"一致した画像数: {len(df_merged)}枚 / 総画像数: {len(df_imgs)}枚")
+
+    unmatched = set(df_imgs["Filename"]) - set(df_merged["Filename"])
+    if unmatched:
+        print(f"一致しなかった画像フォルダ数: {len(unmatched)}枚")
+        print(f"例: {list(unmatched)[:5]} ...")
+
+    if len(df_merged) == 0:
+        raise RuntimeError("一致する画像(final.jpg)が無し→確認事項：Filename列")
 
     # データ分割
-    train_val_imgs, test_imgs = train_test_split(
-        image_paths, test_size=test_size, random_state=seed, shuffle=True
+    df_train_val, df_test = train_test_split(
+        df_merged, test_size=test_size, random_state=seed, shuffle=True
     )
     val_ratio_adj = val_size / (1 - test_size)
-    train_imgs, val_imgs = train_test_split(
-        train_val_imgs, test_size=val_ratio_adj, random_state=seed, shuffle=True
+    df_train, df_val = train_test_split(
+        df_train_val, test_size=val_ratio_adj, random_state=seed, shuffle=True
     )
 
-    def make_df(img_list, split_name):
-        return pd.DataFrame({
-            "filepath": [str(p) for p in img_list],
-            "split": [split_name] * len(img_list)
-        })
+    # split列を追加
+    df_train["split"] = "train"
+    df_val["split"] = "val"
+    df_test["split"] = "test"
 
+    # CSV出力
+    cols_to_save = ["filepath", "Filename", "Exposure", "split"]
+    df_train[cols_to_save].to_csv(output_dir / "train.csv", index=False)
+    df_val[cols_to_save].to_csv(output_dir / "val.csv", index=False)
+    df_test[cols_to_save].to_csv(output_dir / "test.csv", index=False)
 
-
-    df_train = make_df(train_imgs, "train")
-    df_val = make_df(val_imgs, "val")
-    df_test = make_df(test_imgs, "test")
-
-    df_train.to_csv(output_dir / "train.csv", index=False)
-    df_val.to_csv(output_dir / "val.csv", index=False)
-    df_test.to_csv(output_dir / "test.csv", index=False)
-
-
-
-    print(f"\n=== データ分割結果 ===")
+    # 結果出力
+    print("\n=== データ分割結果 ===")
     print(f"train: {len(df_train)} 枚")
     print(f"val  : {len(df_val)} 枚")
     print(f"test : {len(df_test)} 枚")
     print(f"出力先: {output_dir}")
 
+    print("\n出力されたCSV:")
+    print(f"  train.csv -> {output_dir / 'train.csv'}")
+    print(f"  val.csv   -> {output_dir / 'val.csv'}")
+    print(f"  test.csv  -> {output_dir / 'test.csv'}")
+
 
 if __name__ == "__main__":
-
     split_dataset()
-
-
-
-#学習用のデータを記録したパスを作る
-
-#results_20171023の中にある画像を採用する（連射した画像を除いた綺麗な画像のみのフォルダ）
-
-#ytomita@oit:~/auto_exposure$ ls conf/dataset/HDR+burst/20171106/bursts/ -l | wc -l でファイルの総数を調べるコマンド

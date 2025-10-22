@@ -90,18 +90,19 @@ def main(cfg: DictConfig):
      # データ分割 
     train_df = pd.read_csv(cfg.dataset.train.csv_file)
     val_df = pd.read_csv(cfg.dataset.val.csv_file)
-    print(f"データ分割：訓練 {len(train_df)}, 検証 {len(val_df)} 件")
-
     # データセット
+    print(f"[INFO] 訓練CSV: {cfg.dataset.train.csv_file}")
+    print(f"[INFO] 検証CSV: {cfg.dataset.val.csv_file}")
+
     train_set = AnnotatedDatasetFolder(
         root=cfg.dataset.train.root,
-        dataframe=train_df,
+        csv_file=cfg.dataset.train.csv_file, # dataframe= ではなく csv_file=
         loader=pil_loader,
         transform=train_transforms
     )
     val_set = AnnotatedDatasetFolder(
         root=cfg.dataset.val.root,
-        dataframe=val_df,
+        csv_file=cfg.dataset.val.csv_file, # dataframe= ではなく csv_file=
         loader=pil_loader,
         transform=val_transforms
     )

@@ -17,9 +17,16 @@ def denormalize(tensor, mean, std):
     return torch.clamp(tensor, 0, 1)
 
 def adjust_exposure(image_tensor, ev_value):
+    # sRGB (非線形) -> Linear (線形)
+    # 一般的なガンマ値 2.2 を使用
+    linear_image = torch.pow(image_tensor, 2.2)
     correction_factor = 2.0 ** ev_value
-    corrected_image = image_tensor * correction_factor
-    return torch.clamp(corrected_image, 0, 1)
+    corrected_linear_image = linear_image * correction_factor
+    # Linear (線形) -> sRGB (非線形) に戻す
+    # 逆ガンマ (1 / 2.2) を適用
+    corrected_srgb_image = torch.pow(corrected_linear_image, 1.0/2.2)
+    # 最終結果を [0, 1] にクリップして返す
+    return torch.clamp(corrected_srgb_image, 0, 1)
 
 @hydra.main(version_base=None, config_path="../conf", config_name="config.yaml")
 def main(cfg: DictConfig):
@@ -79,7 +86,7 @@ def main(cfg: DictConfig):
     transform = v2.Compose([
         v2.ToImage(),
         v2.Resize(cfg.dataset.test.transform.resize),
-        v2.CenterCrop(cfg.dataset.test.transform.resize),
+        v2.CenterCrop(cfg.dataset.test.transform.center_crop),
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(
             mean=cfg.dataset.test.transform.normalize.mean,

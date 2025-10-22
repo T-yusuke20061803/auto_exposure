@@ -32,6 +32,8 @@ accumulation_steps: 2
 dataset:
   name: HDR+burst
   split_root: conf/dataset/${dataset.name}_split
+  # image_root:「実際の画像ファイルが保存されている基点ディレクトリ」
+  image_root: conf/dataset/${dataset.name}/20171106/results_20171023
 
   normalize_mean: [0.3925, 0.3757, 0.3692]  #mean: [0.4094, 0.3765, 0.367],std: [0.2477, 0.2397, 0.2685]変更前
   normalize_std: [0.2424, 0.2433, 0.2818]  #値が0～1の範囲に収まらなければならない
@@ -39,8 +41,8 @@ dataset:
   #mean:[0.3925, 0.3757, 0.3692] (フルサイズのデータセットで行った仮の結果)　10／20
   #std:[0.2424, 0.2433, 0.2818]
   train:
-      csv_file: ${dataset.split_root}/train_labels.csv
-      root: ${dataset.split_root}/train 
+      csv_file: ${dataset.split_root}/train.csv
+      root: ${dataset.image_root}
       transform:
         random_resized_crop: # 画像をランダムな位置・サイズで切り抜き、224x224にリサイズする
           size: 224
@@ -69,8 +71,8 @@ dataset:
 
   #検証用データ
   val:
-    csv_file: ${dataset.split_root}/val_labels.csv
-    root: ${dataset.split_root}/val
+    csv_file: ${dataset.split_root}/val.csv
+    root: ${dataset.image_root}
     transform:
       resize: 256
       center_crop: 224
@@ -80,8 +82,8 @@ dataset:
 
   # --- 評価（試験）用のデータセット設定 ---
   test:
-    csv_file: ${dataset.split_root}/test_labels.csv
-    root: ${dataset.split_root}/test
+    csv_file: ${dataset.split_root}/test.csv
+    root: ${dataset.image_root}
     
     # 評価時にはデータ拡張を行わない
     transform:
