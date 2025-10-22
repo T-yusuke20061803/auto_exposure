@@ -43,7 +43,9 @@ def split_dataset(
     # annotations.csv 読み込み
     df_ann = pd.read_csv(annotations_csv)
     # 重複行がある場合は最初の1つを採用
-    df_ann = df_ann.drop_duplicates(subset="Filename", keep="first")
+    dupes = df_ann.drop_duplicates(subset="Filename", keep="Flase") #keep="first"で最初に記録されたExposureを優先、keep="last"で最後に記録されたExposureを優先
+    if not dupes.empty:
+        df_ann = df_ann.drop_duplicates(subset="Filename", keep="last")
     if "Filename" not in df_ann.columns or "Exposure" not in df_ann.columns:
         raise ValueError("annotations.csv に 'Filename' + 'Exposure' 列が必要です。")
 
