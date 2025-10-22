@@ -1,5 +1,0 @@
-=== 最良モデルの検証結果 ===
-Train ID: cbb4d5f382
-Model:simplecnn
-Validation MSE:  0.2901
-Validation RMSE: 0.5386

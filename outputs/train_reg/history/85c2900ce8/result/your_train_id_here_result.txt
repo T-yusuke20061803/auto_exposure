@@ -1,5 +1,0 @@
-=== 最良モデルの検証結果 ===
-Train ID: 85c2900ce8
-Model:simplecnn
-Validation MSE:  0.2609
-Validation RMSE: 0.5108
