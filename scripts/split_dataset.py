@@ -62,6 +62,11 @@ def split_dataset(
     #マージ（Filenameベース）
     df_merged = pd.merge(df_imgs, df_ann, on="Filename", how="inner")
 
+    dupes = df_ann[df_ann.duplicated("Filename", keep=False)]
+    print(f"重複しているFilename数: {dupes['Filename'].nunique()}件")
+    if not dupes.empty:
+        print(dupes.head(10))
+
     # 一致・不一致数を報告
     print(f"一致した画像数: {len(df_merged)}枚 / 総画像数: {len(df_imgs)}枚")
 
