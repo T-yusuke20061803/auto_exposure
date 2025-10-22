@@ -42,6 +42,8 @@ def split_dataset(
 
     # annotations.csv 読み込み
     df_ann = pd.read_csv(annotations_csv)
+    # 重複行がある場合は最初の1つを採用
+    df_ann = df_ann.drop_duplicates(subset="Filename", keep="first")
     if "Filename" not in df_ann.columns or "Exposure" not in df_ann.columns:
         raise ValueError("annotations.csv に 'Filename' + 'Exposure' 列が必要です。")
 
@@ -62,13 +64,13 @@ def split_dataset(
     #マージ（Filenameベース）
     df_merged = pd.merge(df_imgs, df_ann, on="Filename", how="inner")
 
+    # 一致・不一致数を報告
+    print(f"一致した画像数: {len(df_merged)}枚 / 総画像数: {len(df_imgs)}枚")
+
     dupes = df_ann[df_ann.duplicated("Filename", keep=False)]
     print(f"重複しているFilename数: {dupes['Filename'].nunique()}件")
     if not dupes.empty:
         print(dupes.head(10))
-
-    # 一致・不一致数を報告
-    print(f"一致した画像数: {len(df_merged)}枚 / 総画像数: {len(df_imgs)}枚")
 
     unmatched = set(df_imgs["Filename"]) - set(df_merged["Filename"])
     if unmatched:
