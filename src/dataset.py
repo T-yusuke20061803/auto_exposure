@@ -32,13 +32,16 @@ class AnnotatedDatasetFolder(torchdata.Dataset):
         
         self.samples = []
         for _, row in dataframe.iterrows():
-            filename = row['Filename']
+            relative_path = row['filepath'] 
             target = row['Exposure']
-            path = os.path.join(self.root, filename)
+            filename = row['Filename']
+            path = os.path.join(self.root, relative_path)
             
             if os.path.exists(path):
                 self.samples.append((path, float(target), filename))
-                
+            else:
+                # デバッグ用
+                print(f"警告: パスが見つかりません: {path}")   
     def __getitem__(self, index):
         path, target, filename = self.samples[index]
         try:
