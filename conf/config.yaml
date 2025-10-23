@@ -33,7 +33,8 @@ dataset:
   name: HDR+burst
   split_root: conf/dataset/${dataset.name}_split
   # image_root:「実際の画像ファイルが保存されている基点ディレクトリ」
-  image_root: conf/dataset/${dataset.name}/20171106/results_20171023
+  #image_root: conf/dataset/${dataset.name}/20171106/results_20171023
+  image_root: conf/dataset/${dataset.name}/processed_512px
 
   normalize_mean: [0.3925, 0.3757, 0.3692]  #mean: [0.4094, 0.3765, 0.367],std: [0.2477, 0.2397, 0.2685]変更前
   normalize_std: [0.2424, 0.2433, 0.2818]  #値が0～1の範囲に収まらなければならない
