@@ -207,27 +207,27 @@ class ResNet(nn.Module):
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
         # 過学習するようであれば、レイヤー数とニューロン数を小さくする
         self.linear = nn.Sequential(
-            nn.Linear(512 * block.expansion, 256),
-            nn.BatchNorm1d(256),
+            nn.Linear(512 * block.expansion, 512),
+            nn.BatchNorm1d(512),
             nn.ReLU(),
             nn.Dropout(p=self.dropout_p),
 
-            nn.Linear(256* block.expansion, 128),
+            nn.Linear(512, 128),
             nn.BatchNorm1d(128),
             nn.ReLU(),
             nn.Dropout(p=self.dropout_p * 0.7),
 
-            nn.Linear(128* block.expansion, 64),
+            nn.Linear(128, 64),
             nn.BatchNorm1d(64),
             nn.ReLU(),
             nn.Dropout(p=self.dropout_p * 0.5),
 
-            nn.Linear(64* block.expansion, 32),
-            nn.BatchNorm1d(32),
+            nn.Linear(64, 16),
+            nn.BatchNorm1d(16),
             nn.ReLU(),
             nn.Dropout(p=self.dropout_p * 0.3),
 
-            nn.Linear(32, num_classes)
+            nn.Linear(16, num_classes)
         )
 
 
