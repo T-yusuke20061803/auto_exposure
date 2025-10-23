@@ -330,7 +330,7 @@ class RegressionMobileNet(nn.Module):
         super().__init__()
         
         weights = models.MobileNet_V3_Weights.DEFAULT
-        self.mobilenet = models.mobilenet_v2(weights=weights)
+        self.mobilenet = models.mobilenet_v3(weights=weights)
         
         # --- 特徴抽出層を凍結 ---
         if freeze_base:
