@@ -301,15 +301,18 @@ class RegressionEfficientNet(nn.Module):
         # --- 分類層の再構築（Dropout強化・BatchNorm追加） ---
         num_ftrs = self.effnet.classifier[1].in_features
         self.effnet.classifier = nn.Sequential(
-            nn.Linear(num_ftrs, 128),
-            nn.BatchNorm1d(128),
+            nn.Linear(num_ftrs, 256),
+            nn.BatchNorm1d(256),
             nn.ReLU(),
             nn.Dropout(p=dropout_p),
-            nn.Linear(128, 32),
-            nn.BatchNorm1d(32),
+            nn.Linear(256, 128),
+            nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Dropout(p=dropout_p*0.5),
-            nn.Linear(32, 16),
+            nn.Dropout(p=dropout_p*0.7),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_p*0.3),
+            nn.Linear(64, 16),
             nn.ReLU(),
             nn.Linear(16, out_features)
         )
@@ -343,16 +346,18 @@ class RegressionMobileNet(nn.Module):
         # --- classifierの再構築 ---
         num_ftrs = self.mobilenet.classifier[1].in_features
         self.mobilenet.classifier = nn.Sequential(
-            nn.Linear(num_ftrs, 128),
-            nn.BatchNorm1d(128),
+            nn.Linear(num_ftrs, 256),
+            nn.BatchNorm1d(256),
             nn.ReLU(),
             nn.Dropout(p=dropout_p),
-            nn.Linear(128, 32),
-            nn.BatchNorm1d(32),
+            nn.Linear(256, 128),
+            nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Dropout(p=dropout_p*0.5),
-            nn.Linear(32, 16),
-            nn.BatchNorm1d(16),
+            nn.Dropout(p=dropout_p*0.7),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_p*0.3),
+            nn.Linear(64, 16),
             nn.ReLU(),
             nn.Linear(16, out_features)
         )

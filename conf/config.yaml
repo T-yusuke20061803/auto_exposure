@@ -12,7 +12,7 @@ args:
 
 
 seed: 50 #再現性確保のため、固定値を採用
-epoch: 100
+epoch: 200
 
 # ステップ2で "latest" を指定して上書きするための項目
 load_weights_from: null
@@ -21,8 +21,8 @@ amp: true #AMP
 
 # データローダ設定
 dataloader: 
-  batch_size: 32 # SimpleCNN: 64, ResNet: 32
-  num_workers: 2  # ← 16 から減らす 同様の理由
+  batch_size: 32 # バッチサイズ
+  num_workers: 4  # ← 16 から減らす 同様の理由
   pin_memory: true
 
 # 勾配累積：実質的なバッチサイズを 32 * 2 = 64 にする(※無しの場合：デフォルトの１となる)
@@ -48,7 +48,7 @@ dataset:
       transform:
         random_resized_crop: # 画像をランダムな位置・サイズで切り抜き、224x224にリサイズする
           size: 224
-          scale: [0.7, 1.0] # 元画像を指定の範囲で切り抜く
+          scale: [0.8, 1.0] # 元画像を指定の範囲で切り抜く
           ratio: [0.75, 1.33]
         random_horizontal_flip: # 画像を左右反転
           p: 0.5
