@@ -91,8 +91,6 @@ def main(cfg: DictConfig):
     train_df = pd.read_csv(cfg.dataset.train.csv_file)
     val_df = pd.read_csv(cfg.dataset.val.csv_file)
     # データセット
-    print(f"[INFO] 訓練CSV: {cfg.dataset.train.csv_file}")
-    print(f"[INFO] 検証CSV: {cfg.dataset.val.csv_file}")
 
     train_set = AnnotatedDatasetFolder(
         root=cfg.dataset.train.root,
@@ -106,6 +104,10 @@ def main(cfg: DictConfig):
         loader=pil_loader,
         transform=val_transforms
     )
+
+    print(f"[INFO] 訓練CSV: {cfg.dataset.train.csv_file}:{len(train_set)} 件")
+    print(f"[INFO] 検証CSV: {cfg.dataset.val.csv_file}:{len(val_set)} 件")
+
     # データセット読み込み
     train_loader = DataLoader(train_set, shuffle=True, **cfg.dataloader)
     val_loader = DataLoader(val_set, shuffle=False, **cfg.dataloader)
