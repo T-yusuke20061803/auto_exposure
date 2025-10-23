@@ -212,20 +212,25 @@ class ResNet(nn.Module):
             nn.ReLU(),
             nn.Dropout(p=self.dropout_p),
 
-            nn.Linear(512, 128),
-            nn.BatchNorm1d(128),
+            nn.Linear(512, 256),
+            nn.BatchNorm1d(256),
             nn.ReLU(),
             nn.Dropout(p=self.dropout_p * 0.7),
+
+            nn.Linear(256, 128),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout(p=self.dropout_p * 0.5),
 
             nn.Linear(128, 64),
             nn.BatchNorm1d(64),
             nn.ReLU(),
-            nn.Dropout(p=self.dropout_p * 0.5),
+            nn.Dropout(p=self.dropout_p * 0.3),
 
             nn.Linear(64, 16),
             nn.BatchNorm1d(16),
             nn.ReLU(),
-            nn.Dropout(p=self.dropout_p * 0.3),
+            nn.Dropout(p=self.dropout_p * 0.1),
 
             nn.Linear(16, num_classes)
         )
