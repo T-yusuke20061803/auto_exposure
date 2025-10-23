@@ -258,7 +258,7 @@ class RegressionEfficientNet(nn.Module):
     EfficientNet-B0をベースに、露出値回帰用にカスタマイズした軽量モデル
     （過学習抑制と汎化性能向上を重視）
     """
-    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=2, dropout_p =0.3):#versonでモデルの種類を指定 
+    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=2, dropout_p =0.5):#versonでモデルの種類を指定 
         super().__init__() 
         if version.lower() == 'b0': 
             weights = models.EfficientNet_B0_Weights.DEFAULT 
@@ -326,11 +326,11 @@ class RegressionMobileNet(nn.Module):
     MobileNetV2をベースにした軽量回帰モデル
     小型かつ高汎化（過学習抑制・正則化強化）
     """
-    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.3):
+    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.5):
         super().__init__()
         
-        weights = models.MobileNet_V3_Weights.DEFAULT
-        self.mobilenet = models.mobilenet_v3(weights=weights)
+        weights = models.MobileNet_V3_Large_Weights.DEFAULT
+        self.mobilenet = models.mobilenet_v3_large(weights=weights)
         
         # --- 特徴抽出層を凍結 ---
         if freeze_base:
@@ -344,7 +344,7 @@ class RegressionMobileNet(nn.Module):
                     param.requires_grad = True
 
         # --- classifierの再構築 ---
-        num_ftrs = self.mobilenet.classifier[1].in_features
+        num_ftrs = self.mobilenet.classifier[0].in_features
         self.mobilenet.classifier = nn.Sequential(
             nn.Linear(num_ftrs, 256),
             nn.BatchNorm1d(256),
