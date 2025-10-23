@@ -1,0 +1,5 @@
+=== 最良モデルの検証結果 ===
+Train ID: cdc644222e_20251023_135148
+Model:resnet
+Validation MSE:  0.22787
+Validation RMSE: 0.47736
