@@ -5,7 +5,7 @@ import torchvision.models as models
 
 
 class SimpleCNN(nn.Module):
-    def __init__(self, num_classes, dropout_p = 0.5, conv_dropout_p = 0.2):#大きすぎると過学習、小さすぎると学習不足の影響があるため、調整が必要
+    def __init__(self, num_classes, dropout_p = 0.4, conv_dropout_p = 0.2):#大きすぎると過学習、小さすぎると学習不足の影響があるため、調整が必要
         """DNNの層を定義
         """
         super().__init__()
@@ -85,7 +85,7 @@ class ResNet(nn.Module):
         expansion = 1
 
         def __init__(self, in_planes, planes, stride=1,
-                     down_sampling_layer=nn.Conv2d, dropout_p=0.5):
+                     down_sampling_layer=nn.Conv2d, dropout_p=0.2):
             super(ResNet.BasicBlock, self).__init__()
             if stride != 1:
                 self.conv1 = down_sampling_layer(
@@ -130,7 +130,7 @@ class ResNet(nn.Module):
         expansion = 4
 
         def __init__(self, in_planes, planes, stride=1,
-                     down_sampling_layer=nn.Conv2d, dropout_p=0.5):
+                     down_sampling_layer=nn.Conv2d, dropout_p=0.2):
             super(ResNet.Bottleneck, self).__init__()
             self.conv1 = nn.Conv2d(in_planes, planes,
                                    kernel_size=1, bias=False)
@@ -174,7 +174,7 @@ class ResNet(nn.Module):
             return out
 
     def __init__(self, resnet_name, num_classes=1,
-                 down_sampling_layer=nn.Conv2d, dropout_p=0.5):
+                 down_sampling_layer=nn.Conv2d, dropout_p=0.2):
         super(ResNet, self).__init__()
         if resnet_name == "ResNet18":
             block = ResNet.BasicBlock
@@ -212,7 +212,7 @@ class ResNet(nn.Module):
             nn.ReLU(),
             nn.Dropout(p=self.dropout_p),
 
-            nn.Linear(512* block.expansion, 256),
+            nn.Linear(512, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(),
             nn.Dropout(p=self.dropout_p * 0.7),
@@ -222,12 +222,12 @@ class ResNet(nn.Module):
             nn.ReLU(),
             nn.Dropout(p=self.dropout_p * 0.5),
 
-            nn.Linear(128* block.expansion, 64),
+            nn.Linear(128, 64),
             nn.BatchNorm1d(64),
             nn.ReLU(),
             nn.Dropout(p=self.dropout_p * 0.3),
 
-            nn.Linear(64* block.expansion, 16),
+            nn.Linear(64, 16),
             nn.BatchNorm1d(16),
             nn.ReLU(),
             nn.Dropout(p=self.dropout_p * 0.1),
@@ -263,7 +263,7 @@ class RegressionEfficientNet(nn.Module):
     EfficientNet-B0をベースに、露出値回帰用にカスタマイズした軽量モデル
     （過学習抑制と汎化性能向上を重視）
     """
-    def __init__(self, version='b4', out_features=1, freeze_base=True, unfreeze_layers=2, dropout_p =0.5):#versonでモデルの種類を指定 
+    def __init__(self, version='b4', out_features=1, freeze_base=True, unfreeze_layers=2, dropout_p =0.2):#versonでモデルの種類を指定 
         super().__init__() 
         if version.lower() == 'b0': 
             weights = models.EfficientNet_B0_Weights.DEFAULT 
@@ -331,7 +331,7 @@ class RegressionMobileNet(nn.Module):
     MobileNetV2をベースにした軽量回帰モデル
     小型かつ高汎化（過学習抑制・正則化強化）
     """
-    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.5):
+    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.2):
         super().__init__()
         
         weights = models.MobileNet_V3_Large_Weights.DEFAULT
