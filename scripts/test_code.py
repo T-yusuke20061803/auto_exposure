@@ -6,6 +6,12 @@ from torchvision.transforms import v2
 import hydra
 from omegaconf import DictConfig
 
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+
+import time
+
 from src.dataset import AnnotatedDatasetFolder, pil_loader, collate_fn_skip_none
 from src.model import SimpleCNN, ResNet, RegressionEfficientNet, RegressionMobileNet
 from src.trainer import LossEvaluator
@@ -28,6 +34,44 @@ def adjust_exposure(image_tensor, ev_value):
     # 最終結果を [0, 1] にクリップして返す
     return torch.clamp(corrected_srgb_image, 0, 1)
 
+def plot_ev_predictions(csv_file, output_dir):
+    try:
+        df = pd.read_csv(csv_file)
+        #散布図
+        plt.figure(figsize=(6, 6))
+        sns.scatterplot(data=df, x="true_ev", y="pred_ev", s=50, alpha=0.7)
+
+        # 理想直線（y=x）を描画
+        min_val = min(df.true_ev.min(), df.pred_ev.min())
+        max_val = max(df.true_ev.max(), df.pred_ev.max())
+        plt.plot([min_val, max_val], [min_val, max_val], 'r--', label="Ideal (y=x)")
+
+        plt.xlabel("True EV (正解値)")
+        plt.ylabel("Predicted EV (予測値)")
+        plt.title("散布図：露出値（正解値+予測値）")
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(Path(output_dir) / "露出値_scatter.png")
+        plt.close()
+        
+
+        #誤差分布のヒストグラム
+        df["diff"] = df["pred_ev"] - df["true_ev"]
+        plt.figure(figsize=(6,4))
+        sns.histplot(df["diff"], kde=True, bins=30)
+        plt.xlabel("予測誤差（予測値ー正解値）")
+        plt.title("予測誤差の分布")
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(Path(output_dir) / "予測誤差_histogram.png")
+        plt.close()
+
+        print(f"可視化グラフ保存完了: {output_dir}")
+    except Exception as e:
+        print(f"警告: グラフの描画に失敗しました。{e}")
+ 
 @hydra.main(version_base=None, config_path="../conf", config_name="config.yaml")
 def main(cfg: DictConfig):
     set_random_seed(cfg.seed)
@@ -119,6 +163,9 @@ def main(cfg: DictConfig):
     predictions = []
     best_image_info = {"min_error": float("inf")}
 
+    #推論速度計測用 start
+    start_time = time.time()
+
     with torch.no_grad():
         for batch_idx, (inputs, targets, filenames) in enumerate(loader):
             inputs, targets = inputs.to(device), targets.to(device)
@@ -126,6 +173,8 @@ def main(cfg: DictConfig):
 
             evaluator.eval_batch(outputs, targets)
             errors = torch.abs(outputs - targets).squeeze()
+            if errors.dim() == 0: # バッチサイズが1の場合
+                errors = errors.unsqueeze(0)
 
             for i, (filename, target, output) in enumerate(zip(filenames, targets, outputs)):
                 predictions.append([filename, target.item(), output.item()])
@@ -138,9 +187,13 @@ def main(cfg: DictConfig):
                         "filename": filename
                     })
 
+    end_time = time.time()
+    total_inference_time = end_time - start_time
+    avg_inference_time_ms = (total_inference_time / len(dataset)) * 1000 if len(dataset) > 0 else 0
+
+
     #  評価結果計算
     result = evaluator.finalize()
-    print("DEBUG: evaluator result =", result)#確認用
     #MSEのキーを柔軟に取得
     # MSE 取得（キーが "loss")
     mse_value = result.get("loss/MSE",result.get("loss", None))
@@ -155,8 +208,10 @@ def main(cfg: DictConfig):
     print("\n=== 最良モデルの検証結果 ===")
     print(f"Train ID: {train_id}")
     print(f"Model:{cfg.model.name}")
+    print(f"Test Data Size: {len(dataset)} 件")
     print(f"MSE:  {result['loss/MSE']:.5f}")
     print(f"RMSE: {result['loss/RMSE']:.5f}")
+    print(f"推論速度: {avg_inference_time_ms:.3f} ms/枚")
 
 
     #保存処理
@@ -191,8 +246,10 @@ def main(cfg: DictConfig):
         f.write(f"=== 最良モデルの検証結果 ===\n")
         f.write(f"Train ID: {train_id}\n")
         f.write(f"Model:{cfg.model.name}\n")
-        f.write(f"Validation MSE:  {result['loss/MSE']:.5f}\n")
-        f.write(f"Validation RMSE: {result['loss/RMSE']:.5f}\n")
+        f.write(f"Size: {len(dataset)} 件\n")
+        f.write(f"MSE:  {result['loss/MSE']:.5f}\n")
+        f.write(f"RMSE: {result['loss/RMSE']:.5f}\n")
+        f.write(f"推論速度: {avg_inference_time_ms:.2f} ms/枚\n")
 
     # 予測結果保存
     #pred_dir = Path("outputs/train_reg/history") / train_id / "csv_result"
@@ -222,6 +279,8 @@ def main(cfg: DictConfig):
         vutils.save_image(corrected_img, corrected_path)
 
         print(f"補正前後の画像を {output_root} に保存しました")
+        #可視化関数呼び出し
+        plot_ev_predictions(csv_path, output_root)
 
 if __name__ == "__main__":
     main()

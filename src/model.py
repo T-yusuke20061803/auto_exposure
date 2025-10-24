@@ -85,7 +85,7 @@ class ResNet(nn.Module):
         expansion = 1
 
         def __init__(self, in_planes, planes, stride=1,
-                     down_sampling_layer=nn.Conv2d, dropout_p=0.3):
+                     down_sampling_layer=nn.Conv2d, dropout_p=0.5):
             super(ResNet.BasicBlock, self).__init__()
             if stride != 1:
                 self.conv1 = down_sampling_layer(
@@ -130,7 +130,7 @@ class ResNet(nn.Module):
         expansion = 4
 
         def __init__(self, in_planes, planes, stride=1,
-                     down_sampling_layer=nn.Conv2d, dropout_p=0.3):
+                     down_sampling_layer=nn.Conv2d, dropout_p=0.5):
             super(ResNet.Bottleneck, self).__init__()
             self.conv1 = nn.Conv2d(in_planes, planes,
                                    kernel_size=1, bias=False)
@@ -174,7 +174,7 @@ class ResNet(nn.Module):
             return out
 
     def __init__(self, resnet_name, num_classes=1,
-                 down_sampling_layer=nn.Conv2d, dropout_p=0.3):
+                 down_sampling_layer=nn.Conv2d, dropout_p=0.5):
         super(ResNet, self).__init__()
         if resnet_name == "ResNet18":
             block = ResNet.BasicBlock
