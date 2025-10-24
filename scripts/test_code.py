@@ -8,7 +8,6 @@ from omegaconf import DictConfig
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
 
 import time
 
@@ -39,7 +38,7 @@ def plot_ev_predictions(csv_file, output_dir):
         df = pd.read_csv(csv_file)
         #散布図
         plt.figure(figsize=(6, 6))
-        sns.scatterplot(data=df, x="true_ev", y="pred_ev", s=50, alpha=0.7)
+        plt.scatterplot(data=df, x="true_ev", y="pred_ev", s=50, alpha=0.7)
 
         # 理想直線（y=x）を描画
         min_val = min(df.true_ev.min(), df.pred_ev.min())
@@ -59,7 +58,7 @@ def plot_ev_predictions(csv_file, output_dir):
         #誤差分布のヒストグラム
         df["diff"] = df["pred_ev"] - df["true_ev"]
         plt.figure(figsize=(6,4))
-        sns.histplot(df["diff"], kde=True, bins=30)
+        plt.histplot(df["diff"], kde=True, bins=30)
         plt.xlabel("予測誤差（予測値ー正解値）")
         plt.title("予測誤差の分布")
         plt.grid(True)
