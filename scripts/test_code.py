@@ -45,13 +45,13 @@ def plot_ev_predictions(csv_file, output_dir):
         max_val = max(df.true_ev.max(), df.pred_ev.max())
         plt.plot([min_val, max_val], [min_val, max_val], 'r--', label="Ideal (y=x)")
 
-        plt.xlabel("True EV (正解値)")
-        plt.ylabel("Predicted EV (予測値)")
-        plt.title("散布図：露出値（正解値+予測値）")
+        plt.xlabel("True EV ") #正解値
+        plt.ylabel("Predicted EV ") #予測値
+        plt.title("Predicted vs. True EV Scatter Plot")
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
-        plt.savefig(Path(output_dir) / "露出値_scatter.png")
+        plt.savefig(Path(output_dir) / "scatter_ev.png")
         plt.close()
         
 
@@ -59,12 +59,12 @@ def plot_ev_predictions(csv_file, output_dir):
         df["diff"] = df["pred_ev"] - df["true_ev"]
         plt.figure(figsize=(6,4))
         plt.hist(df["diff"], bins=30, alpha=0.7)
-        plt.xlabel("予測誤差（予測値ー正解値）")
-        plt.title("予測誤差の分布")
+        plt.xlabel("Prediction Error (Predicted - True) [EV]")
+        plt.title("Prediction Error Distribution")
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
-        plt.savefig(Path(output_dir) / "予測誤差_histogram.png")
+        plt.savefig(Path(output_dir) / "error_histogram.png")
         plt.close()
 
         print(f"可視化グラフ保存完了: {output_dir}")
@@ -279,7 +279,7 @@ def main(cfg: DictConfig):
 
         print(f"補正前後の画像を {output_root} に保存しました")
         #可視化関数呼び出し
-        plot_ev_predictions(csv_path, output_root)
+    plot_ev_predictions(csv_path, output_root)
 
 if __name__ == "__main__":
     main()
