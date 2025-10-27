@@ -260,11 +260,16 @@ def main(cfg: DictConfig):
         writer.writerows(predictions)
     print(f"\n予測結果を {csv_path} に保存しました")
 
-    # 補正画像保存
+    # 補正画像保存 (3種類: 補正前, 予測補正後, 正解補正後)
     if "original" in best_image_info:
         mean, std = cfg.dataset.test.transform.normalize.mean, cfg.dataset.test.transform.normalize.std
+        #補正前の画像
         denorm_img = denormalize(best_image_info["original"], mean, std)
-        corrected_img = adjust_exposure(denorm_img, best_image_info["pred_ev"])
+        #モデル予測値で補正した画像
+        pred_corrected_img = adjust_exposure(denorm_img, best_image_info["pred_ev"])
+        #正解ラベル値で補正した画像
+        true_corrected_img = adjust_exposure(denorm_img, best_image_info["true_ev"])
+
 
         #img_dir = Path("outputs/train_reg/history") / train_id / "best_predictions"
         #img_dir.mkdir(parents=True, exist_ok=True)
@@ -272,10 +277,12 @@ def main(cfg: DictConfig):
         base_filename = Path(best_image_info['filename']).stem
 
         original_path = bestpred_dir / f"{base_filename}_補正前.png"
-        corrected_path = bestpred_dir / f"{base_filename}_補正後.png"
+        pred_corrected_path = bestpred_dir / f"{base_filename}_補正後.png"
+        true_corrected_path = bestpred_dir / f"{base_filename}_正解補正後.png"
 
         vutils.save_image(denorm_img, original_path)
-        vutils.save_image(corrected_img, corrected_path)
+        vutils.save_image(pred_corrected_img, pred_corrected_path)
+        vutils.save_image(true_corrected_img, true_corrected_path)
 
         print(f"補正前後の画像を {output_root} に保存しました")
         #可視化関数呼び出し
