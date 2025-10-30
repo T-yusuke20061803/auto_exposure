@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - model: efficientnet #モデル（simplecnn / resnet/ efficientnet/ mobilenet）
+  - model: simplecnn #モデル（simplecnn / resnet/ efficientnet/ mobilenet）
   - optimizer: adam  #Optimizer（adam / sgd/ adamw）
   - lr_scheduler: cosine #スケジューラー（plateau or multi_step or cosine）
 
