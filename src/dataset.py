@@ -39,6 +39,7 @@ class AnnotatedDatasetFolder(torchdata.Dataset):
             raise ValueError("CSVには 'Exposure' 列が必要です。")
         
         self.samples = []
+        missing_files = 0
         for _, row in tqdm(dataframe.iterrows(), total=len(dataframe), desc="Loading samples"):
             relative_path_dng_str = row['filepath'] # .csv に書かれている .dng のパス
             target = row['Exposure']
@@ -52,7 +53,7 @@ class AnnotatedDatasetFolder(torchdata.Dataset):
                 try:
                     self.samples.append((path, float(target), filename))
                 except (ValueError, TypeError):
-                     print(f"警告: {path} の Exposure '{target}' を float に変換できません。スキップします。")
+                     print(f"警告: {path} の Exposure '{target}' を float に変換不可。スキップします。")
                      missing_files += 1
             else:
                 missing_files += 1
