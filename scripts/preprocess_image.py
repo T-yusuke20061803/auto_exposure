@@ -8,8 +8,8 @@ import concurrent.futures
 
 # === 設定 ===
 INPUT_DIR = Path("conf/dataset/HDR+burst/20171106/results_20171023")
-OUTPUT_DIR = Path("conf/dataset/HDR+burst/processed_512px_linear_exr")
-TARGET_SIZE = (512, 512)  # リサイズ後サイズ
+OUTPUT_DIR = Path("conf/dataset/HDR+burst/processed_1024px_linear_exr")
+TARGET_SIZE = (1024, 1024)  # リサイズ後サイズ
 
 def process_dng(file_path: Path):
     try:
