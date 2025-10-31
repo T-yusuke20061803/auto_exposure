@@ -1,65 +1,79 @@
-import os
+import rawpy
+import numpy as np
+import imageio.v3 as iio
+from skimage.transform import resize
 from pathlib import Path
-from PIL import Image
 from tqdm import tqdm
 import concurrent.futures
 
-#設定
-#HDR+burstが入っているディレクトリ
+# === 設定 ===
 INPUT_DIR = Path("conf/dataset/HDR+burst/20171106/results_20171023")
-# リサイズした画像を保存する新しいディレクトリ
-OUTPUT_DIR = Path("conf/dataset/HDR+burst/processed_512px")
+OUTPUT_DIR = Path("conf/dataset/HDR+burst/processed_exr_512px")
+TARGET_SIZE = (512, 512)  # リサイズ後サイズ
 
-#リサイズするサイズ（学習サイズ（224）より大きめにすること）
-TARGET_SIZE = (512,512)
-
-def resize_image(file_path):
+def process_dng(file_path: Path):
     try:
-        #出力先のパスを決める
         relative_path = file_path.relative_to(INPUT_DIR)
-        output_path =   OUTPUT_DIR / relative_path
-
-        #出力先の親ディレクトリがなければ作成する
+        output_path = OUTPUT_DIR / relative_path.with_suffix(".exr")
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        #すでに処理済みの場合スキップ
+        # すでに処理済みならスキップ
         if output_path.exists():
-            return(str(file_path),"Skipped")
-        
-        with Image.open(file_path) as img:
-            img_resized = img.resize(TARGET_SIZE, Image.LANCZOS)# 高品質リサイズ
-            img_resized.save(output_path)
-        return (str(file_path), "Success")
-    
+            return "Skipped"
+
+        # DNG読み込み → RGB化
+        with rawpy.imread(str(file_path)) as raw:
+            rgb = raw.postprocess(
+                output_bps=16,
+                no_auto_bright=True,
+                use_auto_wb=False
+            )
+            rgb = np.float32(rgb) / 65535.0  # 16bit → 0–1範囲
+
+        # RGBチャンネル保証
+        if rgb.ndim == 2:
+            rgb = np.stack([rgb] * 3, axis=-1)
+        elif rgb.shape[2] > 3:
+            rgb = rgb[:, :, :3]
+
+        # リサイズ（HDRレンジ保持）
+        rgb_resized = resize(rgb, TARGET_SIZE, anti_aliasing=True, preserve_range=True).astype(np.float32)
+
+        # EXRで保存
+        iio.imwrite(str(output_path), rgb_resized, extension=".exr")
+
+        return "Success"
+
     except Exception as e:
-        return (str(file_path), f"Failed: {e}")
-    
+        return f"Failed: {e}"
 
 def main():
-    print(f"入力元{INPUT_DIR}")
-    print(f"出力先{OUTPUT_DIR}")
-    print(f"リサイズ先{TARGET_SIZE}")
+    print(f"入力元: {INPUT_DIR}")
+    print(f"出力先: {OUTPUT_DIR}")
+    print(f"リサイズサイズ: {TARGET_SIZE}")
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    #画像一覧を取得
-    image_exts = [".jpg", ".jpeg", ".png"]
-    image_paths = sorted([
-        p for p in INPUT_DIR.rglob("*")
-        if p.is_file() and p.suffix.lower() in image_exts
-    ])
+    image_paths = sorted(list(INPUT_DIR.rglob("*.dng")))
+    total = len(image_paths)
 
-    if not image_paths:
-        print(f"error:画像なし")
+    if total == 0:
+        print(".dngファイル無し")
         return
-    
-    print(f"total: {len(image_paths)} 枚の画像の前処理中")
 
-    # CPUコアをフルに使って並列処理
+    print(f"🔧 total: {total} 枚の画像を処理中...")
+
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        results = list(tqdm(executor.map(resize_image, image_paths), total=len(image_paths)))
+        results = list(tqdm(executor.map(process_dng, image_paths), total=total))
 
-    print("前処理が完了しました。")
+    success = results.count("Success")
+    skipped = results.count("Skipped")
+    failed = total - success - skipped
+
+    print("\n前処理完了")
+    print(f"  成功: {success} 枚")
+    print(f"  スキップ: {skipped} 枚")
+    print(f"  失敗: {failed} 枚")
 
 if __name__ == "__main__":
     main()
