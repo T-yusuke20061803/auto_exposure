@@ -6,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 
 # 設定 
-DATASET_ROOT = Path("conf/dataset/HDR+burst/processed_exr_512px_linear_exr")  # EXR画像フォルダ
+DATASET_ROOT = Path("conf/dataset/HDR+burst/processed_512px_linear_exr")  # EXR画像フォルダ
 BATCH_SIZE = 8
 NUM_WORKERS = 0
 
