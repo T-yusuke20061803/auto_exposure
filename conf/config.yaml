@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - model: efficientnet #モデル（simplecnn / resnet/ efficientnet/ mobilenet）
+  - model: resnet #モデル（simplecnn / resnet/ efficientnet/ mobilenet）
   - optimizer: adam  #Optimizer（adam / sgd/ adamw）
   - lr_scheduler: cosine #スケジューラー（plateau or multi_step or cosine）
 
@@ -36,9 +36,8 @@ dataset:
   #image_root: conf/dataset/${dataset.name}/20171106/results_20171023
   image_root: conf/dataset/${dataset.name}/processed_512px
 
-  normalize_mean: [0.3925, 0.3757, 0.3692]  #mean: [0.4094, 0.3765, 0.367],std: [0.2477, 0.2397, 0.2685]変更前
-  normalize_std: [0.2424, 0.2433, 0.2818]  #値が0～1の範囲に収まらなければならない
-  
+  normalize_mean: [0.1191, 0.0917, 0.0823] #mean:[0.3925, 0.3757, 0.3692],std:[0.2424, 0.2433, 0.2818]変更前
+  normalize_std: [0.1649, 0.1313, 0.1368]  #値が0～1の範囲に収まらなければならない
 
   #mean:[0.3925, 0.3757, 0.3692] (フルサイズのデータセットで行った仮の結果)　10／20
   #std:[0.2424, 0.2433, 0.2818]
