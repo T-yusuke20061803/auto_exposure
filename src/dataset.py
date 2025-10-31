@@ -91,11 +91,6 @@ def pil_loader(path):
     
 # .exr を読み込むローダーを新設
 def imageio_loader(path):
-    """ .exr や .tiff などのHDR形式を float32 テンソルで読み込むローダー """
-    global _loader_print_count
-    if _loader_print_count < 5:
-        print(f"--- [確認] imageio_loader が読み込み中: {path} ---")
-        _loader_print_count += 1
     try:
         # .exr を float32 の numpy 配列 (H, W, C) として読み込む
         img_float_numpy = imageio.v3.imread(path) 
