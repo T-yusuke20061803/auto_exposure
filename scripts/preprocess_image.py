@@ -62,7 +62,7 @@ def main():
         print("merged.dng ファイル無し")
         return
 
-    print(f"🔧 total: {total} 枚の 'merged.dng' 画像を処理中")
+    print(f"total: {total} 枚の 'merged.dng' 画像を処理中")
 
     with concurrent.futures.ProcessPoolExecutor() as executor:
         results = list(tqdm(executor.map(process_dng, image_paths), total=total))
