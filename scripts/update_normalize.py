@@ -62,8 +62,8 @@ def calculate_mean_std(root_dir, batch_size, num_workers):
     var = (sum_sq / n_pixels) - (mean ** 2)
     std = torch.sqrt(var)
 
-    mean_list = [round(m.item(), 6) for m in mean]
-    std_list = [round(s.item(), 6) for s in std]
+    mean_list = [round(m.item(), 4) for m in mean]
+    std_list = [round(s.item(), 4) for s in std]
 
     print("\n=== 結果 ===")
     print(f"mean: {mean_list}")
