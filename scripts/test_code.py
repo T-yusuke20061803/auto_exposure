@@ -11,7 +11,7 @@ import pandas as pd
 
 import time
 
-from src.dataset import AnnotatedDatasetFolder, pil_loader, collate_fn_skip_none
+from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, collate_fn_skip_none
 from src.model import SimpleCNN, ResNet, RegressionEfficientNet, RegressionMobileNet
 from src.trainer import LossEvaluator
 from src.util import set_random_seed
@@ -24,11 +24,11 @@ def denormalize(tensor, mean, std):
 def adjust_exposure(image_tensor, ev_value):
     # sRGB (非線形) -> Linear (線形)
     # 一般的なガンマ値 2.2 を使用
-    linear_image = torch.pow(image_tensor, 2.2)
+    #linear_image = torch.pow(image_tensor, 2.2)
     correction_factor = 2.0 ** ev_value
-    corrected_linear_image = linear_image * correction_factor
+    corrected_linear_image = image_tensor * correction_factor #linear_image -> image_tensor
     # Linear (線形) -> sRGB (非線形) に戻す
-    # 逆ガンマ (1 / 2.2) を適用
+    # ガンマ補正 (1 / 2.2) を適用
     corrected_srgb_image = torch.pow(corrected_linear_image, 1.0/2.2)
     # 最終結果を [0, 1] にクリップして返す
     return torch.clamp(corrected_srgb_image, 0, 1)
@@ -127,10 +127,10 @@ def main(cfg: DictConfig):
 
 #評価時においてはデータ拡張を行わない
     transform = v2.Compose([
-        v2.ToImage(),
+        #v2.ToImage(),
         v2.Resize(cfg.dataset.test.transform.resize),
         v2.CenterCrop(cfg.dataset.test.transform.center_crop),
-        v2.ToDtype(torch.float32, scale=True),
+        #v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(
             mean=cfg.dataset.test.transform.normalize.mean,
             std=cfg.dataset.test.transform.normalize.std
@@ -144,7 +144,7 @@ def main(cfg: DictConfig):
     dataset = AnnotatedDatasetFolder(
         root=cfg.dataset.test.root,
         csv_file=cfg.dataset.test.csv_file,
-        loader=pil_loader,
+        loader=imageio_loader, #pil_loader -> imageio_loader
         transform=transform
     )
     

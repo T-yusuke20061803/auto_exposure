@@ -1,108 +1,81 @@
-import yaml
 import torch
-from torchvision import transforms
-from torch.utils.data import DataLoader, Dataset
-from tqdm import tqdm
+import imageio.v3 as iio
+import numpy as np
 from pathlib import Path
-import argparse
-from PIL import Image
-import os
+from torch.utils.data import Dataset, DataLoader
+from tqdm import tqdm
 
-class FlatImageDataset(Dataset):
+# 設定 
+DATASET_ROOT = Path("conf/dataset/HDR+burst/processed_exr_512px_linear_exr")  # EXR画像フォルダ
+BATCH_SIZE = 8
+NUM_WORKERS = 0
+
+# データセットクラス (.exr対応)
+class EXRDataset(Dataset):
     """
-    クラス別のサブフォルダがない、フラットな画像フォルダ用のデータセットクラス。
+    HDR (.exr) 用データセットクラス
+    - imageioでEXRをfloat32として読み込み
+    - CHWに変換しtorch.Tensorとして返す
     """
-    def __init__(self, root_dir, transform=None):
+    def __init__(self, root_dir):
         self.root_dir = Path(root_dir)
-        self.transform = transform
-        self.image_exts = [".jpg", ".jpeg", ".png"]
-        
-        self.image_paths = sorted([
-            p for p in self.root_dir.rglob("*")
-            if p.is_file() and p.suffix.lower() in self.image_exts
-        ])
+        self.image_paths = sorted(self.root_dir.rglob("*.exr"))
 
         if len(self.image_paths) == 0:
-            print(f"有効な画像が見つかりません: {self.root_dir} (拡張子={self.image_exts})")
-    
+            raise FileNotFoundError(f"有効な画像(.exr)無し: {self.root_dir}")
+
     def __len__(self):
         return len(self.image_paths)
 
     def __getitem__(self, idx):
-        img_path = self.image_paths[idx]
+        path = self.image_paths[idx]
         try:
-            image = Image.open(img_path).convert("RGB")
+            img = iio.imread(path).astype(np.float32)
+            # shapeが(H, W, C)前提、C=3の場合のみ処理
+            if img.ndim == 2:
+                img = np.stack([img]*3, axis=-1)
+            elif img.shape[2] > 3:
+                img = img[:, :, :3]
+            img = torch.from_numpy(img).permute(2, 0, 1)
         except Exception as e:
-            print(f" 画像読み込み失敗: {img_path} ({e})")
-            # 破損画像対策: ダミー画像で代替
-            image = Image.new("RGB", (224, 224), (0, 0, 0))
-        if self.transform:
-            image = self.transform(image)
-        return image, 0
+            print(f"読み込み失敗: {path} ({e})")
+            img = torch.zeros((3, 512, 512), dtype=torch.float32)
+        return img
 
-# 設定
-dataset_root = Path("conf/dataset/HDR+burst/20171106/results_20171023")  # データセットを変更する場合ここ
-config_path = Path("conf/config.yaml")               # 更新対象のconfig.yamlパス
-batch_size=16
-num_workers=0
-
-def calculate_mean_std(dataset_root, batch_size, num_workers):
-     # 画像をTensor化（正規化前）
-    transform = transforms.Compose([
-        # 1. 画像の短辺を256ピクセルにリサイズ
-        transforms.Resize(256),
-        # 2. 画像の中央部分を224x224ピクセルで切り抜く
-        transforms.CenterCrop(224),
-        transforms.ToTensor(), #0~1にスケール
-
-    ])
-    dataset = FlatImageDataset(dataset_root, transform=transform)
-    loader = DataLoader(dataset, batch_size = batch_size, num_workers = num_workers, shuffle= False)
-
-    #mean: 各チャンネル（R,G,B）ごとの合計値を保持。
-    #sum_sq: 各チャンネルごとのピクセル値の2乗の合計を保持。
-    # n_pixels: 全ピクセルの数をカウント。
+# 平均・標準偏差を計算
+def calculate_mean_std(root_dir, batch_size, num_workers):
+    dataset = EXRDataset(root_dir)
+    loader = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
 
     n_pixels = 0
     mean = torch.zeros(3)
     sum_sq = torch.zeros(3)
 
-    print(f"\n{len(dataset)}枚の画像から平均・標準偏差を計算中\n")
+    print(f"\n{len(dataset)}枚の画像から平均・標準偏差を計算中...\n")
 
-    for images, _ in tqdm(loader):
-        # images の形状: (batch, channels, height, width) 
-        # ピクセル数を加算
+    for images in tqdm(loader):
         n_pixels += images.shape[0] * images.shape[2] * images.shape[3]
-        # 全ピクセル値の合計をチャンネルごとに加算 (平均計算用)
         mean += images.sum(dim=(0, 2, 3))
-        # 全ピクセル値の2乗の合計を加算 (標準偏差計算用)
         sum_sq += (images ** 2).sum(dim=(0, 2, 3))
 
-    # --- 最終的な計算 ---
     mean /= n_pixels
-    # Var = E[X^2] - (E[X])^2
     var = (sum_sq / n_pixels) - (mean ** 2)
     std = torch.sqrt(var)
 
-    mean_list = [round(m.item(),4) for m in mean]
-    std_list = [round(s.item(),4) for s in std]
+    mean_list = [round(m.item(), 6) for m in mean]
+    std_list = [round(s.item(), 6) for s in std]
 
-    print(f"計算結果\n")
-    print(f"mean:{mean_list}\n")
-    print(f" std:{std_list}\n")
+    print("\n=== 結果 ===")
+    print(f"mean: {mean_list}")
+    print(f" std: {std_list}")
 
     return mean_list, std_list
 
 def main():
-    if not dataset_root.exists():
-        raise FileNotFoundError(f" 指定されたデータセットフォルダが見つかりません: {dataset_root}")
-    if not config_path.exists():
-        raise FileNotFoundError(f"config.yaml が見つかりません: {config_path}")
+    if not DATASET_ROOT.exists():
+        raise FileNotFoundError(f"指定されたフォルダが存在しません: {DATASET_ROOT}")
 
-    calculate_mean_std(dataset_root, batch_size, num_workers)
-
+    calculate_mean_std(DATASET_ROOT, BATCH_SIZE, NUM_WORKERS)
 
 if __name__ == "__main__":
     main()
-
-

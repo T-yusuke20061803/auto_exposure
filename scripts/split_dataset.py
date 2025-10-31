@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 import pandas as pd
+from tqdm import tqdm
 
 
 def split_dataset(
@@ -14,7 +15,7 @@ def split_dataset(
     seed=42
 ):
     """
-    HDR+burst データセットを train / val / test に分割し、
+    HDR+burst データセット (merged.dng を使用) を train/val/test に分割し、
     annotations.csv に記録された露出値（Exposure）を統合。
     拡張子自動判定 & 欠損チェック対応。
     """
@@ -30,13 +31,11 @@ def split_dataset(
     if not Path(annotations_csv).exists():
         raise FileNotFoundError(f"アノテーションCSVが存在しません: {annotations_csv}")
 
-    # 対象拡張子
-    image_paths = sorted(list(input_dir.rglob("final.jpg")))
+    # 画像ファイル検索
+    print(f"{input_dir} 内の merged.dng ファイルを検索中...")
+    image_paths = sorted(list(input_dir.rglob("merged.dng"))) # final.jpg -> merged.dng
     if not image_paths:
-        raise RuntimeError(f"final.jpg が見つかりません: {input_dir}")
-
-    if not image_paths:
-        raise RuntimeError(f"画像が見つかりません: {input_dir}")
+        raise RuntimeError(f"merged.dng 無し: {input_dir}")
 
     print(f"総画像数: {len(image_paths)} 枚検出 ({input_dir})")
 
@@ -50,7 +49,7 @@ def split_dataset(
     # Exposure欠損チェック
     missing_expo = df_ann["Exposure"].isna().sum()
     if missing_expo > 0:
-        print(f"警告: Exposure が欠損している行が {missing_expo} 件あります")
+        print(f"警告: Exposure が欠損している行有り： {missing_expo} 件")
 
     # 画像ファイル情報をDataFrame化
     # 各画像の親フォルダ名（例：0006_20160721_163256_525）をキーとして利用
@@ -66,7 +65,6 @@ def split_dataset(
 
     # 一致・不一致数を報告
     print(f"一致した画像数: {len(df_merged)}枚 / 総画像数: {len(df_imgs)}枚")
-
     dupes = df_ann[df_ann.duplicated("Filename", keep=False)]
     print(f"重複しているFilename数: {dupes['Filename'].nunique()}件")
     if not dupes.empty:
@@ -75,16 +73,16 @@ def split_dataset(
     unmatched = set(df_imgs["Filename"]) - set(df_merged["Filename"])
     if unmatched:
         print(f"一致しなかった画像フォルダ数: {len(unmatched)}枚")
-        print(f"例: {list(unmatched)[:5]} ...")
+        print(f"例: {list(unmatched)[:5]} ")
 
     if len(df_merged) == 0:
-        raise RuntimeError("一致する画像(final.jpg)が無し→確認事項：Filename列")
+        raise RuntimeError("一致する画像(merged.dng)が無し→確認事項：Filename列")
 
     # データ分割
     df_train_val, df_test = train_test_split(
         df_merged, test_size=test_size, random_state=seed, shuffle=True
     )
-    val_ratio_adj = val_size / (1 - test_size)
+    val_ratio_adj = val_size / (1 - test_size) if (1 - test_size) > 0 else 0
     df_train, df_val = train_test_split(
         df_train_val, test_size=val_ratio_adj, random_state=seed, shuffle=True
     )

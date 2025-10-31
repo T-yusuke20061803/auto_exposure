@@ -21,7 +21,7 @@ from src.trainer import Trainer, LossEvaluator
 from src.train_id import print_config, generate_train_id, is_same_config
 from src.extension import ModelSaver, HistorySaver, HistoryLogger, IntervalTrigger, LearningCurvePlotter, MinValueTrigger
 from src.util import set_random_seed
-from src.dataset import AnnotatedDatasetFolder, pil_loader, collate_fn_skip_none
+from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, collate_fn_skip_none
 
 
 # === CSVから画像パスと補正量(EV)を読み込むデータセット ===
@@ -67,11 +67,11 @@ def main(cfg: DictConfig):
 
     # データ変換 (データ拡張＋正規化)
     train_transforms = v2.Compose([
-        v2.ToImage(),
+        #v2.ToImage(),(入力がPILではないため)
         v2.RandomResizedCrop(**cfg.dataset.train.transform.random_resized_crop),
         v2.RandomHorizontalFlip(**cfg.dataset.train.transform.random_horizontal_flip),
         v2.RandomRotation(**cfg.dataset.train.transform.random_rotation),
-        v2.ToDtype(torch.float32, scale=True),
+        #v2.ToDtype(torch.float32, scale=True),(入力がすでにfloat32のため)
         v2.Normalize(**cfg.dataset.train.transform.normalize),
         v2.RandomErasing(p=0.2, scale=(0.02, 0.1), ratio=(0.3, 3.3)),
     ])
@@ -81,10 +81,10 @@ def main(cfg: DictConfig):
         #v2.RandomErasing(p=0.2, scale=(0.02, 0.1), ratio=(0.3, 3.3)),
 
     val_transforms = v2.Compose([
-        v2.ToImage(),
+        #v2.ToImage(),
         v2.Resize(cfg.dataset.val.transform.resize),
         v2.CenterCrop(cfg.dataset.val.transform.center_crop),
-        v2.ToDtype(torch.float32, scale=True),
+        #v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(**cfg.dataset.val.transform.normalize),
     ])
      # データ分割 
@@ -95,13 +95,13 @@ def main(cfg: DictConfig):
     train_set = AnnotatedDatasetFolder(
         root=cfg.dataset.train.root,
         csv_file=cfg.dataset.train.csv_file, # dataframe= ではなく csv_file=
-        loader=pil_loader,
+        loader=imageio_loader, #il_loader -> imageio_loader
         transform=train_transforms
     )
     val_set = AnnotatedDatasetFolder(
         root=cfg.dataset.val.root,
         csv_file=cfg.dataset.val.csv_file, # dataframe= ではなく csv_file=
-        loader=pil_loader,
+        loader=imageio_loader, #il_loader -> imageio_loader
         transform=val_transforms
     )
 

@@ -8,7 +8,7 @@ import concurrent.futures
 
 # === 設定 ===
 INPUT_DIR = Path("conf/dataset/HDR+burst/20171106/results_20171023")
-OUTPUT_DIR = Path("conf/dataset/HDR+burst/processed_exr_512px")
+OUTPUT_DIR = Path("conf/dataset/HDR+burst/processed_512px_linear_exr")
 TARGET_SIZE = (512, 512)  # リサイズ後サイズ
 
 def process_dng(file_path: Path):
@@ -26,7 +26,8 @@ def process_dng(file_path: Path):
             rgb = raw.postprocess(
                 output_bps=16,
                 no_auto_bright=True,
-                use_auto_wb=False
+                use_auto_wb=False,
+                gamma=(1, 1)
             )
             rgb = np.float32(rgb) / 65535.0  # 16bit → 0–1範囲
 
@@ -54,14 +55,14 @@ def main():
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    image_paths = sorted(list(INPUT_DIR.rglob("*.dng")))
+    image_paths = sorted(list(INPUT_DIR.rglob("merged.dng")))
     total = len(image_paths)
 
     if total == 0:
-        print(".dngファイル無し")
+        print("merged.dng ファイル無し")
         return
 
-    print(f"🔧 total: {total} 枚の画像を処理中...")
+    print(f"🔧 total: {total} 枚の 'merged.dng' 画像を処理中")
 
     with concurrent.futures.ProcessPoolExecutor() as executor:
         results = list(tqdm(executor.map(process_dng, image_paths), total=total))
