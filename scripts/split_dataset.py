@@ -9,9 +9,9 @@ def split_dataset(
     dataset_name="HDR+burst",
     subset_name="20171106/results_20171023",  # ← 使用フォルダをここで変更
     annotations_csv="conf/dataset/annotations.csv",
-    train_size=0.7,
-    val_size=0.15,
-    test_size=0.15,
+    train_size=0.8,
+    val_size=0.1,
+    test_size=0.1,
     seed=42
 ):
     """

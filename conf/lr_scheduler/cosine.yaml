@@ -1,4 +1,4 @@
 name: cosine
 params:
   T_max: ${epoch}
-  eta_min: 1.0e-07
+  eta_min: 1.0e-09
