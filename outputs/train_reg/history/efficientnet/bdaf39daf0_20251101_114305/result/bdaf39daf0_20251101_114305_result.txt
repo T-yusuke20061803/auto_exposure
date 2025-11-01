@@ -1,0 +1,7 @@
+=== 最良モデルの検証結果 ===
+Train ID: bdaf39daf0_20251101_114305
+Model:efficientnet
+Size: 546 件
+MSE:  0.18617
+RMSE: 0.43148
+推論速度: 45.46 ms/枚
