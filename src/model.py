@@ -199,10 +199,10 @@ class ResNet(nn.Module):
         self.down_sampling_layer = down_sampling_layer
         self.dropout_p = dropout_p
 
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2,
-                               padding=3, bias=False)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1,
+                               padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
@@ -250,7 +250,6 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)))
-        out = self.maxpool(out)
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
@@ -260,6 +259,74 @@ class ResNet(nn.Module):
         out = self.linear(out)
         return out
 
+
+class ResNetRegression(nn.Module):
+    """
+    torchvision の事前学習済み ResNet をベースとし、
+    カスタム回帰ヘッドを持つモデル
+    """
+    def __init__(self, resnet_name="ResNet34", out_features=1, freeze_base=True, dropout_p=0.3):
+        super().__init__()
+
+        # 事前学習済みのResNetを読み込む
+        if resnet_name == "ResNet18":
+            weights = models.ResNet18_Weights.DEFAULT
+            self.resnet = models.resnet18(weights=weights)
+            num_ftrs = 512 # ResNet18/34 の fc 入力
+        elif resnet_name == "ResNet34":
+            weights = models.ResNet34_Weights.DEFAULT
+            self.resnet = models.resnet34(weights=weights)
+            num_ftrs = 512 # ResNet18/34 の fc 入力
+        elif resnet_name == "ResNet50":
+            weights = models.ResNet50_Weights.DEFAULT
+            self.resnet = models.resnet50(weights=weights)
+            num_ftrs = 2048 # ResNet50/101/152 の fc 入力
+        # (ResNet101なども同様に追加可能)
+        else:
+            raise ValueError(f"未対応のResNet名: {resnet_name}")
+
+        # ベース層を凍結 (転移学習の基本)
+        if freeze_base:
+            for name, param in self.resnet.named_parameters():
+                if "fc" not in name: # 最後の層(fc)以外を凍結
+                    param.requires_grad = False
+            
+            # (より高度なファインチューニングとして、後で層の一部を解凍することも可能)
+
+        # --- 3. 最後の層(fc)を、カスタム回帰ヘッドに置き換える ---
+        # (先生のコードの self.linear の構造を再現)
+        self.resnet.fc = nn.Sequential(
+            nn.Linear(num_ftrs, 512),       # 入力を ResNet の出力 (num_ftrs) に合わせる
+            nn.BatchNorm1d(512),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_p),
+
+            nn.Linear(512, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_p * 0.7),
+
+            nn.Linear(256, 128),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_p * 0.5),
+            
+            nn.Linear(128, 64),
+            nn.BatchNorm1d(64),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_p * 0.3),
+            
+            nn.Linear(64, 16),
+            nn.BatchNorm1d(16),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_p * 0.1),
+
+            nn.Linear(16, out_features)
+        )
+
+    def forward(self, x):
+        # torchvision の ResNet をそのまま実行
+        return self.resnet(x)
 
 class RegressionEfficientNet(nn.Module):
     """
