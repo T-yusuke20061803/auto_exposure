@@ -21,12 +21,12 @@ amp: true #AMP
 
 # データローダ設定
 dataloader: 
-  batch_size: 32 # バッチサイズ
+  batch_size: 8 # バッチサイズ
   num_workers: 4  # ← 16 から減らす 同様の理由
   pin_memory: true
 
 # 勾配累積：実質的なバッチサイズを 32 * 2 = 64 にする(※無しの場合：デフォルトの１となる)
-accumulation_steps: 2
+accumulation_steps: 8
 
 #---データセットの指定---
 dataset:
