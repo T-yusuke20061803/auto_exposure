@@ -21,7 +21,7 @@ from src.trainer import Trainer, LossEvaluator
 from src.train_id import print_config, generate_train_id, is_same_config
 from src.extension import ModelSaver, HistorySaver, HistoryLogger, IntervalTrigger, LearningCurvePlotter, MinValueTrigger
 from src.util import set_random_seed
-from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, collate_fn_skip_none
+from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, dng_loader, collate_fn_skip_none
 
 
 # === CSVから画像パスと補正量(EV)を読み込むデータセット ===
@@ -95,13 +95,13 @@ def main(cfg: DictConfig):
     train_set = AnnotatedDatasetFolder(
         root=cfg.dataset.train.root,
         csv_file=cfg.dataset.train.csv_file, # dataframe= ではなく csv_file=
-        loader=imageio_loader, #il_loader -> imageio_loader
+        loader=imageio_loader, # ★ imageio_loader から dng_loader
         transform=train_transforms
     )
     val_set = AnnotatedDatasetFolder(
         root=cfg.dataset.val.root,
         csv_file=cfg.dataset.val.csv_file, # dataframe= ではなく csv_file=
-        loader=imageio_loader, #il_loader -> imageio_loader
+        loader=imageio_loader, # ★ imageio_loader から dng_loader
         transform=val_transforms
     )
 

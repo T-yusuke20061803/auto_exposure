@@ -11,7 +11,7 @@ import pandas as pd
 
 import time
 
-from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, collate_fn_skip_none
+from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, dng_loader, collate_fn_skip_none
 from src.model import SimpleCNN, ResNet, RegressionEfficientNet, RegressionMobileNet
 from src.trainer import LossEvaluator
 from src.util import set_random_seed
@@ -144,7 +144,7 @@ def main(cfg: DictConfig):
     dataset = AnnotatedDatasetFolder(
         root=cfg.dataset.test.root,
         csv_file=cfg.dataset.test.csv_file,
-        loader=imageio_loader, #pil_loader -> imageio_loader
+        loader=imageio_loader, # imageio_loader から dng_loader
         transform=transform
     )
     
