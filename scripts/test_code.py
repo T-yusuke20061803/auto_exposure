@@ -12,7 +12,7 @@ import pandas as pd
 import time
 
 from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, dng_loader, collate_fn_skip_none
-from src.model import SimpleCNN, ResNet, RegressionEfficientNet, RegressionMobileNet
+from src.model import SimpleCNN, ResNet,ResNetRegression, RegressionEfficientNet, RegressionMobileNet
 from src.trainer import LossEvaluator
 from src.util import set_random_seed
 
@@ -114,7 +114,7 @@ def main(cfg: DictConfig):
     if cfg.model.name.lower() == "simplecnn":
         net = SimpleCNN(**cfg.model.params).to(device)
     elif cfg.model.name.lower() == "resnet":
-        net = ResNet(**cfg.model.params).to(device)
+        net = ResNetRegression(**cfg.model.params).to(device) #ResNer -> ResNetRegression(事前学習ver)
     elif cfg.model.name.lower() == "efficientnet":
         net = RegressionEfficientNet(**cfg.model.params).to(device)
     elif cfg.model.name.lower() == "mobilenet":

@@ -265,7 +265,7 @@ class ResNetRegression(nn.Module):
     torchvision の事前学習済み ResNet をベースとし、
     カスタム回帰ヘッドを持つモデル
     """
-    def __init__(self, resnet_name="ResNet34", out_features=1, freeze_base=True, dropout_p=0.3):
+    def __init__(self, resnet_name="ResNet34", out_features=1, freeze_base=True, dropout_p=0.3, unfreeze_layers=0):
         super().__init__()
 
         # 事前学習済みのResNetを読み込む
@@ -286,12 +286,23 @@ class ResNetRegression(nn.Module):
             raise ValueError(f"未対応のResNet名: {resnet_name}")
 
         # ベース層を凍結 (転移学習の基本)
+
         if freeze_base:
-            for name, param in self.resnet.named_parameters():
-                if "fc" not in name: # 最後の層(fc)以外を凍結
-                    param.requires_grad = False
+            # まず、全てのパラメータを凍結
+            for param in self.resnet.parameters():
+                param.requires_grad = False
             
-            # (より高度なファインチューニングとして、後で層の一部を解凍することも可能)
+            # 指定された層数だけ解凍 (EfficientNet と同じロジック)
+            if unfreeze_layers > 0:
+                # 例: unfreeze_layers=1 なら layer4 を解凍
+                if hasattr(self.resnet, 'layer4'):
+                    for param in self.resnet.layer4.parameters():
+                        param.requires_grad = True
+            if unfreeze_layers > 1:
+                # 例: unfreeze_layers=2 なら layer3 も解凍
+                if hasattr(self.resnet, 'layer3'):
+                    for param in self.resnet.layer3.parameters():
+                        param.requires_grad = True
 
         # --- 3. 最後の層(fc)を、カスタム回帰ヘッドに置き換える ---
         # (先生のコードの self.linear の構造を再現)
