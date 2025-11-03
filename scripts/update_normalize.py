@@ -44,46 +44,6 @@ class EXRDataset(Dataset):
             img = torch.zeros((3, 512, 512), dtype=torch.float32)
         return img
 
-class FlatDNGDataset(Dataset): 
-    def __init__(self, root_dir, transform=None): # ★ transform を受け取る ★
-        self.root_dir = Path(root_dir)
-        self.transform = transform # ★ transform を保存 ★
-        self.image_exts = [".dng"] 
-
-        print(f"検索中: {self.root_dir} (拡張子={self.image_exts})")
-        # ★ 修正: split_dataset.py と同じ merged.dng のみ対象に ★
-        self.image_paths = sorted([
-            p for p in self.root_dir.rglob("merged.dng") 
-            if p.is_file()
-        ])
-        if len(self.image_paths) == 0:
-            print(f"有効な画像 (merged.dng) が見つかりません: {self.root_dir}")
-
-    def __len__(self):
-        return len(self.image_paths)
-    
-    def __getitem__(self, idx):
-        img_path = self.image_paths[idx]
-        try:
-            # dng_loader と同じロジック 
-            with rawpy.imread(str(img_path)) as raw:
-                rgb_16bit = raw.postprocess(
-                    use_camera_wb=True, output_bps=16, no_auto_bright=True, gamma=(1, 1)
-                )
-            rgb_linear_float = rgb_16bit.astype(np.float32) / 65535.0
-            rgb_linear_float = np.clip(rgb_linear_float, 0.0, 1.0) 
-            tensor = torch.from_numpy(rgb_linear_float).permute(2, 0, 1)
-            
-            # 統計計算のためにリサイズ/クロップを適用 
-            if self.transform:
-                tensor = self.transform(tensor) 
-            
-            return tensor, 0
-            
-        except Exception as e:
-            print(f" 画像読み込み失敗: {img_path} ({e})")
-            return None
-
 # 平均・標準偏差を計算
 def calculate_mean_std(root_dir, batch_size, num_workers):
     dataset = EXRDataset(root_dir)
