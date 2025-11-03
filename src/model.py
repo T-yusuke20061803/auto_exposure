@@ -199,8 +199,8 @@ class ResNet(nn.Module):
         self.down_sampling_layer = down_sampling_layer
         self.dropout_p = dropout_p
 
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1,
-                               padding=1, bias=False)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2,
+                               padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)
