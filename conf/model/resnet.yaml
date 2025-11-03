@@ -2,4 +2,4 @@ name: resnet
 params:
  resnet_name: ResNet34
  num_classes: 1
- freeze_base: true
+ #freeze_base: true
