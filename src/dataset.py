@@ -7,6 +7,7 @@ from tqdm import tqdm
 import imageio 
 import numpy as np 
 from pathlib import Path
+import rawpy
 
 _loader_print_count = 0
 
@@ -41,15 +42,16 @@ class AnnotatedDatasetFolder(torchdata.Dataset):
             raise ValueError("CSVには 'Exposure' 列が必要です。")
         
         self.samples = []
+        print(f"{csv_file or 'DataFrame'} からサンプルを読み込み中 (基準パス: {root})...")
         missing_files = 0
         for _, row in tqdm(dataframe.iterrows(), total=len(dataframe), desc="Loading samples"):
             relative_path_dng_str = row['filepath'] # .csv に書かれている .dng のパス
             target = row['Exposure']
             filename = row.get('Filename', relative_path_dng_str) # Filename があれば使う
 
-            relative_path_exr_str = str(Path(relative_path_dng_str).with_suffix('.exr'))
+            relative_path_exr_str = str(Path(relative_path_dng_str).with_suffix('.exr')) #リサイズしない場合は、ここをコメントアウト
             # .exr のフルパスを構築
-            path = os.path.join(self.root, relative_path_exr_str)
+            path = os.path.join(self.root, relative_path_exr_str)#リサイズしない場合：relative_path_exr_str -> relative_path_dng_str
             
             if os.path.exists(path):
                 try:
@@ -60,7 +62,7 @@ class AnnotatedDatasetFolder(torchdata.Dataset):
             else:
                 missing_files += 1
                 if missing_files < 10: # ログが溢れないように
-                    print(f"警告: パスが見つかりません ( .exr に変換): {path}") 
+                    print(f"警告: パスが見つかりません ( .exr に変換): {path}") # .exr に変換 -> .dng
         
         if missing_files > 0:
              print(f"警告: {missing_files} 件のファイルが見つかりませんでした。")
@@ -101,6 +103,25 @@ def imageio_loader(path):
         return tensor
     except Exception as e:
         print(f"imageioでの画像読み込みエラー: {path}, エラー: {e}")
+        raise
+
+def dng_loader(path):
+    """ .dng を rawpy で読み込み、線形 float32 テンソルで返す """
+    try:
+        with rawpy.imread(str(path)) as raw:
+        # 線形16bitデータを取得
+            rgb_16bit = raw.postprocess(
+                use_camera_wb=True, output_bps=16, no_auto_bright=True, gamma=(1, 1) 
+            )
+        # float32 [0, 1] (clipなし) に変換
+        rgb_linear_float = rgb_16bit.astype(np.float32) / 65535.0
+        # rgb_linear_float = np.clip(rgb_linear_float, 0.0, 1.0) # クリップはNormalize前にはしない方が良いかも
+        
+        # NumPy (H, W, C) -> PyTorch Tensor (C, H, W)
+        tensor = torch.from_numpy(rgb_linear_float).permute(2, 0, 1) 
+        return tensor
+    except Exception as e:
+        print(f"rawpyでの画像読み込みエラー: {path}, エラー: {e}")
         raise
 
 def collate_fn_skip_none(batch):
