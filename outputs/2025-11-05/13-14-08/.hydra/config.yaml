@@ -1,0 +1,93 @@
+args:
+  history_dir: ./outputs/train_reg/history
+  train_id: your_train_id_here
+  seed: 50
+  skip_tested: false
+seed: 50
+epoch: 300
+load_weights_from: null
+amp: true
+dataloader:
+  batch_size: 8
+  num_workers: 4
+  pin_memory: true
+accumulation_steps: 8
+dataset:
+  name: HDR+burst
+  split_root: conf/dataset/${dataset.name}_split
+  image_root: conf/dataset/${dataset.name}/processed_2048px_exr
+  normalize_mean:
+  - 0.1191
+  - 0.0917
+  - 0.0823
+  normalize_std:
+  - 0.167
+  - 0.1341
+  - 0.1387
+  train:
+    csv_file: ${dataset.split_root}/train.csv
+    root: ${dataset.image_root}
+    transform:
+      random_resized_crop:
+        size: 224
+        scale:
+        - 0.8
+        - 1.0
+        ratio:
+        - 0.75
+        - 1.33
+      random_horizontal_flip:
+        p: 0.5
+      random_vertical_flip:
+        p: 0.5
+      random_rotation:
+        degrees: 10
+      random_erasing:
+        p: 0.2
+        scale:
+        - 0.02
+        - 0.1
+        ratio:
+        - 0.3
+        - 3.3
+      normalize:
+        mean: ${dataset.normalize_mean}
+        std: ${dataset.normalize_std}
+  val:
+    csv_file: ${dataset.split_root}/val.csv
+    root: ${dataset.image_root}
+    transform:
+      resize: 256
+      center_crop: 224
+      normalize:
+        mean: ${dataset.normalize_mean}
+        std: ${dataset.normalize_std}
+  test:
+    csv_file: ${dataset.split_root}/test.csv
+    root: ${dataset.image_root}
+    transform:
+      resize: 256
+      center_crop: 224
+      normalize:
+        mean: ${dataset.normalize_mean}
+        std: ${dataset.normalize_std}
+model:
+  name: resnet
+  params:
+    resnet_name: ResNet18
+    num_classes: 1
+optimizer:
+  name: adam
+  params:
+    lr: 0.0001
+    betas:
+    - 0.9
+    - 0.999
+    eps: 1.0e-08
+    weight_decay: 0.001
+    amsgrad: false
+lr_scheduler:
+  name: cosine
+  params:
+    T_max: ${epoch}
+    eta_min: 1.0e-09
