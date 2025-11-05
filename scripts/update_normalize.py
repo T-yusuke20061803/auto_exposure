@@ -7,7 +7,7 @@ from tqdm import tqdm
 import rawpy
 
 # 設定 
-DATASET_ROOT = Path("conf/dataset/HDR+burst/processed_1024px_linear_exr")  # EXR画像フォルダ
+DATASET_ROOT = Path("conf/dataset/HDR+burst/processed_2048px_exr")  # EXR画像フォルダ
 #processed_2048px_linear_exr→20171106/results_20171023
 BATCH_SIZE = 32
 NUM_WORKERS = 4

@@ -21,12 +21,12 @@ amp: true #AMP
 
 # データローダ設定
 dataloader: 
-  batch_size: 32 # バッチサイズ
+  batch_size: 8 # バッチサイズ
   num_workers: 4  # ← 16 から減らす 同様の理由
   pin_memory: true
 
 # 勾配累積：実質的なバッチサイズを 32 * 2 = 64 にする(※無しの場合：デフォルトの１となる)
-accumulation_steps: 2
+accumulation_steps: 8
 
 #---データセットの指定---
 dataset:
@@ -34,7 +34,7 @@ dataset:
   split_root: conf/dataset/${dataset.name}_split
   # image_root:「実際の画像ファイルが保存されている基点ディレクトリ」
   #image_root: conf/dataset/${dataset.name}/20171106/results_20171023
-  image_root: conf/dataset/${dataset.name}/processed_1024px_linear_exr
+  image_root: conf/dataset/${dataset.name}/processed_2048px_exr
 
   normalize_mean: [0.1191, 0.0917, 0.0823] #mean:[0.3925, 0.3757, 0.3692],std:[0.2424, 0.2433, 0.2818]変更前
   normalize_std: [0.1670, 0.1313, 0.1387]  #値が0～1の範囲に収まらなければならない
