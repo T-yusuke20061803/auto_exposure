@@ -47,7 +47,7 @@ class EXRDataset(Dataset):
 # 平均・標準偏差を計算
 def calculate_mean_std(root_dir, batch_size, num_workers):
     dataset = EXRDataset(root_dir)
-    loader = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False)
+    loader = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False,)
 
     n_pixels = 0
     mean = torch.zeros(3)
@@ -55,13 +55,19 @@ def calculate_mean_std(root_dir, batch_size, num_workers):
 
     print(f"\n{len(dataset)}枚の画像から平均・標準偏差を計算中...\n")
 
-    for images in tqdm(loader):
+    for images, _ in tqdm(loader): 
+        if images is None: continue
         n_pixels += images.shape[0] * images.shape[2] * images.shape[3]
         mean += images.sum(dim=(0, 2, 3))
         sum_sq += (images ** 2).sum(dim=(0, 2, 3))
 
+    if n_pixels == 0:
+        print("エラー: 有効なピクセルがありませんでした。")
+        return [0.0, 0.0, 0.0], [1.0, 1.0, 1.0]
+
     mean /= n_pixels
     var = (sum_sq / n_pixels) - (mean ** 2)
+    var = torch.clamp(var, min=1e-6)
     std = torch.sqrt(var)
 
     mean_list = [round(m.item(), 4) for m in mean]

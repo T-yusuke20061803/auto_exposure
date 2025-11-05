@@ -17,9 +17,10 @@ from src.trainer import LossEvaluator
 from src.util import set_random_seed
 
 def denormalize(tensor, mean, std):
+    tensor_copy = tensor.clone()
     for t, m, s in zip(tensor, mean, std):
         t.mul_(s).add_(m)
-    return torch.clamp(tensor, 0, 1)
+    return tensor_copy
 
 def adjust_exposure(image_tensor, ev_value):
     # sRGB (非線形) -> Linear (線形)
@@ -203,6 +204,10 @@ def main(cfg: DictConfig):
     result["loss/MSE"] = mse_value
     result["loss/RMSE"] = rmse_value
 
+    # --- 総パラメータ数を計算 ---
+    total_params = sum(p.numel() for p in net.parameters()) / 1e6
+    trainable_params = sum(p.numel() for p in net.parameters() if p.requires_grad) / 1e6
+
      # ターミナルに分かりやすく表示 
     print("\n=== 最良モデルの検証結果 ===")
     print(f"Train ID: {train_id}")
@@ -210,6 +215,7 @@ def main(cfg: DictConfig):
     print(f"Test Data Size: {len(dataset)} 件")
     print(f"MSE:  {result['loss/MSE']:.5f}")
     print(f"RMSE: {result['loss/RMSE']:.5f}")
+    print(f"総パラメータ数: {total_params:.2f} M (学習対象: {trainable_params:.2f} M)")
     print(f"推論速度: {avg_inference_time_ms:.3f} ms/枚")
 
 
@@ -248,6 +254,7 @@ def main(cfg: DictConfig):
         f.write(f"Size: {len(dataset)} 件\n")
         f.write(f"MSE:  {result['loss/MSE']:.5f}\n")
         f.write(f"RMSE: {result['loss/RMSE']:.5f}\n")
+        f.write(f"総パラメータ数: {total_params:.2f} M (学習対象: {trainable_params:.2f} M)\n")
         f.write(f"推論速度: {avg_inference_time_ms:.2f} ms/枚\n")
 
     # 予測結果保存
