@@ -18,7 +18,7 @@ from src.util import set_random_seed
 
 def denormalize(tensor, mean, std):
     tensor_copy = tensor.clone()
-    for t, m, s in zip(tensor, mean, std):
+    for t, m, s in zip(tensor_copy, mean, std):
         t.mul_(s).add_(m)
     return tensor_copy
 
