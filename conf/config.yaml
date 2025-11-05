@@ -2,7 +2,7 @@ defaults:
   - _self_
   - model: resnet #モデル（simplecnn / resnet/ efficientnet/ mobilenet）
   - optimizer: adamw  #Optimizer（adam / sgd/ adamw）
-  - lr_scheduler: cosine #スケジューラー（plateau or multi_step or cosine）
+  - lr_scheduler: plateau #スケジューラー（plateau or multi_step or cosine）
 
 args:
   history_dir: "./outputs/train_reg/history"
@@ -57,7 +57,7 @@ dataset:
         random_vertical_flip: # 画像を上下反転
           p: 0.5
         random_rotation: # -15度から+15度の範囲で画像をランダムに回転
-          degrees: 10
+          degrees: 15
         #color_jitter:  # 明るさ、コントラスト、彩度、色相をランダムに変化させる
           #brightness: 0.2
           #contrast: 0.2
@@ -65,7 +65,7 @@ dataset:
           #hue: 0.1
           # 強力な正則化手法「RandomErasing」を追加
         random_erasing:
-          p: 0.1          # 25%の確率で実行
+          p: 0.3        # 25%の確率で実行
           scale: [0.02, 0.1]
           ratio: [0.3, 3.3]
           # 正規化:学習を安定させるための必須の前処理
