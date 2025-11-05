@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - model: resnet #モデル（simplecnn / resnet/ efficientnet/ mobilenet）
-  - optimizer: adam  #Optimizer（adam / sgd/ adamw）
+  - optimizer: adamw  #Optimizer（adam / sgd/ adamw）
   - lr_scheduler: cosine #スケジューラー（plateau or multi_step or cosine）
 
 args:
@@ -12,7 +12,7 @@ args:
 
 
 seed: 50 #再現性確保のため、固定値を採用
-epoch: 300
+epoch: 250
 
 
 amp: true #AMP
@@ -22,8 +22,6 @@ dataloader:
   batch_size: 16 # バッチサイズ
   num_workers: 4  # ← 16 から減らす 同様の理由
   pin_memory: true
-  persistent_workers: true
-  prefetch_factor: 2
 
 # 勾配累積：実質的なバッチサイズを 32 * 2 = 64 にする(※無しの場合：デフォルトの１となる)
 accumulation_steps: 2
@@ -37,7 +35,7 @@ dataset:
   image_root: conf/dataset/${dataset.name}/processed_1024px_exr
 
   normalize_mean: [0.1191, 0.0917, 0.0823] #mean:[0.3925, 0.3757, 0.3692],std:[0.2424, 0.2433, 0.2818]変更前
-  normalize_std: [0.1670, 0.1341, 0.1387]  #値が0～1の範囲に収まらなければならない
+  normalize_std: [0.1670, 0.1330, 0.1381]  #値が0～1の範囲に収まらなければならない
 
   #1024リサイズ
   # [0.1191, 0.0917, 0.0823]
@@ -67,7 +65,7 @@ dataset:
           #hue: 0.1
           # 強力な正則化手法「RandomErasing」を追加
         random_erasing:
-          p: 0.2           # 25%の確率で実行
+          p: 0.1          # 25%の確率で実行
           scale: [0.02, 0.1]
           ratio: [0.3, 3.3]
           # 正規化:学習を安定させるための必須の前処理
