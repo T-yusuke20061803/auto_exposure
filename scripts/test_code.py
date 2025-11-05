@@ -270,8 +270,9 @@ def main(cfg: DictConfig):
     # 補正画像保存 (3種類: 補正前, 予測補正後, 正解補正後)
     if "original" in best_image_info:
         mean, std = cfg.dataset.test.transform.normalize.mean, cfg.dataset.test.transform.normalize.std
-        #補正前の画像
+        #補正前の画像(EV=0 のsRGB画像として保存) <- ".png"で保存すると画像全体が暗くなるため、視覚的に比較しやすくするため
         denorm_img = denormalize(best_image_info["original"], mean, std)
+        baseline_srgb_img = adjust_exposure(denorm_img, 0.0)
         #モデル予測値で補正した画像
         pred_corrected_img = adjust_exposure(denorm_img, best_image_info["pred_ev"])
         #正解ラベル値で補正した画像
@@ -287,7 +288,7 @@ def main(cfg: DictConfig):
         pred_corrected_path = bestpred_dir / f"{base_filename}_補正後.png"
         true_corrected_path = bestpred_dir / f"{base_filename}_正解補正後.png"
 
-        vutils.save_image(denorm_img, original_path)
+        vutils.save_image(baseline_srgb_img, original_path)
         vutils.save_image(pred_corrected_img, pred_corrected_path)
         vutils.save_image(true_corrected_img, true_corrected_path)
 
