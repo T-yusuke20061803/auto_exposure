@@ -344,36 +344,22 @@ class RegressionEfficientNet(nn.Module):
     EfficientNet-B0をベースに、露出値回帰用にカスタマイズした軽量モデル
     （過学習抑制と汎化性能向上を重視）
     """
-    def __init__(self, version='b4', out_features=1, freeze_base=True, unfreeze_layers=2, dropout_p =0.4):#versonでモデルの種類を指定 
+    def __init__(self, version='b4', out_features=1, freeze_base=True, unfreeze_layers=2, dropout_p =0.4, pretrained=True):#versonでモデルの種類を指定 :pretrained=True:事前学習有り、pretrained=False:事前学習無し
         super().__init__() 
-        if version.lower() == 'b0': 
-            weights = models.EfficientNet_B0_Weights.DEFAULT 
-            self.effnet = models.efficientnet_b0(weights=weights) 
-        elif version.lower() == 'b1': 
-            weights = models.EfficientNet_B1_Weights.DEFAULT 
-            self.effnet = models.efficientnet_b1(weights=weights) 
-        elif version.lower() == 'b2': 
-            weights = models.EfficientNet_B2_Weights.DEFAULT 
-            self.effnet = models.efficientnet_b2(weights=weights) 
-        elif version.lower() == 'b3': 
-            weights = models.EfficientNet_B3_Weights.DEFAULT 
-            self.effnet = models.efficientnet_b3(weights=weights) 
-        elif version.lower() == 'b4': 
-            weights = models.EfficientNet_B4_Weights.DEFAULT 
-            self.effnet = models.efficientnet_b4(weights=weights) 
-        elif version.lower() == 'b5': 
-            weights = models.EfficientNet_B5_Weights.DEFAULT 
-            self.effnet = models.efficientnet_b5(weights=weights) 
-        elif version.lower() == 'b6': 
-            weights = models.EfficientNet_B6_Weights.DEFAULT 
-            self.effnet = models.efficientnet_b6(weights=weights) 
-        elif version.lower() == 'b7': 
-            weights = models.EfficientNet_B7_Weights.DEFAULT 
-            self.effnet = models.efficientnet_b7(weights=weights) 
-        else: 
-            raise ValueError(f"Unsupported EfficientNet version: {version}")
+        version = version.lower()
+        valid_versions = [f"b{i}" for i in range(8)]
+        if version not in valid_versions:
+            raise ValueError(f"Unsupported EfficientNet version: {version}. Choose from {valid_versions}")
+
+        # EfficientNetのモデルと重みを自動的に選択 
+        model_fn = getattr(models, f"efficientnet_{version}")
+        weight_enum = getattr(models, f"EfficientNet_{version.upper()}_Weights")
+        weights = weight_enum.DEFAULT if pretrained else None
+
+        # モデル構築
+        self.effnet = model_fn(weights=weights)
         
-        # --- 特徴抽出部の凍結 ---
+        # 特徴抽出部の凍結
         if freeze_base:
             for param in self.effnet.features.parameters():
                 param.requires_grad = False
@@ -384,7 +370,7 @@ class RegressionEfficientNet(nn.Module):
                 for param in self.effnet.features[block].parameters():
                     param.requires_grad = True
 
-        # --- 分類層の再構築（Dropout強化・BatchNorm追加） ---
+        # 分類層の再構築（Dropout強化・BatchNorm追加）
         num_ftrs = self.effnet.classifier[1].in_features
         self.effnet.classifier = nn.Sequential(
             nn.Linear(num_ftrs, 512),
@@ -415,10 +401,10 @@ class RegressionMobileNet(nn.Module):
     MobileNetV2をベースにした軽量回帰モデル
     小型かつ高汎化（過学習抑制・正則化強化）
     """
-    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.4):
+    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.4, pretrained=True):
         super().__init__()
         
-        weights = models.MobileNet_V3_Large_Weights.DEFAULT
+        weights = models.MobileNet_V3_Large_Weights.DEFAULT if pretrained else None
         self.mobilenet = models.mobilenet_v3_large(weights=weights)
         
         # --- 特徴抽出層を凍結 ---
