@@ -157,7 +157,7 @@ def main(cfg: DictConfig):
     )
     #評価処理
     criterion = torch.nn.MSELoss()
-    evaluator = LossEvaluator(criterion, "MSE")
+    evaluator = LossEvaluator(criterion, "loss")
     evaluator.initialize()
 
     predictions = []
@@ -196,13 +196,13 @@ def main(cfg: DictConfig):
     result = evaluator.finalize()
     #MSEのキーを柔軟に取得
     monitor_key = evaluator.criterion_name
-    mse_value = result.get("loss/MSE",result.get("loss", None))
+    mse_value = result.get("loss")
     if mse_value is None:
         raise KeyError(f"キー '{monitor_key}' が見つかりません: {result}")
 
     rmse_value = float(torch.sqrt(torch.tensor(mse_value)))
-    result["loss/MSE"] = mse_value
-    result["loss/RMSE"] = rmse_value
+    result["MSE"] = mse_value
+    result["RMSE"] = rmse_value
 
     # --- 総パラメータ数を計算 ---
     total_params = sum(p.numel() for p in net.parameters()) / 1e6
@@ -213,8 +213,8 @@ def main(cfg: DictConfig):
     print(f"Train ID: {train_id}")
     print(f"Model:{cfg.model.name}")
     print(f"Test Data Size: {len(dataset)} 件")
-    print(f"MSE:  {result['loss/MSE']:.5f}")
-    print(f"RMSE: {result['loss/RMSE']:.5f}")
+    print(f"MSE:  {result['MSE']:.5f}")
+    print(f"RMSE: {result['RMSE']:.5f}")
     print(f"総パラメータ数: {total_params:.2f} M (学習対象: {trainable_params:.2f} M)")
     print(f"推論速度: {avg_inference_time_ms:.3f} ms/枚")
 
@@ -252,8 +252,8 @@ def main(cfg: DictConfig):
         f.write(f"Train ID: {train_id}\n")
         f.write(f"Model:{cfg.model.name}\n")
         f.write(f"Size: {len(dataset)} 件\n")
-        f.write(f"MSE:  {result['loss/MSE']:.5f}\n")
-        f.write(f"RMSE: {result['loss/RMSE']:.5f}\n")
+        f.write(f"MSE:  {result['MSE']:.5f}\n")
+        f.write(f"RMSE: {result['RMSE']:.5f}\n")
         f.write(f"総パラメータ数: {total_params:.2f} M (学習対象: {trainable_params:.2f} M)\n")
         f.write(f"推論速度: {avg_inference_time_ms:.2f} ms/枚\n")
 
