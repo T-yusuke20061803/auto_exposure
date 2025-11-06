@@ -204,9 +204,9 @@ def main(cfg: DictConfig):
         scheduler_type = None
 
     # 評価指標と拡張
-    evaluators = [LossEvaluator(criterion, criterion_name="MSE")]
+    evaluators = [LossEvaluator(criterion, criterion_name="loss")]
     extensions = [
-            ModelSaver(directory=history_path, name=lambda x: "best_model.pth", trigger=MinValueTrigger(mode="validation", key="MSE")),
+            ModelSaver(directory=history_path, name=lambda x: "best_model.pth", trigger=MinValueTrigger(mode="validation", key="loss")),
             HistorySaver(directory=history_path, name=lambda x: "history.pth", trigger=IntervalTrigger(period=1)),
             HistoryLogger(trigger=IntervalTrigger(period=1), print_func=print),
             LearningCurvePlotter(directory=history_path, trigger=IntervalTrigger(period=1)),

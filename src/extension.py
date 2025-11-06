@@ -268,6 +268,8 @@ class HistoryLogger(Extension):
                     continue
                 format_str += f"val. {k}: {v:.4f}"
                 format_str += " | "
+        lr = trainer.optimizer.param_groups[0]['lr']
+        format_str += f"LR: {lr:.2e} | "
         format_str += f"time: {int(elapsed_time/60/60):02d} hour {elapsed_time/60%60:02.2f} min"
         format_str += " | "
         format_str += f"finish after: {int(finish_time/60/60):02d} hour {finish_time/60%60:02.2f} min"
