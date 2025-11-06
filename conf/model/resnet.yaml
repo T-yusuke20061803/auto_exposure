@@ -1,6 +1,6 @@
 name: resnet
 params:
- resnet_name: ResNet18
+ resnet_name: ResNet34
  num_classes: 1 #事前学習ではない場合は、この1行のみ採用
  #freeze_base: true #下2行は事前学習済みを用いる時に利用、そうでないときはコメントアウト
  #out_features: 1
