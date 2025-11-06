@@ -98,12 +98,17 @@ class Trainer(ABCTrainer):
             if val_loader is not None:
                 vallosses = self.eval(val_loader)
                 self.history["validation"].append({'epoch':self.epoch, **vallosses})
-                val_loss = vallosses["loss"]
+                #val_loss = vallosses["loss"]
+                if self.evaluators:
+                    monitor_key = self.evaluators[0].criterion_name
+                    val_loss = vallosses.get(monitor_key)
+                else:
+                    val_loss = None
             # スケジューラ更新
             if self.scheduler is not None:
                 if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                     if val_loss is not None:
-                            self.scheduler.step(val_loss)
+                        self.scheduler.step(val_loss)
                 elif not getattr(self.scheduler, 'is_warmup_scheduler', False): # warmup以外
                     self.scheduler.step()
                 else:
@@ -251,7 +256,7 @@ class LossEvaluator(Evaluator):
         self.loss_meter.update(loss.item(), number=outputs.size(0))
 
     def finalize(self):
-        return {"loss": self.loss_meter.average}
+        return {self.criterion_name: self.loss_meter.average}
 
 
 class AccuracyEvaluator(Evaluator):
