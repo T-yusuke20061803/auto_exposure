@@ -195,10 +195,10 @@ def main(cfg: DictConfig):
     #  評価結果計算
     result = evaluator.finalize()
     #MSEのキーを柔軟に取得
-    # MSE 取得（キーが "loss")
+    monitor_key = evaluator.criterion_name
     mse_value = result.get("loss/MSE",result.get("loss", None))
     if mse_value is None:
-        raise KeyError(f"MSEが見つかりません: {result}")
+        raise KeyError(f"キー '{monitor_key}' が見つかりません: {result}")
 
     rmse_value = float(torch.sqrt(torch.tensor(mse_value)))
     result["loss/MSE"] = mse_value
