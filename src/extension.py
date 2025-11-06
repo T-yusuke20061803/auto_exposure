@@ -298,15 +298,34 @@ class LearningCurvePlotter(Extension):
     def __call__(self, trainer: Trainer) -> typing.NoReturn:
         import matplotlib.pyplot as plt
         history = trainer.history
+ 
+         # 訓練ロスは trainer.py 側で 'loss' とハードコードされているため、これでOK
         train_losses = [h["loss"] for h in history["train"]]
-        val_losses = [h["loss"] for h in history["validation"]]
         epoch = [h["epoch"] for h in history["train"]]
 
-        plt.plot(epoch, train_losses, label="train")
-        plt.plot(epoch, val_losses, label="validation")
+        # --- 検証ロスのキーを動的に取得 ---
+        val_losses = []
+        monitor_key = None
+        
+        # trainer.evaluators の最初のもの（例: LossEvaluator("MSE")）の名前を取得
+        if trainer.evaluators:
+            monitor_key = trainer.evaluators[0].criterion_name
+
+        if monitor_key and history["validation"]:
+            # history (例: {"epoch": 1, "MSE": 0.5}) から 'MSE' の値を取得
+            val_losses = [h[monitor_key] for h in history["validation"]]
+
+        plt.plot(epoch, train_losses, label="train loss")
+
+        if val_losses:
+            # 検証ロスのラベルも動的に設定 (例: "validation MSE")
+            plt.plot(epoch, val_losses, label=f"validation {monitor_key}")
+
         plt.xlabel("epoch")
         plt.ylabel("loss")
         plt.legend()
+        plt.grid(True) # グリッドを追加
+        plt.tight_layout() # レイアウトを自動調整
         plt.savefig(str(self.directory / "learning_curve.png"))
         plt.clf()
         plt.close()
