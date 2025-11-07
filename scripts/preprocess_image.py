@@ -24,7 +24,7 @@ def process_dng(file_path: Path):
         # DNG読み込み → RGB化
         with rawpy.imread(str(file_path)) as raw:
             rgb = raw.postprocess(
-                output_bps=16,
+                output_bps=16, #試しに一枚画像を読み込み、rgbの画素値のヒストグラムを出す（11／07やること①）→　元々の画像がRGBが16bitより小さい可能性もあるため確認する
                 no_auto_bright=True,
                 use_auto_wb=False,
                 gamma=(1, 1)
