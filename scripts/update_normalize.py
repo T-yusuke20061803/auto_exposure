@@ -55,7 +55,7 @@ def calculate_mean_std(root_dir, batch_size, num_workers):
 
     print(f"\n{len(dataset)}枚の画像から平均・標準偏差を計算中...\n")
 
-    for images, _, _ in tqdm(loader):
+    for images in tqdm(loader):
         if images is None: continue
         n_pixels += images.shape[0] * images.shape[2] * images.shape[3]
         mean += images.sum(dim=(0, 2, 3))
