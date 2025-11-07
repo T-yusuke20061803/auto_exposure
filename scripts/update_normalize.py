@@ -25,6 +25,14 @@ class EXRDataset(Dataset):
 
         if len(self.image_paths) == 0:
             raise FileNotFoundError(f"有効な画像(.exr)無し: {self.root_dir}")
+        
+        print(f"--- {self.root_dir} 以下で {len(self.image_paths)}件の画像パスを検出 ---")
+        # 最初の5件だけ表示
+        for path in self.image_paths[:5]:
+            print(f"  {path}")
+        if len(self.image_paths) > 5:
+            print(f"  ...他 {len(self.image_paths) - 5} 件")
+        print("---------------------------------")
 
     def __len__(self):
         return len(self.image_paths)
