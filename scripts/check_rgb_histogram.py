@@ -83,4 +83,4 @@ plt.savefig(save_path_norm, dpi=200)
 plt.close()
 print(f"正規化後のヒストグラムを保存しました: {save_path_norm}\n")
 
-print("処理完了！")
+print("処理完了")
