@@ -5,7 +5,7 @@ import torchvision.models as models
 
 
 class SimpleCNN(nn.Module):
-    def __init__(self, num_classes, dropout_p = 0.4, conv_dropout_p = 0.4):#大きすぎると過学習、小さすぎると学習不足の影響があるため、調整が必要
+    def __init__(self, num_classes, dropout_p = 0.4, conv_dropout_p = 0.5):#大きすぎると過学習、小さすぎると学習不足の影響があるため、調整が必要
         """DNNの層を定義
         """
         super().__init__()
@@ -85,7 +85,7 @@ class ResNet(nn.Module):
         expansion = 1
 
         def __init__(self, in_planes, planes, stride=1,
-                     down_sampling_layer=nn.Conv2d, dropout_p=0.7):
+                     down_sampling_layer=nn.Conv2d, dropout_p=0.5):
             super(ResNet.BasicBlock, self).__init__()
             if stride != 1:
                 self.conv1 = down_sampling_layer(
@@ -130,7 +130,7 @@ class ResNet(nn.Module):
         expansion = 4
 
         def __init__(self, in_planes, planes, stride=1,
-                     down_sampling_layer=nn.Conv2d, dropout_p=0.7):
+                     down_sampling_layer=nn.Conv2d, dropout_p=0.5):
             super(ResNet.Bottleneck, self).__init__()
             
             self.conv1 = nn.Conv2d(in_planes, planes,
@@ -175,7 +175,7 @@ class ResNet(nn.Module):
             return out
 
     def __init__(self, resnet_name, num_classes=1,
-                 down_sampling_layer=nn.Conv2d, dropout_p=0.7):
+                 down_sampling_layer=nn.Conv2d, dropout_p=0.5):
         super(ResNet, self).__init__()
         if resnet_name == "ResNet18":
             block = ResNet.BasicBlock
@@ -361,10 +361,10 @@ class RegressionEfficientNet(nn.Module):
 
 class RegressionMobileNet(nn.Module):
     """
-    MobileNetV2をベースにした軽量回帰モデル
+    MobileNetV3をベースにした軽量回帰モデル
     小型かつ高汎化（過学習抑制・正則化強化）
     """
-    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.4, pretrained=True):
+    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.5, pretrained=True):
         super().__init__()
         
         weights = models.MobileNet_V3_Large_Weights.DEFAULT if pretrained else None

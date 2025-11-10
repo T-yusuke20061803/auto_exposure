@@ -115,7 +115,7 @@ def main(cfg: DictConfig):
     if cfg.model.name.lower() == "simplecnn":
         net = SimpleCNN(**cfg.model.params).to(device)
     elif cfg.model.name.lower() == "resnet":
-        net = ResNet(**cfg.model.params).to(device) #ResNer -> ResNetRegression(事前学習ver)
+        net = ResNetRegression(**cfg.model.params).to(device) #ResNer -> ResNetRegression(事前学習ver)
     elif cfg.model.name.lower() == "efficientnet":
         net = RegressionEfficientNet(**cfg.model.params).to(device)
     elif cfg.model.name.lower() == "mobilenet":
