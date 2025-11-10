@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - model: efficientnet #モデル（simplecnn / resnet/ efficientnet/ mobilenet）
+  - model: resnet #モデル（simplecnn / resnet/ efficientnet/ mobilenet）
   - optimizer: adamw #Optimizer（adam / sgd/ adamw）
   - lr_scheduler: plateau #スケジューラー（plateau / multi_step / cosine）
 
@@ -19,7 +19,7 @@ amp: true #AMP
 
 # データローダ設定
 dataloader: 
-  batch_size: 128 # バッチサイズ
+  batch_size: 512 # バッチサイズ
   num_workers: 8  # ← 16 から減らす 同様の理由
   pin_memory: true
 

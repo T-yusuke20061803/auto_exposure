@@ -54,7 +54,7 @@ def main(cfg: DictConfig):
 
     # 保存先
     train_id = generate_train_id(cfg)
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.datetime.now().strftime("%Y%m%d")
     output_dir = Path("outputs/train_reg/history") / cfg.model.name
     history_path = output_dir / f"{train_id}_{timestamp}"
     history_path.mkdir(parents=True, exist_ok=True)
@@ -144,7 +144,7 @@ def main(cfg: DictConfig):
             else:
                 latest_train_dir = max(other_run_dirs, key=lambda p: p.stat().st_mtime)
                 model_path = latest_train_dir / "best_model.pth"
-                print(f"[INFO] 'latest'が指定されたため、最新のモデルを読み込みます: {model_path}")
+                print(f"[INFO] 最新のモデルを読み込み: {model_path}")
         else:
             # 具体的なパスが指定された場合は、そのまま使う
             model_path = Path(model_path_str)
@@ -152,7 +152,7 @@ def main(cfg: DictConfig):
         if model_path.exists():
             net.load_state_dict(torch.load(model_path, map_location=device))
         else:
-            print(f"警告: 指定された重みファイルが見つかりません: {model_path}")  
+            print(f"警告: 指定された重みファイル:無し  {model_path}")  
     # サマリー表示
     sample_batch = next(iter(train_loader))
     if sample_batch[0] is not None:
@@ -183,7 +183,6 @@ def main(cfg: DictConfig):
         )
         scheduler_type = "epoch"
 
-     # ReduceLROnPlateau（性能が停滞したらLR変更）Trainer側で毎エポックの検証lossを渡す必要がある
     elif sched_name == "plateau":
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, **cfg.lr_scheduler.params
