@@ -65,7 +65,7 @@ dataset:
           #hue: 0.1
           # 強力な正則化手法「RandomErasing」を追加
         random_erasing:
-          p: 0.3        # 25%の確率で実行
+          p: 0.4      # 25%の確率で実行
           scale: [0.02, 0.1]
           ratio: [0.3, 3.3]
           # 正規化:学習を安定させるための必須の前処理
