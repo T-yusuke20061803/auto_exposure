@@ -85,7 +85,7 @@ class ResNet(nn.Module):
         expansion = 1
 
         def __init__(self, in_planes, planes, stride=1,
-                     down_sampling_layer=nn.Conv2d, dropout_p=0.4):
+                     down_sampling_layer=nn.Conv2d, dropout_p=0.7):
             super(ResNet.BasicBlock, self).__init__()
             if stride != 1:
                 self.conv1 = down_sampling_layer(
@@ -130,7 +130,7 @@ class ResNet(nn.Module):
         expansion = 4
 
         def __init__(self, in_planes, planes, stride=1,
-                     down_sampling_layer=nn.Conv2d, dropout_p=0.4):
+                     down_sampling_layer=nn.Conv2d, dropout_p=0.7):
             super(ResNet.Bottleneck, self).__init__()
             
             self.conv1 = nn.Conv2d(in_planes, planes,
@@ -175,7 +175,7 @@ class ResNet(nn.Module):
             return out
 
     def __init__(self, resnet_name, num_classes=1,
-                 down_sampling_layer=nn.Conv2d, dropout_p=0.4):
+                 down_sampling_layer=nn.Conv2d, dropout_p=0.7):
         super(ResNet, self).__init__()
         if resnet_name == "ResNet18":
             block = ResNet.BasicBlock
@@ -256,7 +256,7 @@ class ResNetRegression(nn.Module):
     torchvision の事前学習済み ResNet をベースとし、
     カスタム回帰ヘッドを持つモデル
     """
-    def __init__(self, resnet_name="ResNet34", out_features=1, freeze_base=True, dropout_p=0.3, unfreeze_layers=0):
+    def __init__(self, resnet_name="ResNet34", out_features=1, freeze_base=True, dropout_p=0.5, unfreeze_layers=0):
         super().__init__()
 
         # 事前学習済みのResNetを読み込む
@@ -299,6 +299,7 @@ class ResNetRegression(nn.Module):
         # (先生のコードの self.linear の構造を再現)
         self.resnet.fc = nn.Sequential(
             nn.ReLU(),
+            nn.Dropout(p=dropout_p),
             nn.Linear(num_ftrs, out_features)
         )
 
