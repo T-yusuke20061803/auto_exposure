@@ -2,7 +2,7 @@ defaults:
   - _self_
   - model: resnet #モデル（simplecnn / resnet/ efficientnet/ mobilenet）
   - optimizer: adamw #Optimizer（adam / sgd/ adamw）
-  - lr_scheduler: plateau #スケジューラー（plateau / multi_step / cosine）
+  - lr_scheduler: cosine #スケジューラー（plateau / multi_step / cosine）
 
 args:
   history_dir: "./outputs/train_reg/history"

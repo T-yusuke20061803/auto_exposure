@@ -206,10 +206,10 @@ class ResNet(nn.Module):
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
-        self.layer4 = self._make_layer(block, 1024, num_blocks[3], stride=2)
+        self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
         # 過学習するようであれば、レイヤー数とニューロン数を小さくする
         self.linear = nn.Sequential(
-            nn.Linear(1024* block.expansion, 512),#大きく減らしすぎた可能性がある10/24
+            nn.Linear(512* block.expansion, 512),#大きく減らしすぎた可能性がある10/24
             nn.BatchNorm1d(512),
             nn.ReLU(),
             nn.Dropout(p=self.dropout_p),
@@ -219,22 +219,13 @@ class ResNet(nn.Module):
             nn.ReLU(),
             nn.Dropout(p=self.dropout_p * 0.7),
 
-            nn.Linear(256, 128),
-            nn.BatchNorm1d(128),
-            nn.ReLU(),
-            nn.Dropout(p=self.dropout_p * 0.5),
-
-            nn.Linear(128, 64),
-            nn.BatchNorm1d(64),
+            
+            nn.Linear(256, 32),
+            nn.BatchNorm1d(32),
             nn.ReLU(),
             nn.Dropout(p=self.dropout_p * 0.3),
 
-            nn.Linear(64, 16),
-            nn.BatchNorm1d(16),
-            nn.ReLU(),
-            nn.Dropout(p=self.dropout_p * 0.1),
-
-            nn.Linear(16, num_classes)
+            nn.Linear(32, num_classes)
         )
 
 
@@ -307,32 +298,8 @@ class ResNetRegression(nn.Module):
         # --- 3. 最後の層(fc)を、カスタム回帰ヘッドに置き換える ---
         # (先生のコードの self.linear の構造を再現)
         self.resnet.fc = nn.Sequential(
-            nn.Linear(num_ftrs, 512),       # 入力を ResNet の出力 (num_ftrs) に合わせる
-            nn.BatchNorm1d(512),
             nn.ReLU(),
-            nn.Dropout(p=dropout_p),
-
-            nn.Linear(512, 256),
-            nn.BatchNorm1d(256),
-            nn.ReLU(),
-            nn.Dropout(p=dropout_p * 0.7),
-
-            nn.Linear(256, 128),
-            nn.BatchNorm1d(128),
-            nn.ReLU(),
-            nn.Dropout(p=dropout_p * 0.5),
-            
-            nn.Linear(128, 64),
-            nn.BatchNorm1d(64),
-            nn.ReLU(),
-            nn.Dropout(p=dropout_p * 0.3),
-            
-            nn.Linear(64, 16),
-            nn.BatchNorm1d(16),
-            nn.ReLU(),
-            nn.Dropout(p=dropout_p * 0.1),
-
-            nn.Linear(16, out_features)
+            nn.Linear(num_ftrs, out_features)
         )
 
     def forward(self, x):
@@ -344,7 +311,7 @@ class RegressionEfficientNet(nn.Module):
     EfficientNet-B0をベースに、露出値回帰用にカスタマイズした軽量モデル
     （過学習抑制と汎化性能向上を重視）
     """
-    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=2, dropout_p =0.4, pretrained=False):#versonでモデルの種類を指定 :pretrained=True:事前学習有り、pretrained=False:事前学習無し
+    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=2, dropout_p =0.4, pretrained=True):#versonでモデルの種類を指定 :pretrained=True:事前学習有り、pretrained=False:事前学習無し
         super().__init__() 
         version = version.lower()
         valid_versions = [f"b{i}" for i in range(8)]
@@ -376,17 +343,12 @@ class RegressionEfficientNet(nn.Module):
             nn.Linear(num_ftrs, 512),
             nn.BatchNorm1d(512),
             nn.ReLU(),
-            nn.Dropout(p=dropout_p),
-            nn.Linear(512, 256),
-            nn.BatchNorm1d(256),
-            nn.ReLU(),
             nn.Dropout(p=dropout_p*0.7),
-            nn.Linear(256, 128),
+
+            nn.Linear(512, 64),
             nn.ReLU(),
             nn.Dropout(p=dropout_p*0.3),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Dropout(p=dropout_p*0.1),
+            
             nn.Linear(64, 16),
             nn.ReLU(),
             nn.Linear(16, out_features)
@@ -401,7 +363,7 @@ class RegressionMobileNet(nn.Module):
     MobileNetV2をベースにした軽量回帰モデル
     小型かつ高汎化（過学習抑制・正則化強化）
     """
-    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.4, pretrained=False):
+    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.4, pretrained=True):
         super().__init__()
         
         weights = models.MobileNet_V3_Large_Weights.DEFAULT if pretrained else None
@@ -420,25 +382,19 @@ class RegressionMobileNet(nn.Module):
 
         # --- classifierの再構築 ---
         num_ftrs = self.mobilenet.classifier[0].in_features
-        self.mobilenet.classifier = nn.Sequential(
+        self.effnet.classifier = nn.Sequential(
             nn.Linear(num_ftrs, 512),
             nn.BatchNorm1d(512),
             nn.ReLU(),
-            nn.Dropout(p=dropout_p),
-            nn.Linear(512, 256),
-            nn.BatchNorm1d(256),
-            nn.ReLU(),
             nn.Dropout(p=dropout_p*0.7),
-            nn.Linear(256, 128),
+
+            nn.Linear(512, 64),
             nn.ReLU(),
             nn.Dropout(p=dropout_p*0.3),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Dropout(p=dropout_p*0.1),
+            
             nn.Linear(64, 16),
             nn.ReLU(),
             nn.Linear(16, out_features)
         )
-
     def forward(self, x):
         return self.mobilenet(x)
