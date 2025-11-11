@@ -21,7 +21,7 @@ from src.trainer import Trainer, LossEvaluator
 from src.train_id import print_config, generate_train_id, is_same_config
 from src.extension import ModelSaver, HistorySaver, HistoryLogger, IntervalTrigger, LearningCurvePlotter, MinValueTrigger
 from src.util import set_random_seed
-from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, dng_loader, collate_fn_skip_none #LogTransform
+from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, dng_loader, collate_fn_skip_none, LogTransform
 
 
 # === CSVから画像パスと補正量(EV)を読み込むデータセット ===
@@ -72,7 +72,7 @@ def main(cfg: DictConfig):
         v2.RandomHorizontalFlip(**cfg.dataset.train.transform.random_horizontal_flip),
         v2.RandomRotation(**cfg.dataset.train.transform.random_rotation),
         #v2.ToDtype(torch.float32, scale=True),(入力がすでにfloat32のため)
-        #LogTransform(),
+        LogTransform(),
         v2.Normalize(**cfg.dataset.train.transform.normalize), #log_normalize(対数を取る場合) -> normalize(そうでない場合)
         v2.RandomErasing(p=0.2, scale=(0.02, 0.1), ratio=(0.3, 3.3)),
     ])
@@ -86,7 +86,7 @@ def main(cfg: DictConfig):
         v2.Resize(cfg.dataset.val.transform.resize),
         v2.CenterCrop(cfg.dataset.val.transform.center_crop),
         #v2.ToDtype(torch.float32, scale=True),
-        #LogTransform(),
+        LogTransform(),
         v2.Normalize(**cfg.dataset.val.transform.normalize),
     ])
      # データ分割 

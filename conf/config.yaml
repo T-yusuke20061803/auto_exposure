@@ -73,8 +73,8 @@ dataset:
           ratio: [0.3, 3.3]
           # 正規化:学習を安定させるための必須の前処理
         normalize:
-          mean: ${dataset.normalize_mean}  #dataset.log_normalize_mean(対数修正)
-          std: ${dataset.normalize_std}    #dataset.log_normalize_std(対数修正)
+          mean: ${dataset.log_normalize_mean}  #dataset.log_normalize_mean(対数修正)
+          std: ${dataset.log_normalize_std}    #dataset.log_normalize_std(対数修正)
 
   #検証用データ
   val:
@@ -84,8 +84,8 @@ dataset:
       resize: 256
       center_crop: 224
       normalize:
-        mean: ${dataset.normalize_mean} # ◀ 共通の値を参照 dataset.log_normalize_mean(対数修正)
-        std: ${dataset.normalize_std}   #dataset.log_normalize_std(対数修正)
+        mean: ${dataset.log_normalize_mean} # ◀ 共通の値を参照 dataset.log_normalize_mean(対数修正)
+        std: ${dataset.log_normalize_std}   #dataset.log_normalize_std(対数修正)
 
   # --- 評価（試験）用のデータセット設定 ---
   test:
@@ -97,5 +97,5 @@ dataset:
       resize: 256
       center_crop: 224
       normalize:
-        mean: ${dataset.normalize_mean} # ◀ 共通の値を参照 dataset.log_normalize_mean(対数修正)
-        std: ${dataset.normalize_std}   #dataset.log_normalize_std(対数修正)
+        mean: ${dataset.log_normalize_mean} # ◀ 共通の値を参照 dataset.log_normalize_mean(対数修正)
+        std: ${dataset.log_normalize_std}   #dataset.log_normalize_std(対数修正)

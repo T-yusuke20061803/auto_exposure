@@ -11,7 +11,7 @@ import pandas as pd
 
 import time
 
-from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, dng_loader, collate_fn_skip_none
+from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, dng_loader, collate_fn_skip_none, LogTransform
 from src.model import SimpleCNN, ResNet,ResNetRegression, RegressionEfficientNet, RegressionMobileNet
 from src.trainer import LossEvaluator
 from src.util import set_random_seed
@@ -131,10 +131,8 @@ def main(cfg: DictConfig):
         v2.Resize(cfg.dataset.test.transform.resize),
         v2.CenterCrop(cfg.dataset.test.transform.center_crop),
         #v2.ToDtype(torch.float32, scale=True),
-        v2.Normalize(
-            mean=cfg.dataset.test.transform.normalize.mean,
-            std=cfg.dataset.test.transform.normalize.std
-        ),
+        LogTransform(),
+        v2.Normalize(**cfg.dataset.train.transform.normalize),
     ])
     
     print(f"[INFO] テストCSV: {cfg.dataset.test.csv_file}")

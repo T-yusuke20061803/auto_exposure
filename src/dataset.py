@@ -8,8 +8,19 @@ import imageio
 import numpy as np 
 from pathlib import Path
 import rawpy
+import torch
 
 _loader_print_count = 0
+
+class LogTransform(object):
+    """
+    各入力の画素値に対してlog2(T+1.0)を適応する 
+    理由：画素値が0から10,000に集中しているため対数を用いることで、小さいな（0～10000）に集中している部分を強調するため
+    """
+    def __call__(self, tensor):
+        # +1.0 して log(0) を防ぐ
+        return torch.log2(tensor+1.0)
+
 
 class AnnotatedDatasetFolder(torchdata.Dataset):
     """
