@@ -256,7 +256,7 @@ class ResNetRegression(nn.Module):
     torchvision の事前学習済み ResNet をベースとし、
     カスタム回帰ヘッドを持つモデル
     """
-    def __init__(self, resnet_name="ResNet34", out_features=1, freeze_base=True, dropout_p=0.5, unfreeze_layers=0):
+    def __init__(self, resnet_name="ResNet34", num_classes=1, freeze_base=True, dropout_p=0.7, unfreeze_layers=0):
         super().__init__()
 
         # 事前学習済みのResNetを読み込む
@@ -284,27 +284,22 @@ class ResNetRegression(nn.Module):
                 param.requires_grad = False
             
             # 指定された層数だけ解凍 (EfficientNet と同じロジック)
-            if unfreeze_layers > 0:
-                # 例: unfreeze_layers=1 なら layer4 を解凍
-                if hasattr(self.resnet, 'layer4'):
-                    for param in self.resnet.layer4.parameters():
-                        param.requires_grad = True
-            if unfreeze_layers > 1:
-                # 例: unfreeze_layers=2 なら layer3 も解凍
-                if hasattr(self.resnet, 'layer3'):
-                    for param in self.resnet.layer3.parameters():
-                        param.requires_grad = True
+            if unfreeze_layers > 0 and hasattr(self.resnet, 'layer4'):
+                for param in self.resnet.layer4.parameters():
+                    param.requires_grad = True
+            if unfreeze_layers > 1 and hasattr(self.resnet, 'layer3'):
+                for param in self.resnet.layer3.parameters():
+                    param.requires_grad = True
 
         # --- 3. 最後の層(fc)を、カスタム回帰ヘッドに置き換える ---
         # (先生のコードの self.linear の構造を再現)
         self.resnet.fc = nn.Sequential(
             nn.ReLU(),
             nn.Dropout(p=dropout_p),
-            nn.Linear(num_ftrs, out_features)
+            nn.Linear(num_ftrs, num_classes)
         )
 
     def forward(self, x):
-        # torchvision の ResNet をそのまま実行
         return self.resnet(x)
 
 class RegressionEfficientNet(nn.Module):
@@ -312,7 +307,7 @@ class RegressionEfficientNet(nn.Module):
     EfficientNet-B0をベースに、露出値回帰用にカスタマイズした軽量モデル
     （過学習抑制と汎化性能向上を重視）
     """
-    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=2, dropout_p =0.4, pretrained=True):#versonでモデルの種類を指定 :pretrained=True:事前学習有り、pretrained=False:事前学習無し
+    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=2, dropout_p =0.7, pretrained=True):#versonでモデルの種類を指定 :pretrained=True:事前学習有り、pretrained=False:事前学習無し
         super().__init__() 
         version = version.lower()
         valid_versions = [f"b{i}" for i in range(8)]
@@ -364,7 +359,7 @@ class RegressionMobileNet(nn.Module):
     MobileNetV3をベースにした軽量回帰モデル
     小型かつ高汎化（過学習抑制・正則化強化）
     """
-    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.5, pretrained=True):
+    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.7, pretrained=True):
         super().__init__()
         
         weights = models.MobileNet_V3_Large_Weights.DEFAULT if pretrained else None

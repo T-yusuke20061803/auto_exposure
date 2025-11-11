@@ -115,7 +115,7 @@ def main(cfg: DictConfig):
     if cfg.model.name.lower() == "simplecnn":
         net = SimpleCNN(**cfg.model.params).to(device)
     elif cfg.model.name.lower() == "resnet":
-        net = ResNet(**cfg.model.params).to(device) #ResNer -> ResNetRegression(事前学習ver)
+        net = ResNetRegression(**cfg.model.params).to(device) #ResNer -> ResNetRegression(事前学習ver)
     elif cfg.model.name.lower() == "efficientnet":
         net = RegressionEfficientNet(**cfg.model.params).to(device)
     elif cfg.model.name.lower() == "mobilenet":
@@ -269,10 +269,18 @@ def main(cfg: DictConfig):
 
     # 補正画像保存 (3種類: 補正前, 予測補正後, 正解補正後)
     if "original" in best_image_info:
-        mean, std = cfg.dataset.test.transform.normalize.mean, cfg.dataset.test.transform.normalize.std
+        mean, std = cfg.dataset.test.transform.normalize.mean, cfg.dataset.test.transform.normalize.std #対数修正：cfg.dataset.test.transform.log_normalize.mean, cfg.dataset.test.transform.log_normalize.std
         #補正前の画像(EV=0 のsRGB画像として保存) <- ".png"で保存すると画像全体が暗くなるため、視覚的に比較しやすくするため
         denorm_img = denormalize(best_image_info["original"], mean, std)
-        baseline_srgb_img = adjust_exposure(denorm_img, 0.0)
+    #対数修正その2
+        # Log -> 線形 への「逆変換」
+        # (x = 2^y - 1)
+        #linear_img = torch.pow(2.0, denorm_img) - 1.0
+        # (計算誤差でマイナスになるのを防ぐ)
+        #linear_img = torch.clamp(linear_img, min=0.0)
+
+        # adjust_exposure には「線形」の linear_img を渡す
+        baseline_srgb_img = adjust_exposure(denorm_img, 0.0) #対数修正その3:denorm_img -> linear_img
         #モデル予測値で補正した画像
         pred_corrected_img = adjust_exposure(denorm_img, best_image_info["pred_ev"])
         #正解ラベル値で補正した画像
