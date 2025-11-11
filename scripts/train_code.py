@@ -21,7 +21,7 @@ from src.trainer import Trainer, LossEvaluator
 from src.train_id import print_config, generate_train_id, is_same_config
 from src.extension import ModelSaver, HistorySaver, HistoryLogger, IntervalTrigger, LearningCurvePlotter, MinValueTrigger
 from src.util import set_random_seed
-from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, dng_loader, collate_fn_skip_none, LogTransform
+from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, dng_loader, collate_fn_skip_none #LogTransform
 
 
 # === CSVから画像パスと補正量(EV)を読み込むデータセット ===
