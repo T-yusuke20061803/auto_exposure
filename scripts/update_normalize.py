@@ -63,8 +63,9 @@ def calculate_mean_std(root_dir, batch_size, num_workers):
 
     print(f"\n{len(dataset)}枚の画像から平均・標準偏差を計算中...\n")
 
-    for images in tqdm(loader):
-        if images is None: continue
+    for linear_images in tqdm(loader):
+        if linear_images is None: continue
+        images = torch.log2(linear_images + 1.0) #計算の前にLogを入れた
         n_pixels += images.shape[0] * images.shape[2] * images.shape[3]
         mean += images.sum(dim=(0, 2, 3))
         sum_sq += (images ** 2).sum(dim=(0, 2, 3))
