@@ -36,6 +36,9 @@ dataset:
 
   normalize_mean: [0.1191, 0.0917, 0.0823] #mean:[0.3925, 0.3757, 0.3692],std:[0.2424, 0.2433, 0.2818]変更前
   normalize_std: [0.1670, 0.1330, 0.1381]  #値が0～1の範囲に収まらなければならない
+ 
+  log_normalize_mean: [0.1491, 0.1176, 0.1044]
+  log_normalize_std: [0.1862, 0.1544, 0.1606]
 
   #1024リサイズ
   # [0.1191, 0.0917, 0.0823]
@@ -70,8 +73,8 @@ dataset:
           ratio: [0.3, 3.3]
           # 正規化:学習を安定させるための必須の前処理
         normalize:
-          mean: ${dataset.normalize_mean} 
-          std: ${dataset.normalize_std} 
+          mean: ${dataset.normalize_mean}  #dataset.log_normalize_mean(対数修正)
+          std: ${dataset.normalize_std}    #dataset.log_normalize_std(対数修正)
 
   #検証用データ
   val:
@@ -81,8 +84,8 @@ dataset:
       resize: 256
       center_crop: 224
       normalize:
-        mean: ${dataset.normalize_mean} # ◀ 共通の値を参照
-        std: ${dataset.normalize_std} 
+        mean: ${dataset.normalize_mean} # ◀ 共通の値を参照 dataset.log_normalize_mean(対数修正)
+        std: ${dataset.normalize_std}   #dataset.log_normalize_std(対数修正)
 
   # --- 評価（試験）用のデータセット設定 ---
   test:
@@ -94,5 +97,5 @@ dataset:
       resize: 256
       center_crop: 224
       normalize:
-        mean: ${dataset.normalize_mean} # ◀ 共通の値を参照
-        std: ${dataset.normalize_std} 
+        mean: ${dataset.normalize_mean} # ◀ 共通の値を参照 dataset.log_normalize_mean(対数修正)
+        std: ${dataset.normalize_std}   #dataset.log_normalize_std(対数修正)

@@ -63,7 +63,6 @@ def plot_ev_predictions(csv_file, output_dir):
         plt.xlabel("Prediction Error (Predicted - True) [EV]")
         plt.title("Prediction Error Distribution")
         plt.grid(True)
-        plt.legend()
         plt.tight_layout()
         plt.savefig(Path(output_dir) / "error_histogram.png")
         plt.close()
