@@ -155,6 +155,21 @@ def main(cfg: DictConfig):
             net.load_state_dict(torch.load(model_path, map_location=device))
         else:
             print(f"警告: 指定された重みファイル:無し  {model_path}")  
+
+    print("\n--- 事前学習（凍結）設定の確認 ---")
+    if cfg.model.params.get("freeze_base", False):
+        unfreeze_count = cfg.model.params.get("unfreeze_layers", 0)
+        if unfreeze_count == 0:
+            print(f" [INFO] 凍結: ON (freeze_base: true, unfreeze_layers: 0)")
+            print(f" [INFO] 学習対象: 最後のFC層のみ")
+        else:
+            print(f" [INFO] 凍結: 部分的 (freeze_base: true, unfreeze_layers: {unfreeze_count})")
+            print(f" [INFO] 学習対象: 最後のFC層 + Layer {5 - unfreeze_count} 以降")
+    else:
+        print(f" [INFO] 凍結: OFF (freeze_base: false)")
+        print(f" [INFO] 学習対象: 全てのパラメータ (11.18M)")
+    print("------------------------------------\n")
+
     # サマリー表示
     sample_batch = next(iter(train_loader))
     if sample_batch[0] is not None:
