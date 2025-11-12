@@ -7,5 +7,5 @@ params:
     - 0.9
     - 0.999
   eps: 1e-08
-  weight_decay: 2e-2 #過学習を抑制したいのなら0.01のような値にすること
+  weight_decay: 3e-2 #過学習を抑制したいのなら0.01のような値にすること
   amsgrad: false
