@@ -2,7 +2,7 @@
 name: adamw
 
 params:
-  lr: 1e-3 #学習率を調整
+  lr: 1e-4 #学習率を調整
   betas:
     - 0.9
     - 0.999
