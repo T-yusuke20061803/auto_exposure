@@ -179,8 +179,32 @@ def main(cfg: DictConfig):
 
  # 損失関数、最適化手法、スケジューラ
     criterion = nn.MSELoss()
+    #-------(11/12)---------
     # Optimizer 選択 
     opt_name = cfg.optimizer.name.lower()
+
+    # config からベースのLRを取得
+    base_lr = cfg.optimizer.params.lr
+    # 新しい層（fc層）のパラメータ
+    new_layer_params = [p for p in net.resnet.fc.parameters() if p.requires_grad]
+
+    # 凍結解除した層（layer4など）のパラメータ
+    # (fc層以外の、requires_grad=True のパラメータ)
+    base_params = [
+        p for n, p in net.resnet.named_parameters() 
+        if not n.startswith('fc') and p.requires_grad
+    ]
+
+    # 3. パラメータグループを作成
+    param_groups = [
+        {'params': base_params, 'lr': base_lr * 0.01}, # ← 凍結解除した層は 1/100 のLR
+        {'params': new_layer_params, 'lr': base_lr}      # ← fc層は通常のLR
+    ]
+
+    print(f"[INFO] 凍結解除した層(base)のLR: {base_lr * 0.01:.1e}")
+    print(f"[INFO] 新しい層(fc)のLR: {base_lr:.1e}")
+    #-------------------------------------------------------------------------
+
     if opt_name == "sgd":
         optimizer = optim.SGD(net.parameters(), **cfg.optimizer.params)
     elif opt_name == "adam":
