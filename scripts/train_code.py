@@ -186,7 +186,7 @@ def main(cfg: DictConfig):
     # config からベースのLRを取得
     base_lr = cfg.optimizer.params.lr
     # 新しい層（fc層）のパラメータ
-    new_layer_params = [p for p in net.resnet.fc.parameters() if p.requires_grad]
+    new_layer_params = [p for p in net.efficientnet.fc.parameters() if p.requires_grad] #モデルを変えるごとにここも変更
 
     # 凍結解除した層（layer4など）のパラメータ
     # (fc層以外の、requires_grad=True のパラメータ)
