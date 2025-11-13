@@ -182,64 +182,57 @@ def main(cfg: DictConfig):
     #-------(11/12)---------
     # Optimizer 選択 
     opt_name = cfg.optimizer.name.lower()
-
-    # config からベースのLRを取得
+    # 1. config からベースのLRを取得
     base_lr = cfg.optimizer.params.lr
+    param_groups = None # パラメータグループを初期化
+
+    model_name_lower = cfg.model.name.lower()
     
-    param_groups = None
-    # 1. モデルの「ベース部分」と「ヘッド(最終層)」の属性名を取得
-    if cfg.model.name.lower() == "resnet":
-        model_base_attribute = "resnet"
-        head_attribute = "fc"
-    
-    elif cfg.model.name.lower() == "efficientnet":
-        # 'RegressionEfficientNet' が 'self.efficientnet' を持ち、
-        # 'self.efficientnet.classifier' を置き換えていると仮定
-        model_base_attribute = "efficientnet"
-        head_attribute = "classifier"
+    if model_name_lower == "resnet":
+        # ResNetRegression は 'self.resnet.fc' が新しい層
+        print("[INFO] 差動学習率(DLR)を ResNet 用に設定します")
         
-    elif cfg.model.name.lower() == "mobilenet":
-        # 'RegressionMobileNet' が 'self.mobilenet' を持ち、
-        # 'self.mobilenet.classifier' を置き換えていると仮定
-        model_base_attribute = "mobilenet"
-        head_attribute = "classifier"
+        # 新しい層（fc層）のパラメータ
+        new_layer_params = [p for p in net.resnet.fc.parameters() if p.requires_grad]
+        
+        # 凍結解除した層（layer4など）のパラメータ
+        base_params = [
+            p for n, p in net.resnet.named_parameters() 
+            if not n.startswith('fc') and p.requires_grad
+        ]
+        
+        param_groups = [
+            {'params': base_params, 'lr': base_lr * 0.01}, # ← 凍結解除した層(base)は 1/100 のLR
+            {'params': new_layer_params, 'lr': base_lr}      # ← fc層(head)は通常のLR
+        ]
 
-    else:
-        # SimpleCNN や DLR 非対応モデル
-        model_base_attribute = None
-        head_attribute = None
+    elif model_name_lower in ["efficientnet", "mobilenet"]:
+        # EfficientNet/MobileNet は 'self.classifier' が新しい層と仮定
+        print(f"[INFO] 差動学習率(DLR)を {cfg.model.name} 用に設定します")
 
-    
-    # 2. DLR対応モデルの場合、パラメータをグループ分け
-    if model_base_attribute:
-        try:
-            # 'net.resnet' や 'net.efficientnet' などのベースモデルを取得
-            model_base = getattr(net, model_base_attribute)
-            
-            # 'model_base.fc' や 'model_base.classifier' などのヘッド（新層）を取得
-            head_layer = getattr(model_base, head_attribute)
-            
-            new_layer_params = [p for p in head_layer.parameters() if p.requires_grad]
-            
-            # ヘッド(最終層)以外の、凍結解除された層（base）のパラメータ
-            base_params = [
-                p for n, p in model_base.named_parameters() 
-                if not n.startswith(head_attribute) and p.requires_grad
-            ]
-            
-            print(f"[INFO] 差動学習率(DLR)を適用します (モデル: {cfg.model.name})")
-            print(f"[INFO] 凍結解除した層(base)のLR: {base_lr * 0.01:.1e}")
-            print(f"[INFO] 新しい層(head)のLR: {base_lr:.1e}")
+        # 新しい層（classifier層）のパラメータ
+        new_layer_params = [p for p in net.classifier.parameters() if p.requires_grad]
+        
+        # 凍結解除した層（featuresなど）のパラメータ
+        base_params = [
+            p for n, p in net.named_parameters() 
+            if not n.startswith('classifier') and p.requires_grad
+        ]
+        
+        param_groups = [
+            {'params': base_params, 'lr': base_lr * 0.01}, # ← 凍結解除した層(base)は 1/100 のLR
+            {'params': new_layer_params, 'lr': base_lr}      # ← classifier層(head)は通常のLR
+        ]
 
-        except AttributeError:
-            # モデルの内部構造が仮定と異なっていた場合
-            print(f"[WARN] DLRの自動設定に失敗 (モデル: {cfg.model.name})。単一のLRを使用します。")
-            param_groups = net.parameters()
-            
     else:
         # SimpleCNN など、DLR非対応モデルの場合
         print(f"[INFO] 差動学習率(DLR)は {cfg.model.name} では未サポートです。単一のLRを使用します。")
         param_groups = net.parameters()
+
+    # DLRが設定された場合、ログを出力
+    if model_name_lower in ["resnet", "efficientnet", "mobilenet"]:
+         print(f"[INFO] 凍結解除した層(base)のLR: {base_lr * 0.01:.1e}")
+         print(f"[INFO] 新しい層(head)のLR: {base_lr:.1e}")
     #-------------------------------------------------------------------------
     
     if opt_name == "adam":
