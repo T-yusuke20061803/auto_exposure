@@ -178,7 +178,7 @@ def main(cfg: DictConfig):
 
 
  # 損失関数、最適化手法、スケジューラ
-    criterion = nn.MSELoss()
+    criterion = nn.MSELoss() #SmoothL1Loss(beta=0.5)  # HuberLoss
     #-------(11/12)---------
     # Optimizer 選択 
     opt_name = cfg.optimizer.name.lower()
@@ -204,13 +204,13 @@ def main(cfg: DictConfig):
     print(f"[INFO] 凍結解除した層(base)のLR: {base_lr * 0.01:.1e}")
     print(f"[INFO] 新しい層(fc)のLR: {base_lr:.1e}")
     #-------------------------------------------------------------------------
-
-    if opt_name == "sgd":
-        optimizer = optim.SGD(net.parameters(), **cfg.optimizer.params)
-    elif opt_name == "adam":
-        optimizer = optim.Adam(net.parameters(), **cfg.optimizer.params)
+    
+    if opt_name == "adam":
+        optimizer = optim.Adam(param_groups, **cfg.optimizer.params) #変更前param_groups -> net.parameters() 11/13
     elif opt_name == "adamw":
-        optimizer = optim.AdamW(net.parameters(), **cfg.optimizer.params)
+        optimizer = optim.AdamW(param_groups, **cfg.optimizer.params)
+    elif opt_name == "sgd":
+        optimizer = optim.SGD(param_groups, **cfg.optimizer.params)
     else:
         raise ValueError(f"未対応のoptimizer: {opt_name}")
     
@@ -236,7 +236,7 @@ def main(cfg: DictConfig):
             T_max=cfg.lr_scheduler.params.T_max,
             eta_min=cfg.lr_scheduler.params.eta_min
         )
-        scheduler_type = "epoch"
+        scheduler_type = "batch"
 
     else:
         # スケジューラを使わない場合

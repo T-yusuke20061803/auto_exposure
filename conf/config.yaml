@@ -19,7 +19,7 @@ amp: true #AMP
 
 # データローダ設定
 dataloader: 
-  batch_size: 256 # バッチサイズ
+  batch_size: 128 # バッチサイズ
   num_workers: 8  # ← 16 から減らす 同様の理由
   pin_memory: true
 

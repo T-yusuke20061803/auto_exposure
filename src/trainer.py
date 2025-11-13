@@ -17,12 +17,12 @@ class AverageMeter(object):
     def __init__(self):
         self.sum = 0
         self.count = 0
-        self.average = None
+        self.average = 0.0
 
     def update(self, value, number=1):
         self.sum += value * number
         self.count += number
-        self.average = self.sum / self.count
+        self.average = self.sum / self.count if self.count > 0 else 0.0
 
 
 # 抽象トレーナークラス
@@ -76,6 +76,8 @@ class Trainer(ABCTrainer):
         self.scaler = GradScaler(enabled=self.use_amp)
         if self.use_amp:
             print("[INFO] AMP (自動混合精度) :有効")
+        else:
+            print("[INFO] AMP (自動混合精度): 無効 (CPUまたは設定オフ)")
 
     def train(self, epochs, val_loader=None):
         start_time = time.time()
@@ -90,8 +92,8 @@ class Trainer(ABCTrainer):
             # loss is a scalar and self.epoch is incremented in the step function
             # (i.e. self.epoch = epoch + 1)
             #1エポックの学習処理
-            loss = self.step()
-            self.history["train"].append({'epoch':self.epoch, 'loss':loss})
+            loss = self.step(epoch)
+            self.history["train"].append({'epoch':epoch, 'loss':loss})
 
             # 検証処理
             val_loss = None
@@ -111,17 +113,17 @@ class Trainer(ABCTrainer):
                         self.scheduler.step(val_loss)
                 elif not getattr(self.scheduler, 'is_warmup_scheduler', False): # warmup以外
                     self.scheduler.step()
-                else:
-                    self.scheduler.step()
 
             self.extend()
+            self.epoch = epoch + 1
 
         self.train_cleanup()
         print('-----Training Finished-----')
+        print(f"[INFO] Total training time: {(time.time() - start_time)/60:.1f} min")
 
         return self.net
 
-    def step(self):
+    def step(self, epoch):
         self.net.train()
         loss_meter = AverageMeter()
         # 最初に勾配をゼロにする
@@ -131,14 +133,15 @@ class Trainer(ABCTrainer):
 
         for i, batch in enumerate(self.dataloader):
             # collate_fnによってNoneが返される場合を考慮
-            if batch is None: continue
+            if batch is None:
+                continue
             inputs , targets , _ = batch
             inputs = inputs.to(self.device)
             targets = targets.to(self.device)
             if self.use_amp: #AMP利用
                 with autocast(enabled = self.use_amp):
                     outputs = self.net(inputs)
-                    loss = self.criterion(outputs, targets)
+                    loss = self.criterion(outputs, targets) 
                     if accumulation_steps > 1:
                         # 勾配をステップ数で割って正規化
                         loss = loss / accumulation_steps
@@ -155,7 +158,8 @@ class Trainer(ABCTrainer):
                 if self.use_amp:
                     # 勾配をスケーリング解除してからclip
                     self.scaler.unscale_(self.optimizer)
-                    nn_utils.clip_grad_norm_(self.net.parameters(), max_norm=1.0)
+                nn_utils.clip_grad_norm_(self.net.parameters(), max_norm=1.0)
+                if self.use_amp:
                      # 勾配適用
                     # optimizerを更新
                     # scalerを使ってoptimizer.step()を呼び出す
@@ -168,6 +172,13 @@ class Trainer(ABCTrainer):
                     self.optimizer.step()
                 # 次のイテレーションのために勾配をリセット
                 self.optimizer.zero_grad()
+
+                # schedulerをバッチ単位で更新
+            if self.scheduler is not None:
+                if isinstance(self.scheduler, torch.optim.lr_scheduler.CosineAnnealingWarmRestarts):  # ← 修正
+                    self.scheduler.step(epoch + i / len(self.dataloader))
+                else:
+                    self.scheduler.step()
 
             loss_meter.update(loss.item() * accumulation_steps, number=inputs.size(0))
         #if self.scheduler is not None:

@@ -35,13 +35,8 @@ class SimpleCNN(nn.Module):
             nn.ReLU(),
             nn.Dropout2d(p=conv_dropout_p),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            # Block 5
-            nn.LazyConv2d(out_channels=512, kernel_size=3, padding=1, stride=1, bias=False),
-            nn.LazyBatchNorm2d(),
-            nn.ReLU(),
-            nn.Dropout2d(p=conv_dropout_p),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-
+            
+            nn.Dropout2d(p=0.3),
             nn.AdaptiveAvgPool2d(1)
         )
         self.classifier = nn.Sequential(
@@ -199,7 +194,7 @@ class ResNet(nn.Module):
         self.down_sampling_layer = down_sampling_layer
         self.dropout_p = dropout_p
 
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=4,
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2,
                                padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
 
@@ -212,18 +207,18 @@ class ResNet(nn.Module):
             nn.Linear(512* block.expansion, 512),#大きく減らしすぎた可能性がある10/24
             nn.BatchNorm1d(512),
             nn.ReLU(),
-            nn.Dropout(p=self.dropout_p),
+            nn.Dropout(p=self.dropout_p * 0.6),
 
             nn.Linear(512, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(),
-            nn.Dropout(p=self.dropout_p * 0.7),
+            nn.Dropout(p=self.dropout_p * 0.3),
 
             
             nn.Linear(256, 32),
             nn.BatchNorm1d(32),
             nn.ReLU(),
-            nn.Dropout(p=self.dropout_p * 0.3),
+            nn.Dropout(p=self.dropout_p * 0.2),
 
             nn.Linear(32, num_classes)
         )
@@ -294,9 +289,11 @@ class ResNetRegression(nn.Module):
         # --- 3. 最後の層(fc)を、カスタム回帰ヘッドに置き換える ---
         # (先生のコードの self.linear の構造を再現)
         self.resnet.fc = nn.Sequential(
+            nn.Linear(num_ftrs, 256),
+            nn.BatchNorm1d(256),
             nn.ReLU(),
-            nn.Dropout(p=dropout_p),
-            nn.Linear(num_ftrs, num_classes)
+            nn.Dropout(p=dropout_p * 0.5),
+            nn.Linear(256, num_classes)
         )
 
     def forward(self, x):
@@ -339,7 +336,7 @@ class RegressionEfficientNet(nn.Module):
             nn.Linear(num_ftrs, 512),
             nn.BatchNorm1d(512),
             nn.ReLU(),
-            nn.Dropout(p=dropout_p*0.7),
+            nn.Dropout(p=dropout_p*0.6),
 
             nn.Linear(512, 64),
             nn.ReLU(),
@@ -378,11 +375,11 @@ class RegressionMobileNet(nn.Module):
 
         # --- classifierの再構築 ---
         num_ftrs = self.mobilenet.classifier[0].in_features
-        self.effnet.classifier = nn.Sequential(
+        self.mobilenet.classifier = nn.Sequential( 
             nn.Linear(num_ftrs, 512),
             nn.BatchNorm1d(512),
             nn.ReLU(),
-            nn.Dropout(p=dropout_p*0.7),
+            nn.Dropout(p=dropout_p*0.6),
 
             nn.Linear(512, 64),
             nn.ReLU(),
