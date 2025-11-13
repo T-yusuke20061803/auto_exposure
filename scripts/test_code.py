@@ -8,6 +8,7 @@ from omegaconf import DictConfig
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 
 import time
 
@@ -16,8 +17,8 @@ from src.model import SimpleCNN, ResNet,ResNetRegression, RegressionEfficientNet
 from src.trainer import LossEvaluator
 from src.util import set_random_seed
 
-def denormalize(tensor, mean, std):
-    tensor_copy = tensor.clone()
+def denormalize(tensor, mean, std, inplace=False):
+    tensor_copy = tensor if inplace else tensor.clone()
     for t, m, s in zip(tensor_copy, mean, std):
         t.mul_(s).add_(m)
     return tensor_copy
@@ -61,7 +62,7 @@ def plot_ev_predictions(csv_file, output_dir):
         plt.figure(figsize=(6,4))
         plt.hist(df["diff"], bins=30, alpha=0.7)
         plt.xlabel("Prediction Error (Predicted - True) [EV]")
-        plt.title("Prediction Error Distribution")
+        plt.title(f"Prediction Error Distribution (RMSE={np.sqrt((df['diff']**2).mean()):.3f})")
         plt.grid(True)
         plt.tight_layout()
         plt.savefig(Path(output_dir) / "error_histogram.png")
@@ -197,7 +198,7 @@ def main(cfg: DictConfig):
     if mse_value is None:
         raise KeyError(f"キー '{monitor_key}' が見つかりません: {result}")
 
-    rmse_value = float(torch.sqrt(torch.tensor(mse_value)))
+    rmse_value = float(np.sqrt(mse_value))
     result["MSE"] = mse_value
     result["RMSE"] = rmse_value
 

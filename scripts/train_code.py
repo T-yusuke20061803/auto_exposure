@@ -179,68 +179,15 @@ def main(cfg: DictConfig):
 
  # 損失関数、最適化手法、スケジューラ
     criterion = nn.MSELoss() #SmoothL1Loss(beta=0.5)  # HuberLoss
-    #-------(11/12)---------
-    # Optimizer 選択 
+
     opt_name = cfg.optimizer.name.lower()
-    # 1. config からベースのLRを取得
-    base_lr = cfg.optimizer.params.lr
-    param_groups = None # パラメータグループを初期化
-
-    model_name_lower = cfg.model.name.lower()
-    
-    if model_name_lower == "resnet":
-        # ResNetRegression は 'self.resnet.fc' が新しい層
-        print("[INFO] 差動学習率(DLR)を ResNet 用に設定します")
-        
-        # 新しい層（fc層）のパラメータ
-        new_layer_params = [p for p in net.resnet.fc.parameters() if p.requires_grad]
-        
-        # 凍結解除した層（layer4など）のパラメータ
-        base_params = [
-            p for n, p in net.resnet.named_parameters() 
-            if not n.startswith('fc') and p.requires_grad
-        ]
-        
-        param_groups = [
-            {'params': base_params, 'lr': base_lr * 0.01}, # ← 凍結解除した層(base)は 1/100 のLR
-            {'params': new_layer_params, 'lr': base_lr}      # ← fc層(head)は通常のLR
-        ]
-
-    elif model_name_lower in ["efficientnet", "mobilenet"]:
-        # EfficientNet/MobileNet は 'self.classifier' が新しい層と仮定
-        print(f"[INFO] 差動学習率(DLR)を {cfg.model.name} 用に設定します")
-
-        # 新しい層（classifier層）のパラメータ
-        new_layer_params = [p for p in net.classifier.parameters() if p.requires_grad]
-        
-        # 凍結解除した層（featuresなど）のパラメータ
-        base_params = [
-            p for n, p in net.named_parameters() 
-            if not n.startswith('fc') and p.requires_grad # ここも 'fc' に変更
-        ]
-        
-        param_groups = [
-            {'params': base_params, 'lr': base_lr * 0.01}, # ← 凍結解除した層(base)は 1/100 のLR
-            {'params': new_layer_params, 'lr': base_lr}      # ← classifier層(head)は通常のLR
-        ]
-
-    else:
-        # SimpleCNN など、DLR非対応モデルの場合
-        print(f"[INFO] 差動学習率(DLR)は {cfg.model.name} では未サポートです。単一のLRを使用します。")
-        param_groups = net.parameters()
-
-    # DLRが設定された場合、ログを出力
-    if model_name_lower in ["resnet", "efficientnet", "mobilenet"]:
-         print(f"[INFO] 凍結解除した層(base)のLR: {base_lr * 0.01:.1e}")
-         print(f"[INFO] 新しい層(head)のLR: {base_lr:.1e}")
-    #-------------------------------------------------------------------------
     
     if opt_name == "adam":
-        optimizer = optim.Adam(param_groups, **cfg.optimizer.params) #変更前param_groups -> net.parameters() 11/13
+        optimizer = optim.Adam(net.parameters(), **cfg.optimizer.params) #変更前param_groups -> net.parameters() 11/13
     elif opt_name == "adamw":
-        optimizer = optim.AdamW(param_groups, **cfg.optimizer.params)
+        optimizer = optim.AdamW(net.parameters(), **cfg.optimizer.params)
     elif opt_name == "sgd":
-        optimizer = optim.SGD(param_groups, **cfg.optimizer.params)
+        optimizer = optim.SGD(net.parameters(), **cfg.optimizer.params)
     else:
         raise ValueError(f"未対応のoptimizer: {opt_name}")
     
