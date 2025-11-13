@@ -216,7 +216,7 @@ def main(cfg: DictConfig):
         # 凍結解除した層（featuresなど）のパラメータ
         base_params = [
             p for n, p in net.named_parameters() 
-            if not n.startswith('classifier') and p.requires_grad
+            if not n.startswith('fc') and p.requires_grad # ここも 'fc' に変更
         ]
         
         param_groups = [
