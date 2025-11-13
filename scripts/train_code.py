@@ -180,8 +180,68 @@ def main(cfg: DictConfig):
  # 損失関数、最適化手法、スケジューラ
     criterion = nn.MSELoss() #SmoothL1Loss(beta=0.5)  # HuberLoss
 
-    opt_name = cfg.optimizer.name.lower()
+    # === 差動学習率 (DLR) の設定 ===
     
+    # 1. configからベースLRを取得
+    #    (cfg.optimizer.params.lr に設定されていると仮定)
+    base_lr = cfg.optimizer.params.lr 
+    
+    # 2. モデルの「ヘッド」（最後の層）の名前を特定
+    model_name_lower = cfg.model.name.lower()
+    head_name = None
+    
+    # モデルの「本体」の名前 (net.resnet, net.effnet, net.mobilenet)
+    base_model_name = None 
+
+    if model_name_lower == "resnet":
+        head_name = "fc"
+        base_model_name = "resnet" # ResNetRegression は self.resnet を持つ
+    elif model_name_lower == "efficientnet":
+        head_name = "classifier"
+        base_model_name = "effnet" # RegressionEfficientNet は self.effnet を持つ
+    elif model_name_lower == "mobilenet":
+        head_name = "classifier"
+        base_model_name = "mobilenet" # RegressionMobileNet は self.mobilenet を持つ
+
+    # 3. パラメータをグループ分け
+    #    head_name と base_model_name が設定されており、
+    #    かつ net.base_model_name.head_name が存在する場合にDLRを適用
+    
+    if head_name and base_model_name and hasattr(net, base_model_name) and hasattr(getattr(net, base_model_name), head_name):
+        print(f"[INFO] 差動学習率(DLR)を有効化します。Head: 'net.{base_model_name}.{head_name}', Base LR: {base_lr:.1e}")
+        
+        # getattr を使い、動的に層を取得
+        # 例: net.effnet.classifier
+        head_layer = getattr(getattr(net, base_model_name), head_name)
+
+        # 新しい層（head_name）のパラメータ
+        # 例: net.effnet.classifier.parameters()
+        new_layer_params = [p for p in head_layer.parameters() if p.requires_grad]
+        
+        # 凍結解除した層（Base）のパラメータ
+        # (head_name で始まらない *全ての* パラメータ)
+        base_params = [
+            p for n, p in net.named_parameters() 
+            if not n.startswith(f"{base_model_name}.{head_name}") and p.requires_grad
+        ]
+        
+        param_groups = [
+            {'params': base_params, 'lr': base_lr * 0.01}, # ← Base層は 1/100 のLR
+            {'params': new_layer_params, 'lr': base_lr}    # ← Head層は通常のLR
+        ]
+        
+        print(f"[INFO] Base層 (凍結解除) のLR: {base_lr * 0.01:.1e}")
+        print(f"[INFO] Head層 (新規) のLR: {base_lr:.1e}")
+
+    else:
+        # DLR非対応モデル (SimpleCNNなど) または head_name が見つからない場合
+        if model_name_lower not in ["resnet", "efficientnet", "mobilenet"]:
+            print(f"[INFO] 差動学習率(DLR)は {cfg.model.name} では未サポートです。単一のLRを使用します。")
+        else:
+            print(f"[WARN] DLR設定エラー: 'net.{base_model_name}.{head_name}' が見つかりません。単一のLRを使用します。")
+        param_groups = net.parameters()
+
+    opt_name = cfg.optimizer.name.lower()
     if opt_name == "adam":
         optimizer = optim.Adam(net.parameters(), **cfg.optimizer.params) #変更前param_groups -> net.parameters() 11/13
     elif opt_name == "adamw":
