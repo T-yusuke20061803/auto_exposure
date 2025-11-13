@@ -170,6 +170,27 @@ def main(cfg: DictConfig):
         print(f" [INFO] 学習対象: 全てのパラメータ (11.18M)")
     print("------------------------------------\n")
 
+    # === [デバッグ] LogTransform の動作確認 === LogTransformありなしで二回実行しそれぞれの値を比較する
+    print("\n" + "="*30)
+    print("LogTransform 動作確認 (1バッチ目)")
+    print("="*30)
+    try:
+        # 1バッチ取得
+        sample_batch_debug, _ = next(iter(train_loader))
+        
+        if sample_batch_debug is not None and len(sample_batch_debug) > 0:
+            print(f"  バッチ形状: {sample_batch_debug.shape}")
+            print(f"  最小値 (Min): {sample_batch_debug.min().item():.4f}")
+            print(f"  最大値 (Max): {sample_batch_debug.max().item():.4f}")
+            print(f"  平均値 (Mean): {sample_batch_debug.mean().item():.4f}")
+            print(f"  標準偏差 (Std): {sample_batch_debug.std().item():.4f}")
+        else:
+            print("  [WARN] デバッグ用のバッチが取得できませんでした。")
+
+    except Exception as e:
+        print(f"  [ERROR] デバッグ中にエラー: {e}")
+    print("="*30 + "\n")
+
     # サマリー表示
     sample_batch = next(iter(train_loader))
     if sample_batch[0] is not None:
@@ -178,15 +199,16 @@ def main(cfg: DictConfig):
 
 
  # 損失関数、最適化手法、スケジューラ
-    criterion = nn.MSELoss() #SmoothL1Loss(beta=0.5)  # HuberLoss
+    #MSEからSmoothL１に変更すること、外れ値の影響を軽減
+    criterion = nn.SmoothL1Loss(beta=1.0) #nn.MSELoss()変更前
 
-    # === 差動学習率 (DLR) の設定 ===
+    # 差動学習率 (DLR) の設定 
     
-    # 1. configからベースLRを取得
+    # 1configからベースLRを取得
     #    (cfg.optimizer.params.lr に設定されていると仮定)
     base_lr = cfg.optimizer.params.lr 
     
-    # 2. モデルの「ヘッド」（最後の層）の名前を特定
+    # モデルの「ヘッド」（最後の層）の名前を特定
     model_name_lower = cfg.model.name.lower()
     head_name = None
     
@@ -203,12 +225,11 @@ def main(cfg: DictConfig):
         head_name = "classifier"
         base_model_name = "mobilenet" # RegressionMobileNet は self.mobilenet を持つ
 
-    # 3. パラメータをグループ分け
+    # パラメータをグループ分け
     #    head_name と base_model_name が設定されており、
     #    かつ net.base_model_name.head_name が存在する場合にDLRを適用
     
     if head_name and base_model_name and hasattr(net, base_model_name) and hasattr(getattr(net, base_model_name), head_name):
-        print(f"[INFO] 差動学習率(DLR)を有効化します。Head: 'net.{base_model_name}.{head_name}', Base LR: {base_lr:.1e}")
         
         # getattr を使い、動的に層を取得
         # 例: net.effnet.classifier
@@ -231,7 +252,7 @@ def main(cfg: DictConfig):
         ]
         
         print(f"[INFO] Base層 (凍結解除) のLR: {base_lr * 0.01:.1e}")
-        print(f"[INFO] Head層 (新規) のLR: {base_lr:.1e}")
+        print(f"[INFO] Head層 (新規) のLR: {base_lr:.1e}:net.{base_model_name}.{head_name}")
 
     else:
         # DLR非対応モデル (SimpleCNNなど) または head_name が見つからない場合
@@ -281,7 +302,10 @@ def main(cfg: DictConfig):
         scheduler_type = None
 
     # 評価指標と拡張
-    evaluators = [LossEvaluator(criterion, criterion_name="loss")]
+    # 訓練用の損失 (SmoothL1Loss) + 監視用の損失 (MSE)
+    training_criterion = criterion #学習ではSmoothL1Lossを用いて学習を安定させ、別途でMSEを計算するがそれを区別するため
+    mse_eval_criterion = nn.MSELoss()# RMSE(目標)を計算するために、MSEを別途定義する
+    evaluators = [LossEvaluator(training_criterion, criterion_name="loss"),LossEvaluator(mse_eval_criterion, criterion_name="mse")]
     extensions = [
             ModelSaver(directory=history_path, name=lambda x: "best_model.pth", trigger=MinValueTrigger(mode="validation", key="loss")),
             HistorySaver(directory=history_path, name=lambda x: "history.pth", trigger=IntervalTrigger(period=1)),
@@ -293,7 +317,7 @@ def main(cfg: DictConfig):
     trainer = Trainer(
             net, 
             optimizer, 
-            criterion,
+            training_criterion, # (MSEではなくSmoothL1Lossを渡す) criterion -> training_criterion
             train_loader, 
             cfg = cfg,
             scheduler=scheduler,
