@@ -176,16 +176,20 @@ def main(cfg: DictConfig):
     print("="*30)
     try:
         # 1バッチ取得
-        sample_batch_debug, _ = next(iter(train_loader))
+        # (アンパックしない)
+        sample_batch_debug = next(iter(train_loader)) 
         
-        if sample_batch_debug is not None and len(sample_batch_debug) > 0:
-            print(f"  バッチ形状: {sample_batch_debug.shape}")
-            print(f"  最小値 (Min): {sample_batch_debug.min().item():.4f}")
-            print(f"  最大値 (Max): {sample_batch_debug.max().item():.4f}")
-            print(f"  平均値 (Mean): {sample_batch_debug.mean().item():.4f}")
-            print(f"  標準偏差 (Std): {sample_batch_debug.std().item():.4f}")
+        # 最初の要素（画像バッチ）を取得
+        image_batch = sample_batch_debug[0] 
+        
+        if image_batch is not None and len(image_batch) > 0:
+            print(f"  バッチ形状 (画像): {image_batch.shape}")
+            print(f"  最小値 (Min): {image_batch.min().item():.4f}")
+            print(f"  最大値 (Max): {image_batch.max().item():.4f}")
+            print(f"  平均値 (Mean): {image_batch.mean().item():.4f}")
+            print(f"  標準偏差 (Std): {image_batch.std().item():.4f}")
         else:
-            print("  [WARN] デバッグ用のバッチが取得できませんでした。")
+            print("  [WARN] デバッグ用の画像バッチが取得できませんでした。")
 
     except Exception as e:
         print(f"  [ERROR] デバッグ中にエラー: {e}")
