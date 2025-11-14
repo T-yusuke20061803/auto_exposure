@@ -132,7 +132,7 @@ def main(cfg: DictConfig):
         v2.Resize(cfg.dataset.test.transform.resize),
         v2.CenterCrop(cfg.dataset.test.transform.center_crop),
         #v2.ToDtype(torch.float32, scale=True),
-        #LogTransform(),
+        LogTransform(),
         v2.Normalize(**cfg.dataset.train.transform.normalize),
     ])
     
