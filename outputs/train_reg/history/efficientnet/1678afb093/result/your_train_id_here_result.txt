@@ -1,5 +1,0 @@
-=== 最良モデルの検証結果 ===
-Train ID: 1678afb093
-Model:efficientnet
-Validation MSE:  0.4944
-Validation RMSE: 0.7032
