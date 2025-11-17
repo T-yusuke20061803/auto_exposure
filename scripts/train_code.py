@@ -204,7 +204,7 @@ def main(cfg: DictConfig):
 
  # 損失関数、最適化手法、スケジューラ
     #MSEからSmoothL１に変更すること、外れ値の影響を軽減
-    criterion = nn.SmoothL1Loss(beta=1.0) #nn.MSELoss()変更前
+    criterion = nn.MSELoss() #nn.SmoothL1Loss(beta=1.0) 変更前
 
     # 差動学習率 (DLR) の設定 
     
@@ -266,13 +266,30 @@ def main(cfg: DictConfig):
             print(f"[WARN] DLR設定エラー: 'net.{base_model_name}.{head_name}' が見つかりません。単一のLRを使用します。")
         param_groups = net.parameters()
 
+    #opt_name = cfg.optimizer.name.lower() 11/17修正以下のものに変更
+    #if opt_name == "adam":
+        #optimizer = optim.Adam(net.parameters(), **cfg.optimizer.params) #変更前param_groups -> net.parameters() 11/13
+    #elif opt_name == "adamw":
+        #optimizer = optim.AdamW(net.parameters(), **cfg.optimizer.params)
+    #elif opt_name == "sgd":
+        #optimizer = optim.SGD(net.parameters(), **cfg.optimizer.params)
+    #else:
+        #raise ValueError(f"未対応のoptimizer: {opt_name}")
     opt_name = cfg.optimizer.name.lower()
+    
+    # DLR設定時は cfg.optimizer.params.lr を上書きするため、
+    # オプティマイザのデフォルト 'lr' を削除する
+    opt_params = cfg.optimizer.params.copy()
+    if 'lr' in opt_params:
+        del opt_params['lr'] # 'lr' は param_groups で指定済み
+        
     if opt_name == "adam":
-        optimizer = optim.Adam(net.parameters(), **cfg.optimizer.params) #変更前param_groups -> net.parameters() 11/13
+        #  (net.parameters() -> param_groups)
+        optimizer = optim.Adam(param_groups, lr=base_lr, **opt_params) 
     elif opt_name == "adamw":
-        optimizer = optim.AdamW(net.parameters(), **cfg.optimizer.params)
+        optimizer = optim.AdamW(param_groups, lr=base_lr, **opt_params)
     elif opt_name == "sgd":
-        optimizer = optim.SGD(net.parameters(), **cfg.optimizer.params)
+        optimizer = optim.SGD(param_groups, lr=base_lr, **opt_params)
     else:
         raise ValueError(f"未対応のoptimizer: {opt_name}")
     
@@ -307,11 +324,11 @@ def main(cfg: DictConfig):
 
     # 評価指標と拡張
     # 訓練用の損失 (SmoothL1Loss) + 監視用の損失 (MSE)
-    training_criterion = criterion #学習ではSmoothL1Lossを用いて学習を安定させ、別途でMSEを計算するがそれを区別するため
-    mse_eval_criterion = nn.MSELoss()# RMSE(目標)を計算するために、MSEを別途定義する
-    evaluators = [LossEvaluator(training_criterion, criterion_name="loss"),LossEvaluator(mse_eval_criterion, criterion_name="mse")]
+    #training_criterion = criterion #学習ではSmoothL1Lossを用いて学習を安定させ、別途でMSEを計算するがそれを区別するため
+    criterion = nn.MSELoss()# RMSE(目標)を計算するために、MSEを別途定義する
+    evaluators = [LossEvaluator(criterion, criterion_name="mse")]#,LossEvaluator(mse_eval_criterion, criterion_name="mse")]
     extensions = [
-            ModelSaver(directory=history_path, name=lambda x: "best_model.pth", trigger=MinValueTrigger(mode="validation", key="loss")),
+            ModelSaver(directory=history_path, name=lambda x: "best_model.pth", trigger=MinValueTrigger(mode="validation", key="mse")),
             HistorySaver(directory=history_path, name=lambda x: "history.pth", trigger=IntervalTrigger(period=1)),
             HistoryLogger(trigger=IntervalTrigger(period=1), print_func=print),
             LearningCurvePlotter(directory=history_path, trigger=IntervalTrigger(period=1)),
@@ -321,7 +338,7 @@ def main(cfg: DictConfig):
     trainer = Trainer(
             net, 
             optimizer, 
-            training_criterion, # (MSEではなくSmoothL1Lossを渡す) criterion -> training_criterion
+            criterion, # (MSEではなくSmoothL1Lossを渡す) criterion -> training_criterion
             train_loader, 
             cfg = cfg,
             scheduler=scheduler,
