@@ -251,7 +251,7 @@ class ResNetRegression(nn.Module):
     torchvision の事前学習済み ResNet をベースとし、
     カスタム回帰ヘッドを持つモデル
     """
-    def __init__(self, resnet_name="ResNet34", num_classes=1, freeze_base=True, dropout_p=0.7, unfreeze_layers=0):
+    def __init__(self, resnet_name="ResNet18", num_classes=1, freeze_base=True, dropout_p=0.7, unfreeze_layers=0):
         super().__init__()
 
         # 事前学習済みのResNetを読み込む
@@ -289,11 +289,7 @@ class ResNetRegression(nn.Module):
         # --- 3. 最後の層(fc)を、カスタム回帰ヘッドに置き換える ---
         # (先生のコードの self.linear の構造を再現)
         self.resnet.fc = nn.Sequential(
-            nn.Linear(num_ftrs, 256),
-            nn.BatchNorm1d(256),
-            nn.ReLU(),
-            nn.Dropout(p=dropout_p * 0.5),
-            nn.Linear(256, num_classes)
+            nn.Linear(num_ftrs, num_classes)
         )
 
     def forward(self, x):
