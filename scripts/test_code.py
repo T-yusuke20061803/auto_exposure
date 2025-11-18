@@ -217,6 +217,7 @@ def main(cfg: DictConfig):
     print(f"RMSE: {result['RMSE']:.5f}")
     print(f"総パラメータ数: {total_params:.2f} M (学習対象: {trainable_params:.2f} M)")
     print(f"推論速度: {avg_inference_time_ms:.3f} ms/枚")
+    print(f"  Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
 
 
     #保存処理
@@ -256,6 +257,7 @@ def main(cfg: DictConfig):
         f.write(f"RMSE: {result['RMSE']:.5f}\n")
         f.write(f"総パラメータ数: {total_params:.2f} M (学習対象: {trainable_params:.2f} M)\n")
         f.write(f"推論速度: {avg_inference_time_ms:.2f} ms/枚\n")
+        f.write(f"  Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
 
     # 予測結果保存
     #pred_dir = Path("outputs/train_reg/history") / train_id / "csv_result"
