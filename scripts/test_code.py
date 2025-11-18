@@ -126,6 +126,12 @@ def main(cfg: DictConfig):
     net.load_state_dict(torch.load(model_path, map_location=device))
     net.eval()
 
+    print("=== Normalization Check ===")
+    print("TRAIN mean:", cfg.dataset.train.transform.normalize.mean)
+    print("TRAIN std :", cfg.dataset.train.transform.normalize.std)
+    print("TEST  mean:", cfg.dataset.test.transform.normalize.mean)
+    print("TEST  std :", cfg.dataset.test.transform.normalize.std)
+
 #評価時においてはデータ拡張を行わない
     transform = v2.Compose([
         #v2.ToImage(),
@@ -133,7 +139,7 @@ def main(cfg: DictConfig):
         v2.CenterCrop(cfg.dataset.test.transform.center_crop),
         #v2.ToDtype(torch.float32, scale=True),
         LogTransform(),
-        v2.Normalize(**cfg.dataset.train.transform.normalize),
+        v2.Normalize(**cfg.dataset.test.transform.normalize),
     ])
     
     print(f"[INFO] テストCSV: {cfg.dataset.test.csv_file}")
@@ -218,7 +224,7 @@ def main(cfg: DictConfig):
 
 
     #保存処理
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.datetime.now().strftime("%Y%m%d")
     # モデル別フォルダ構造に整理
     model_name = cfg.model.name
     output_root = Path("outputs/train_reg/history") / model_name / f"{train_id}"
@@ -267,7 +273,9 @@ def main(cfg: DictConfig):
 
     # 補正画像保存 (3種類: 補正前, 予測補正後, 正解補正後)
     if "original" in best_image_info:
-        mean, std = cfg.dataset.test.transform.normalize.mean, cfg.dataset.test.transform.normalize.std 
+        mean = cfg.dataset.train.transform.normalize.mean
+        std  = cfg.dataset.train.transform.normalize.std
+
         #補正前の画像(EV=0 のsRGB画像として保存) <- ".png"で保存すると画像全体が暗くなるため、視覚的に比較しやすくするため
         denorm_img = denormalize(best_image_info["original"], mean, std)
     #対数修正その2
@@ -302,6 +310,8 @@ def main(cfg: DictConfig):
         vutils.save_image(baseline_srgb_img, original_path)
         vutils.save_image(pred_corrected_img, pred_corrected_path)
         vutils.save_image(true_corrected_img, true_corrected_path)
+
+        print("DEBUG img:", torch.isnan(baseline_srgb_img).any(), baseline_srgb_img.min(), baseline_srgb_img.max())
 
         print(f"補正前後の画像を {output_root} に保存しました")
         #可視化関数呼び出し
