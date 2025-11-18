@@ -269,8 +269,8 @@ def main(cfg: DictConfig):
 
     # 補正画像保存 (3種類: 補正前, 予測補正後, 正解補正後)
     if "original" in best_image_info:
-        mean = cfg.dataset.test.transform.normalize.mean
-        std  = cfg.dataset.test.transform.normalize.std
+        mean = cfg.dataset.train.transform.normalize.mean
+        std  = cfg.dataset.train.transform.normalize.std
 
         #補正前の画像(EV=0 のsRGB画像として保存) <- ".png"で保存すると画像全体が暗くなるため、視覚的に比較しやすくするため
         denorm_img = denormalize(best_image_info["original"], mean, std)
