@@ -65,7 +65,7 @@ class EXRDataset(Dataset):
     def __getitem__(self, idx):
         path = self.image_paths[idx]
         try:
-            img = iio.v3.imread(path).astype(np.float32)
+            img = iio.imread(path).astype(np.float32)
             # shapeが(H, W, C)前提、C=3の場合のみ処理
             if img.ndim == 2:
                 img = np.stack([img]*3, axis=-1)
