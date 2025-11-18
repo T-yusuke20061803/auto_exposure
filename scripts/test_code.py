@@ -178,7 +178,7 @@ def main(cfg: DictConfig):
 
             for i, (filename, target, output) in enumerate(zip(filenames, targets, outputs)):
                 predictions.append([filename, target.item(), output.item()])
-                if errors[i] < best_image_info["max_error"]:
+                if errors[i] > best_image_info["max_error"]:
                     best_image_info.update({
                         "max_error": errors[i].item(),
                         "original": inputs[i].cpu(),
