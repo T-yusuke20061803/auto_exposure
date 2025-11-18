@@ -312,6 +312,9 @@ def main(cfg: DictConfig):
         vutils.save_image(true_corrected_img, true_corrected_path)
 
         print("DEBUG img:", torch.isnan(baseline_srgb_img).any(), baseline_srgb_img.min(), baseline_srgb_img.max())
+        print("denorm_img:", denorm_img.min().item(), denorm_img.max().item())
+        print("linear_img:", linear_img.min().item(), linear_img.max().item())
+        print("baseline_srgb_img:", baseline_srgb_img.min().item(), baseline_srgb_img.max().item())
 
         print(f"補正前後の画像を {output_root} に保存しました")
         #可視化関数呼び出し
