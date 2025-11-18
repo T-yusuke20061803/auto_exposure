@@ -87,10 +87,8 @@ def main(cfg: DictConfig):
         v2.RandomHorizontalFlip(**cfg.dataset.train.transform.random_horizontal_flip),
         v2.RandomRotation(**cfg.dataset.train.transform.random_rotation),
         #v2.ToDtype(torch.float32, scale=True),(入力がすでにfloat32のため)
-        DebugPrintTransform(name="Before LogTransform"),
         LogTransform(),
         v2.Normalize(**cfg.dataset.train.transform.normalize), #log_normalize(対数を取る場合) -> normalize(そうでない場合)
-        DebugPrintTransform(name="After LogTransform"),
         v2.RandomErasing(p=0.2, scale=(0.02, 0.1), ratio=(0.3, 3.3)),
     ])
     #採用しなかったデータ拡張及び正規化
