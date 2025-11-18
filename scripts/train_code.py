@@ -296,7 +296,7 @@ def main(cfg: DictConfig):
     
     # DLR設定時は cfg.optimizer.params.lr を上書きするため、
     # オプティマイザのデフォルト 'lr' を削除する
-    opt_params = cfg.optimizer.params.copy()
+    opt_params = OmegaConf.to_container(cfg.optimizer.params, resolve=True)
     if 'lr' in opt_params:
         del opt_params['lr'] # 'lr' は param_groups で指定済み
         
