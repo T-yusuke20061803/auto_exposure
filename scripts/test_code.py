@@ -309,15 +309,6 @@ def main(cfg: DictConfig):
         vutils.save_image(pred_corrected_img, pred_corrected_path)
         vutils.save_image(true_corrected_img, true_corrected_path)
 
-        # 保存
-        diff_path = bestpred_dir / f"{base_filename}_差分(強調).png"
-        vutils.save_image(diff_img_amplified, diff_path)
-
-        print("DEBUG img:", torch.isnan(baseline_srgb_img).any(), baseline_srgb_img.min(), baseline_srgb_img.max())
-        print("denorm_img:", denorm_img.min().item(), denorm_img.max().item())
-        print("linear_img:", linear_img.min().item(), linear_img.max().item())
-        print("baseline_srgb_img:", baseline_srgb_img.min().item(), baseline_srgb_img.max().item())
-
         print(f"補正前後の画像を {output_root} に保存しました")
         print(f"  Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
         #可視化関数呼び出し
