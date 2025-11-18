@@ -24,6 +24,21 @@ from src.util import set_random_seed
 from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, dng_loader, collate_fn_skip_none, LogTransform
 
 
+class DebugPrintTransform(object):
+    def __init__(self, name=""):
+        self.name = name
+
+    def __call__(self, tensor):
+        print("\n" + "="*20)
+        print(f"DebugPoint: {self.name}")
+        print(f"  Shape: {tensor.shape}")
+        print(f"  Dtype: {tensor.dtype}")
+        print(f"  Min:   {tensor.min().item():.6f}")
+        print(f"  Max:   {tensor.max().item():.6f}")
+        print(f"  Mean:  {tensor.mean().item():.6f}")
+        print("="*20 + "\n")
+        return tensor
+
 # === CSVから画像パスと補正量(EV)を読み込むデータセット ===
 class EVRegressionDataset(Dataset):
     def __init__(self, csv_file, transform=None):
@@ -72,8 +87,10 @@ def main(cfg: DictConfig):
         v2.RandomHorizontalFlip(**cfg.dataset.train.transform.random_horizontal_flip),
         v2.RandomRotation(**cfg.dataset.train.transform.random_rotation),
         #v2.ToDtype(torch.float32, scale=True),(入力がすでにfloat32のため)
+        DebugPrintTransform(name="Before LogTransform"),
         LogTransform(),
         v2.Normalize(**cfg.dataset.train.transform.normalize), #log_normalize(対数を取る場合) -> normalize(そうでない場合)
+        DebugPrintTransform(name="After LogTransform"),
         v2.RandomErasing(p=0.2, scale=(0.02, 0.1), ratio=(0.3, 3.3)),
     ])
     #採用しなかったデータ拡張及び正規化
