@@ -35,7 +35,7 @@ def adjust_exposure(image_tensor, ev_value):
     # ガンマ補正 (1 / 2.2) を適用
     corrected_srgb_image = torch.pow(tone_mapped, 1.0/2.2)
     # 最終結果を [0, 1] にクリップして返す
-    return torch.clamp(corrected_srgb_image, 0, 1)
+    return corrected_srgb_image
 
 def plot_ev_predictions(csv_file, output_dir):
     try:
@@ -127,12 +127,6 @@ def main(cfg: DictConfig):
     
     net.load_state_dict(torch.load(model_path, map_location=device))
     net.eval()
-
-    print("=== Normalization Check ===")
-    print("TRAIN mean:", cfg.dataset.train.transform.normalize.mean)
-    print("TRAIN std :", cfg.dataset.train.transform.normalize.std)
-    print("TEST  mean:", cfg.dataset.test.transform.normalize.mean)
-    print("TEST  std :", cfg.dataset.test.transform.normalize.std)
 
 #評価時においてはデータ拡張を行わない
     transform = v2.Compose([
