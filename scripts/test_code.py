@@ -277,12 +277,17 @@ def main(cfg: DictConfig):
         # (計算誤差でマイナスになるのを防ぐ)
         linear_img = torch.clamp(linear_img, min=0.0)
 
+        # (補正前のEV値は 0.0 で固定)
+        base_ev = 0.0 
+        pred_ev = best_image_info["pred_ev"]
+        true_ev = best_image_info["true_ev"]
+
         # adjust_exposure には「線形」の linear_img を渡す
-        baseline_srgb_img = adjust_exposure(linear_img, 0.0) #対数修正その3:denorm_img -> linear_img
+        baseline_srgb_img = adjust_exposure(linear_img, base_ev) #対数修正その3:denorm_img -> linear_img
         #モデル予測値で補正した画像
-        pred_corrected_img = adjust_exposure(linear_img, best_image_info["pred_ev"])
+        pred_corrected_img = adjust_exposure(linear_img, pred_ev)
         #正解ラベル値で補正した画像
-        true_corrected_img = adjust_exposure(linear_img, best_image_info["true_ev"])
+        true_corrected_img = adjust_exposure(linear_img, true_ev)
 
 
         #img_dir = Path("outputs/train_reg/history") / train_id / "best_predictions"
@@ -290,9 +295,9 @@ def main(cfg: DictConfig):
         # 元のファイル名から拡張子 (.jpgなど) を取り除く
         base_filename = Path(best_image_info['filename']).stem
 
-        original_path = bestpred_dir / f"{base_filename}_補正前.png"
-        pred_corrected_path = bestpred_dir / f"{base_filename}_補正後.png"
-        true_corrected_path = bestpred_dir / f"{base_filename}_正解補正後.png"
+        original_path = bestpred_dir / f"{base_filename}_補正前(EV {base_ev:+.2f}).png"
+        pred_corrected_path = bestpred_dir / f"{base_filename}_補正後(Pred EV {pred_ev:+.2f}).png"
+        true_corrected_path = bestpred_dir / f"{base_filename}_正解補正後(True EV {true_ev:+.2f}).png"
 
         vutils.save_image(baseline_srgb_img, original_path)
         vutils.save_image(pred_corrected_img, pred_corrected_path)
