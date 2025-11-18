@@ -161,7 +161,7 @@ def main(cfg: DictConfig):
     evaluator.initialize()
 
     predictions = []
-    best_image_info = {"min_error": float("inf")}
+    best_image_info = {"max_error": float("inf")} #max -> min
 
     #推論速度計測用 start
     start_time = time.time()
@@ -178,9 +178,9 @@ def main(cfg: DictConfig):
 
             for i, (filename, target, output) in enumerate(zip(filenames, targets, outputs)):
                 predictions.append([filename, target.item(), output.item()])
-                if errors[i] < best_image_info["min_error"]:
+                if errors[i] < best_image_info["max_error"]:
                     best_image_info.update({
-                        "min_error": errors[i].item(),
+                        "max_error": errors[i].item(),
                         "original": inputs[i].cpu(),
                         "pred_ev": output.item(),
                         "true_ev": target.item(),
