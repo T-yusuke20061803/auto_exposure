@@ -281,17 +281,19 @@ def main(cfg: DictConfig):
         # (計算誤差でマイナスになるのを防ぐ)
         linear_img = torch.clamp(linear_img, min=0.0)
 
+        linear_img_png = linear_img / 65535.0
+
         # (補正前のEV値は 0.0 で固定)
         base_ev = 0.0 
         pred_ev = best_image_info["pred_ev"]
         true_ev = best_image_info["true_ev"]
 
         # adjust_exposure には「線形」の linear_img を渡す
-        baseline_srgb_img = adjust_exposure(linear_img, base_ev) #対数修正その3:denorm_img -> linear_img
+        baseline_srgb_img = adjust_exposure(linear_img_png, base_ev) #対数修正その3:denorm_img -> linear_img
         #モデル予測値で補正した画像
-        pred_corrected_img = adjust_exposure(linear_img, pred_ev)
+        pred_corrected_img = adjust_exposure(linear_img_png, pred_ev)
         #正解ラベル値で補正した画像
-        true_corrected_img = adjust_exposure(linear_img, true_ev)
+        true_corrected_img = adjust_exposure(linear_img_png, true_ev)
 
 
         #img_dir = Path("outputs/train_reg/history") / train_id / "best_predictions"
