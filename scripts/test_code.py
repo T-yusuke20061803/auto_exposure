@@ -301,13 +301,18 @@ def main(cfg: DictConfig):
         # 元のファイル名から拡張子 (.jpgなど) を取り除く
         base_filename = Path(best_image_info['filename']).stem
 
-        original_path = bestpred_dir / f"{base_filename}_補正前(EV {base_ev:+.2f}).png"
-        pred_corrected_path = bestpred_dir / f"{base_filename}_補正後(Pred EV {pred_ev:+.2f}).png"
-        true_corrected_path = bestpred_dir / f"{base_filename}_正解補正後(True EV {true_ev:+.2f}).png"
+        original_path = bestpred_dir / f"{base_filename}_補正前(EV {base_ev:+.4f}).png"
+        pred_corrected_path = bestpred_dir / f"{base_filename}_補正後(Pred EV {pred_ev:+.4f}).png"
+        true_corrected_path = bestpred_dir / f"{base_filename}_正解補正後(True EV {true_ev:+.4f}).png"
 
         vutils.save_image(baseline_srgb_img, original_path)
         vutils.save_image(pred_corrected_img, pred_corrected_path)
         vutils.save_image(true_corrected_img, true_corrected_path)
+
+        print("DEBUG img:", torch.isnan(baseline_srgb_img).any(), baseline_srgb_img.min(), baseline_srgb_img.max())
+        print("denorm_img:", denorm_img.min().item(), denorm_img.max().item())
+        print("linear_img:", linear_img.min().item(), linear_img.max().item())
+        print("baseline_srgb_img:", baseline_srgb_img.min().item(), baseline_srgb_img.max().item())
 
         print(f"補正前後の画像を {output_root} に保存しました")
         print(f"  Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
