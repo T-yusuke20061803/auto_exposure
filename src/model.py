@@ -251,7 +251,7 @@ class ResNetRegression(nn.Module):
     torchvision の事前学習済み ResNet をベースとし、
     カスタム回帰ヘッドを持つモデル
     """
-    def __init__(self, resnet_name="ResNet18", num_classes=1, freeze_base=True, dropout_p=0.8, unfreeze_layers=0):
+    def __init__(self, resnet_name="ResNet34", num_classes=1, freeze_base=True, dropout_p=0.8, unfreeze_layers=2):
         super().__init__()
 
         # 事前学習済みのResNetを読み込む
@@ -304,7 +304,7 @@ class RegressionEfficientNet(nn.Module):
     EfficientNet-B0をベースに、露出値回帰用にカスタマイズした軽量モデル
     （過学習抑制と汎化性能向上を重視）
     """
-    def __init__(self, version='b3', out_features=1, freeze_base=True, unfreeze_layers=2, dropout_p =0.8, pretrained=True):#versonでモデルの種類を指定 :pretrained=True:事前学習有り、pretrained=False:事前学習無し
+    def __init__(self, version='b3', out_features=1, freeze_base=True, unfreeze_layers=1, dropout_p =0.8, pretrained=True):#versonでモデルの種類を指定 :pretrained=True:事前学習有り、pretrained=False:事前学習無し
         super().__init__() 
         version = version.lower()
         valid_versions = [f"b{i}" for i in range(8)]
