@@ -339,10 +339,10 @@ class RegressionEfficientNet(nn.Module):
             nn.Dropout(p=dropout_p*0.6),
 
             nn.Linear(256, 32),
-            nn.BatchNorm1d(256),
+            nn.BatchNorm1d(32),
             nn.ReLU(),
             nn.Dropout(p=dropout_p*0.3),
-            
+
             nn.Linear(32, out_features)
         )
 
