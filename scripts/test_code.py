@@ -286,7 +286,7 @@ def main(cfg: DictConfig):
     print(f"RMSE: {result['RMSE']:.5f}")
     print(f"総パラメータ数: {total_params:.2f} M (学習対象: {trainable_params:.2f} M)")
     print(f"推論速度: {avg_inference_time_ms:.3f} ms/枚")
-    print(f"  Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
+    print(f"Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
 
     result_path = result_dir / f"{train_id}_result.txt"
     with open(result_path, "w") as f:
