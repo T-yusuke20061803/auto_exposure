@@ -168,6 +168,7 @@ def main(cfg: DictConfig):
 
     with torch.no_grad():
         for batch_idx, (inputs, targets, filenames) in enumerate(loader):
+            print("Tensor range:", inputs.min().item(), "〜", inputs.max().item())
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
 
