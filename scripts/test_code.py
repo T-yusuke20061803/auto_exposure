@@ -209,18 +209,6 @@ def main(cfg: DictConfig):
     total_params = sum(p.numel() for p in net.parameters()) / 1e6
     trainable_params = sum(p.numel() for p in net.parameters() if p.requires_grad) / 1e6
 
-     # ターミナルに分かりやすく表示 
-    print("\n=== 最良モデルの検証結果 ===")
-    print(f"Train ID: {train_id}")
-    print(f"Model:{cfg.model.name}")
-    print(f"Test Data Size: {len(dataset)} 件")
-    print(f"MSE:  {result['MSE']:.5f}")
-    print(f"RMSE: {result['RMSE']:.5f}")
-    print(f"総パラメータ数: {total_params:.2f} M (学習対象: {trainable_params:.2f} M)")
-    print(f"推論速度: {avg_inference_time_ms:.3f} ms/枚")
-    print(f"  Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
-
-
     #保存処理
     timestamp = datetime.datetime.now().strftime("%Y%m%d")
     # モデル別フォルダ構造に整理
@@ -248,17 +236,7 @@ def main(cfg: DictConfig):
     # ログ保存 (GitHubで追跡されるディレクトリへ)
     #log_dir = Path("outputs/train_reg/history") / train_id / "result"
     #log_dir.mkdir(parents=True, exist_ok=True)
-    result_path = result_dir / f"{train_id}_result.txt"
-    with open(result_path, "w") as f:
-        f.write(f"=== 最良モデルの検証結果 ===\n")
-        f.write(f"Train ID: {train_id}\n")
-        f.write(f"Model:{cfg.model.name}\n")
-        f.write(f"Size: {len(dataset)} 件\n")
-        f.write(f"MSE:  {result['MSE']:.5f}\n")
-        f.write(f"RMSE: {result['RMSE']:.5f}\n")
-        f.write(f"総パラメータ数: {total_params:.2f} M (学習対象: {trainable_params:.2f} M)\n")
-        f.write(f"推論速度: {avg_inference_time_ms:.2f} ms/枚\n")
-        f.write(f"  Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
+
 
     # 予測結果保存
     #pred_dir = Path("outputs/train_reg/history") / train_id / "csv_result"
@@ -299,6 +277,30 @@ def main(cfg: DictConfig):
         true_corrected_img = adjust_exposure(linear_img_png, true_ev)
 
 
+        # ターミナルに分かりやすく表示 
+    print("\n=== 最良モデルの検証結果 ===")
+    print(f"Train ID: {train_id}")
+    print(f"Model:{cfg.model.name}")
+    print(f"Test Data Size: {len(dataset)} 件")
+    print(f"MSE:  {result['MSE']:.5f}")
+    print(f"RMSE: {result['RMSE']:.5f}")
+    print(f"総パラメータ数: {total_params:.2f} M (学習対象: {trainable_params:.2f} M)")
+    print(f"推論速度: {avg_inference_time_ms:.3f} ms/枚")
+    print(f"  Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
+
+    result_path = result_dir / f"{train_id}_result.txt"
+    with open(result_path, "w") as f:
+        f.write(f"=== 最良モデルの検証結果 ===\n")
+        f.write(f"Train ID: {train_id}\n")
+        f.write(f"Model:{cfg.model.name}\n")
+        f.write(f"Size: {len(dataset)} 件\n")
+        f.write(f"MSE:  {result['MSE']:.5f}\n")
+        f.write(f"RMSE: {result['RMSE']:.5f}\n")
+        f.write(f"総パラメータ数: {total_params:.2f} M (学習対象: {trainable_params:.2f} M)\n")
+        f.write(f"推論速度: {avg_inference_time_ms:.2f} ms/枚\n")
+        f.write(f"  Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
+
+
         #img_dir = Path("outputs/train_reg/history") / train_id / "best_predictions"
         #img_dir.mkdir(parents=True, exist_ok=True)
         # 元のファイル名から拡張子 (.jpgなど) を取り除く
@@ -318,7 +320,6 @@ def main(cfg: DictConfig):
         print("baseline_srgb_img:", baseline_srgb_img.min().item(), baseline_srgb_img.max().item())
 
         print(f"補正前後の画像を {output_root} に保存しました")
-        print(f"  Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
         #可視化関数呼び出し
     plot_ev_predictions(csv_path, output_root)
 
