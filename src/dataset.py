@@ -107,20 +107,6 @@ def imageio_loader(path):
     try:
         # .exr を float32 の numpy 配列 (H, W, C) として読み込む
         img_float_numpy = imageio.v3.imread(path) 
-
-        if not getattr(imageio_loader, "checked_range", False):
-            # np.max() の結果が 1000.0 より大きい場合のみ実行（HDRデータであることの確認）
-            if np.max(img_float_numpy) > 1000.0:
-                print("\n" + "="*50)
-                print("RAW/Linear Data Check (LogTransform適用前) - 1回のみ表示")
-                # 0〜2^16 のスケールであることを証明
-                print(f"   データ範囲 (Min): {np.min(img_float_numpy):.2f}")
-                print(f"   データ範囲 (Max): {np.max(img_float_numpy):.2f} (理論値: 65535.0)")
-                print(f"   Dtype: {img_float_numpy.dtype}")
-                print("="*50)
-
-            imageio_loader.checked_range = True
-        
         # NumPy (H, W, C) -> PyTorch Tensor (C, H, W) に変換
         tensor = torch.from_numpy(img_float_numpy.astype(np.float32)).permute(2, 0, 1) 
         return tensor
