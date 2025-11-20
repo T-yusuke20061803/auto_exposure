@@ -219,8 +219,8 @@ def main(cfg: DictConfig):
 
  # 損失関数、最適化手法、スケジューラ
     #MSEからSmoothL１に変更すること、外れ値の影響を軽減
-    criterion = nn.MSELoss().to(device) #nn.SmoothL1Loss(beta=1.0) 変更前
-    training_criterion = nn.SmoothL1Loss(beta=1.0).to(device)
+    criterion = nn.MSELoss().to(device) 
+    training_criterion = nn.SmoothL1Loss(beta=1.0).to(device) #nn.SmoothL1Loss(beta=1.0) or nn.MAELoss(beta=1.0) 
 
     # 差動学習率 (DLR) の設定 
     
