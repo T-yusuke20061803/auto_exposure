@@ -219,13 +219,15 @@ def main(cfg: DictConfig):
 
  # 損失関数、最適化手法、スケジューラ
     #MSEからSmoothL１に変更すること、外れ値の影響を軽減
-    criterion = nn.MSELoss() #nn.SmoothL1Loss(beta=1.0) 変更前
+    criterion = nn.MSELoss().to(device) #nn.SmoothL1Loss(beta=1.0) 変更前
+    training_criterion = nn.SmoothL1Loss(beta=1.0).to(device)
 
     # 差動学習率 (DLR) の設定 
     
     # 1configからベースLRを取得
     #    (cfg.optimizer.params.lr に設定されていると仮定)
     base_lr = cfg.optimizer.params.lr 
+
     
     # モデルの「ヘッド」（最後の層）の名前を特定
     model_name_lower = cfg.model.name.lower()
@@ -340,7 +342,6 @@ def main(cfg: DictConfig):
     # 評価指標と拡張
     # 訓練用の損失 (SmoothL1Loss) + 監視用の損失 (MSE)
     #training_criterion = criterion #学習ではSmoothL1Lossを用いて学習を安定させ、別途でMSEを計算するがそれを区別するため
-    criterion = nn.MSELoss()# RMSE(目標)を計算するために、MSEを別途定義する
     evaluators = [LossEvaluator(criterion, criterion_name="mse")]#,LossEvaluator(mse_eval_criterion, criterion_name="mse")]
     extensions = [
             ModelSaver(directory=history_path, name=lambda x: "best_model.pth", trigger=MinValueTrigger(mode="validation", key="mse")),
@@ -353,7 +354,8 @@ def main(cfg: DictConfig):
     trainer = Trainer(
             net, 
             optimizer, 
-            criterion, # (MSEではなくSmoothL1Lossを渡す) criterion -> training_criterion
+            #criterion, # (MSEではなくSmoothL1Lossを渡す) criterion -> training_criterion
+            training_criterion,
             train_loader, 
             cfg = cfg,
             scheduler=scheduler,
