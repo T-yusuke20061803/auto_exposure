@@ -210,7 +210,7 @@ def main(cfg: DictConfig):
 
 
     #  評価結果計算
-    result = evaluator.finalize()
+    #result = evaluator.finalize()
     #---------------------11/21------------------------
     result_mse = evaluator_mse.finalize()
     result_mae = evaluator_mae.finalize()
