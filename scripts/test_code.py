@@ -156,7 +156,19 @@ def main(cfg: DictConfig):
         collate_fn=collate_fn_skip_none
     )
     #評価処理
-    criterion = torch.nn.MSELoss()
+    criterion_mse = torch.nn.MSELoss()
+    #--------------------11/21------------------------------------------
+    criterion_mae = torch.nn.L1Loss() # MAE (L1)
+    criterion_smooth = torch.nn.SmoothL1Loss(beta=1.0) # SmoothL1
+
+    evaluator_mse = LossEvaluator(criterion_mse, "mse")
+    evaluator_mae = LossEvaluator(criterion_mae, "mae")
+    evaluator_smooth = LossEvaluator(criterion_smooth, "smooth_l1")
+
+    evaluator_mse.initialize()
+    evaluator_mae.initialize()
+    evaluator_smooth.initialize()
+    #-----------------------------------------------------------------
     evaluator = LossEvaluator(criterion, "loss")
     evaluator.initialize()
 
@@ -171,8 +183,12 @@ def main(cfg: DictConfig):
             print("Tensor range:", inputs.min().item(), "〜", inputs.max().item())
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
-
-            evaluator.eval_batch(outputs, targets)
+            #-----11/21--------------------------------------
+            evaluator_mse.eval_batch(outputs, targets)
+            evaluator_mae.eval_batch(outputs, targets)
+            evaluator_smooth.eval_batch(outputs, targets)
+            #-----------------------------------------------
+            #evaluator.eval_batch(outputs, targets)
             errors = torch.abs(outputs - targets).squeeze()
             if errors.dim() == 0: # バッチサイズが1の場合
                 errors = errors.unsqueeze(0)
@@ -195,15 +211,35 @@ def main(cfg: DictConfig):
 
     #  評価結果計算
     result = evaluator.finalize()
-    #MSEのキーを柔軟に取得
-    monitor_key = evaluator.criterion_name
-    mse_value = result.get("loss")
-    if mse_value is None:
-        raise KeyError(f"キー '{monitor_key}' が見つかりません: {result}")
+    #---------------------11/21------------------------
+    result_mse = evaluator_mse.finalize()
+    result_mae = evaluator_mae.finalize()
+    result_smooth = evaluator_smooth.finalize()
 
+    mse_value = result_mse.get("mse")
+    mae_value = result_mae.get("mae")
+    smooth_value = result_smooth.get("smooth_l1")
+
+    if mse_value is None:
+        raise KeyError("MSE計算エラー")
+    
     rmse_value = float(np.sqrt(mse_value))
+    
+    result = {}
     result["MSE"] = mse_value
     result["RMSE"] = rmse_value
+    result["MAE"] = mae_value
+    result["SmoothL1"] = smooth_value
+    #-------------------------------------------------
+    #MSEのキーを柔軟に取得
+    #monitor_key = evaluator.criterion_name
+    #mse_value = result.get("loss")
+    #if mse_value is None:
+        #raise KeyError(f"キー '{monitor_key}' が見つかりません: {result}")
+
+    #rmse_value = float(np.sqrt(mse_value)) #損失関数を変更する場合、ここも変更する
+    #result["MSE"] = mse_value
+    #result["RMSE"] = rmse_value
 
     # --- 総パラメータ数を計算 ---
     total_params = sum(p.numel() for p in net.parameters()) / 1e6
@@ -284,6 +320,8 @@ def main(cfg: DictConfig):
     print(f"Test Data Size: {len(dataset)} 件")
     print(f"MSE:  {result['MSE']:.5f}")
     print(f"RMSE: {result['RMSE']:.5f}")
+    print(f"MAE:       {result['MAE']:.5f}")    
+    print(f"SmoothL1:  {result['SmoothL1']:.5f}")
     print(f"総パラメータ数: {total_params:.2f} M (学習対象: {trainable_params:.2f} M)")
     print(f"推論速度: {avg_inference_time_ms:.3f} ms/枚")
     print(f"Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
@@ -296,6 +334,8 @@ def main(cfg: DictConfig):
         f.write(f"Size: {len(dataset)} 件\n")
         f.write(f"MSE:  {result['MSE']:.5f}\n")
         f.write(f"RMSE: {result['RMSE']:.5f}\n")
+        f.write(f"MAE:       {result['MAE']:.5f}\n") 
+        f.write(f"SmoothL1:  {result['SmoothL1']:.5f}\n")
         f.write(f"総パラメータ数: {total_params:.2f} M (学習対象: {trainable_params:.2f} M)\n")
         f.write(f"推論速度: {avg_inference_time_ms:.2f} ms/枚\n")
         f.write(f"  Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")

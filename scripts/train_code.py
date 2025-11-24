@@ -219,8 +219,16 @@ def main(cfg: DictConfig):
 
  # 損失関数、最適化手法、スケジューラ
     #MSEからSmoothL１に変更すること、外れ値の影響を軽減
-    criterion = nn.MSELoss().to(device) 
-    training_criterion = nn.SmoothL1Loss(beta=1.0).to(device) #損失関数変更：nn.SmoothL1Loss(beta=1.0) or nn.MAELoss(beta=1.0) 
+    #学習用
+    train_criterion = nn.SmoothL1Loss(beta=1.0).to(device)
+    # 監視・評価用損失 (ログ記録・グラフ化用)
+    # 公平な比較のために MSE(RMSE) を、実用誤差確認のために MAE を、
+    # 学習の進み具合確認のために SmoothL1 をそれぞれ用意
+    val_criterion_mse = nn.MSELoss().to(device)
+    val_criterion_mae = nn.L1Loss().to(device)
+    val_criterion_smooth = nn.SmoothL1Loss(beta=1.0).to(device)
+    #評価用
+    criterion = nn.MSELoss().to(device) #損失関数変更：nn.SmoothL1Loss(beta=1.0) or nn.MAELoss(beta=1.0) 
 
     # 差動学習率 (DLR) の設定 
     
@@ -342,7 +350,10 @@ def main(cfg: DictConfig):
     # 評価指標と拡張
     # 訓練用の損失 (SmoothL1Loss) + 監視用の損失 (MSE)
     #training_criterion = criterion #学習ではSmoothL1Lossを用いて学習を安定させ、別途でMSEを計算するがそれを区別するため
-    evaluators = [LossEvaluator(criterion, criterion_name="mse")]#,LossEvaluator(mse_eval_criterion, criterion_name="mse")]
+    
+    evaluators = [LossEvaluator(val_criterion_mse, criterion_name="mse"), #MSE
+                  LossEvaluator(val_criterion_mae, criterion_name="mae"), #MAE
+                  LossEvaluator(val_criterion_smooth, criterion_name="Smooth")]#,LossEvaluator(mse_eval_criterion, criterion_name="mse")]
     extensions = [
             ModelSaver(directory=history_path, name=lambda x: "best_model.pth", trigger=MinValueTrigger(mode="validation", key="mse")),
             HistorySaver(directory=history_path, name=lambda x: "history.pth", trigger=IntervalTrigger(period=1)),
@@ -354,8 +365,7 @@ def main(cfg: DictConfig):
     trainer = Trainer(
             net, 
             optimizer, 
-            #criterion, # (MSEではなくSmoothL1Lossを渡す) criterion -> training_criterion
-            training_criterion,
+            train_criterion, # (MSEではなくSmoothL1Lossを渡す) criterion -> training_criterion
             train_loader, 
             cfg = cfg,
             scheduler=scheduler,
