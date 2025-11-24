@@ -169,8 +169,8 @@ def main(cfg: DictConfig):
     evaluator_mae.initialize()
     evaluator_smooth.initialize()
     #-----------------------------------------------------------------
-    evaluator = LossEvaluator(criterion, "loss")
-    evaluator.initialize()
+    #evaluator = LossEvaluator(train_criterion, "loss")
+    #evaluator.initialize()
 
     predictions = []
     best_image_info = {"min_error": float("inf")}
