@@ -249,7 +249,7 @@ def main(cfg: DictConfig):
     trainable_params = sum(p.numel() for p in net.parameters() if p.requires_grad) / 1e6
 
     #保存処理
-    timestamp = datetime.datetime.now().strftime("%Y%m%d")
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     # モデル別フォルダ構造に整理
     model_name = cfg.model.name
     output_root = Path("outputs/train_reg/history") / model_name / f"{train_id}"
