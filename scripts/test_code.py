@@ -6,9 +6,11 @@ from torchvision.transforms import v2
 import hydra
 from omegaconf import DictConfig
 
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import imageio.v3 as iio
 
 import time
 
@@ -35,6 +37,7 @@ def adjust_exposure(image_tensor, ev_value):
     # ガンマ補正 (1 / 2.2) を適用
     corrected_srgb_image = torch.pow(tone_mapped, 1.0/2.2)
     # 最終結果を [0, 1] にクリップして返す
+    return torch.clamp(corrected_srgb_image, 0.0, 1.0)
     return corrected_srgb_image
 
 def plot_ev_predictions(csv_file, output_dir):
@@ -282,7 +285,7 @@ def main(cfg: DictConfig):
         writer = csv.writer(f)
         writer.writerow(["filename", "true_ev", "pred_ev"])
         writer.writerows(predictions)
-    print(f"\n予測結果を {csv_path} に保存しました")
+    print(f"\n予測結果保存:{csv_path} ")
 
     # 補正画像保存 (3種類: 補正前, 予測補正後, 正解補正後)
     if "original" in best_image_info:
@@ -294,11 +297,27 @@ def main(cfg: DictConfig):
     #対数修正その2
         # Log -> 線形 への「逆変換」
         #(x = 2^y - 1)
-        linear_img = torch.pow(2.0, denorm_img) - 1.0
+        temp = torch.pow(2.0, denorm_img) - 1.0
+        linear_img = temp / 65535.0
         # (計算誤差でマイナスになるのを防ぐ)
         linear_img = torch.clamp(linear_img, min=0.0)
 
-        linear_img_png = linear_img / 65535.0
+        #-------------------11/25------------------------
+        # max値が1.0に近い場合はすでに正規化されているので65535で割ってはいけない
+        max_val = linear_img.max().item()
+        print(f"\n[Check] 復元されたRawデータの最大値: {max_val:.2f}")
+        
+        # あなたの前処理コードでは 0-65535 なので、それに対応
+        # トーンマップ用には [0,1] スケールが必要
+        if max_val > 100.0: # 明らかに1.0より大きい場合
+            linear_img_normalized = linear_img / 65535.0
+            print(" -> 16bitスケールと判定: 表示用に 1/65535を実施。")
+        else:
+            linear_img_normalized = linear_img
+            print(" -> 0-1スケールと判定: そのまま処理")
+        #------------------------------------------------------
+
+        #linear_img_png = linear_img / 65535.0
 
         # (補正前のEV値は 0.0 で固定)
         base_ev = 0.0 
@@ -306,12 +325,81 @@ def main(cfg: DictConfig):
         true_ev = best_image_info["true_ev"]
 
         # adjust_exposure には「線形」の linear_img を渡す
-        baseline_srgb_img = adjust_exposure(linear_img_png, base_ev) #対数修正その3:denorm_img -> linear_img
+        baseline_srgb_img = adjust_exposure(linear_img_normalized, base_ev) #対数修正その3:denorm_img -> linear_img
         #モデル予測値で補正した画像
-        pred_corrected_img = adjust_exposure(linear_img_png, pred_ev)
+        pred_corrected_img = adjust_exposure(linear_img_normalized, pred_ev)
         #正解ラベル値で補正した画像
-        true_corrected_img = adjust_exposure(linear_img_png, true_ev)
+        true_corrected_img = adjust_exposure(linear_img_normalized, true_ev)
 
+        #img_dir = Path("outputs/train_reg/history") / train_id / "best_predictions"
+        #img_dir.mkdir(parents=True, exist_ok=True)
+        # 元のファイル名から拡張子 (.jpgなど) を取り除く
+        base_filename = Path(best_image_info['filename']).stem
+
+
+        original_path = bestpred_dir / f"{base_filename}_補正前(EV {base_ev:+.4f}).png"
+        pred_path = bestpred_dir / f"{base_filename}_補正後(Pred EV {pred_ev:+.4f}).png"
+        true_path = bestpred_dir / f"{base_filename}_正解補正後(True EV {true_ev:+.4f}).png"
+        path_diff = bestpred_dir / f"{base_filename}_差分強調画像.png"
+
+        vutils.save_image(baseline_srgb_img, original_path)
+        vutils.save_image(pred_corrected_img, pred_path)
+        vutils.save_image(true_corrected_img, true_path)
+
+        # ★視覚的に変化を確認するための「差分強調画像」を作成
+        # (補正後 - 補正前) の絶対値を 10倍 して保存します。
+        # 真っ黒なら「補正されていない」、何かが写れば「補正されている」
+        diff_tensor = torch.abs(pred_corrected_img - baseline_srgb_img) * 10.0
+        vutils.save_image(diff_tensor, path_diff)
+
+        #-----確認事項1：出力画像が何bitなのか-----
+        print("確認事項：画像bit深度")
+        try:
+            #保存した画像を読み込みして確認
+            loaded_img = iio.imread(pred_path)
+            print(f"  保存ファイル: {pred_path.name}")
+            print(f"  データ型(dtype): {loaded_img.dtype}")
+
+            if loaded_img.dtype == np.uint8:
+                print("  → 結果: 8-bit 画像です。")
+            elif loaded_img.dtype == np.uint16:
+                print("  → 結果: 16-bit 画像です。")
+            else:
+                print(f"  → 結果: その他 ({loaded_img.dtype}) です。")
+        except Exception as e:
+            print(f"  確認エラー: {e}")
+        
+        #---------------------------------------------
+        #-----確認事項2：画像補正が正常に行なわれているのか-----
+        print("確認事項：補正実施の数値確認")
+
+        # 画像全体の平均輝度を計算
+        mean_orig = baseline_srgb_img.mean().item()
+        mean_pred = pred_corrected_img.mean().item()
+        diff_val  = mean_pred - mean_orig
+
+        print(f"  予測EV値: {pred_ev:.4f}")
+        print(f"  平均輝度 (補正前): {mean_orig:.5f}")
+        print(f"  平均輝度 (補正後): {mean_pred:.5f}")
+        print(f"  輝度差分        : {diff_val:+.5f}")
+
+        # 判定
+        if abs(diff_val) < 0.00001:
+            print(" 判定: 変化なし")
+            print(" 可能性1: 入力画像が真っ白/真っ黒になっている (上のMax値を確認)")
+            print(" 可能性2: 予測EVが 0.0 に近すぎる")
+        else:
+            print(" 判定: 数値上で明るさが変化確認")
+            print(f"視覚確認用画像を作成: {path_diff.name}")
+            print("(この画像に何かが写っていれば、補正処理は機能)")
+
+
+        print("DEBUG img:", torch.isnan(baseline_srgb_img).any(), baseline_srgb_img.min(), baseline_srgb_img.max())
+        print("denorm_img:", denorm_img.min().item(), denorm_img.max().item())
+        print("linear_img:", linear_img.min().item(), linear_img.max().item())
+        print("baseline_srgb_img:", baseline_srgb_img.min().item(), baseline_srgb_img.max().item())
+
+        print(f"補正前後の画像を {output_root} に保存しました")
 
         # ターミナルに分かりやすく表示 
     print("\n=== 最良モデルの検証結果 ===")
@@ -340,28 +428,10 @@ def main(cfg: DictConfig):
         f.write(f"推論速度: {avg_inference_time_ms:.2f} ms/枚\n")
         f.write(f"  Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
 
-
-        #img_dir = Path("outputs/train_reg/history") / train_id / "best_predictions"
-        #img_dir.mkdir(parents=True, exist_ok=True)
-        # 元のファイル名から拡張子 (.jpgなど) を取り除く
-        base_filename = Path(best_image_info['filename']).stem
-
-        original_path = bestpred_dir / f"{base_filename}_補正前(EV {base_ev:+.4f}).png"
-        pred_corrected_path = bestpred_dir / f"{base_filename}_補正後(Pred EV {pred_ev:+.4f}).png"
-        true_corrected_path = bestpred_dir / f"{base_filename}_正解補正後(True EV {true_ev:+.4f}).png"
-
-        vutils.save_image(baseline_srgb_img, original_path)
-        vutils.save_image(pred_corrected_img, pred_corrected_path)
-        vutils.save_image(true_corrected_img, true_corrected_path)
-
-        print("DEBUG img:", torch.isnan(baseline_srgb_img).any(), baseline_srgb_img.min(), baseline_srgb_img.max())
-        print("denorm_img:", denorm_img.min().item(), denorm_img.max().item())
-        print("linear_img:", linear_img.min().item(), linear_img.max().item())
-        print("baseline_srgb_img:", baseline_srgb_img.min().item(), baseline_srgb_img.max().item())
-
-        print(f"補正前後の画像を {output_root} に保存しました")
-        #可視化関数呼び出し
     plot_ev_predictions(csv_path, output_root)
+
+if __name__ == "__main__":
+    main()
 
 if __name__ == "__main__":
     main()

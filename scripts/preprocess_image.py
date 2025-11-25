@@ -48,7 +48,9 @@ def process_dng(file_path: Path):
                              anti_aliasing=True, 
                              preserve_range=True
                              ).astype(np.float32)
-
+        
+        # 追加: 補間によるマイナス値を防ぐ
+        rgb_resized = np.clip(rgb_resized, 0.0, 65535.0)
         # EXRで保存
         iio.imwrite(str(output_path), rgb_resized, extension=".exr")
 

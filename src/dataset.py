@@ -19,7 +19,7 @@ class LogTransform(object):
     """
     def __call__(self, tensor):
         # +1.0 して log(0) を防ぐ
-        return torch.log2(tensor+1.0)
+        return torch.log2(tensor* 65535.0+1.0)
 
 
 class AnnotatedDatasetFolder(torchdata.Dataset):
@@ -109,7 +109,7 @@ def imageio_loader(path):
         img_float_numpy = imageio.v3.imread(path) 
         # NumPy (H, W, C) -> PyTorch Tensor (C, H, W) に変換
         tensor = torch.from_numpy(img_float_numpy.astype(np.float32)).permute(2, 0, 1) 
-        return tensor
+        return tensor / 65535.0
     except Exception as e:
         print(f"imageioでの画像読み込みエラー: {path}, エラー: {e}")
         raise

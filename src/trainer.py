@@ -177,8 +177,6 @@ class Trainer(ABCTrainer):
             if self.scheduler is not None:
                 if isinstance(self.scheduler, torch.optim.lr_scheduler.CosineAnnealingWarmRestarts):  # ← 修正
                     self.scheduler.step(epoch + i / len(self.dataloader))
-                else:
-                    self.scheduler.step()
 
             loss_meter.update(loss.item() * accumulation_steps, number=inputs.size(0))
         #if self.scheduler is not None:
