@@ -220,7 +220,7 @@ def main(cfg: DictConfig):
  # 損失関数、最適化手法、スケジューラ
     #MSEからSmoothL１に変更すること、外れ値の影響を軽減
     #学習用
-    train_criterion = nn.MSELoss().to(device)
+    train_criterion = nn.L1Loss().to(device)
     # 監視・評価用損失 (ログ記録・グラフ化用)
     # 公平な比較のために MSE(RMSE) を、実用誤差確認のために MAE を、
     # 学習の進み具合確認のために SmoothL1 をそれぞれ用意
