@@ -26,7 +26,7 @@ def denormalize(tensor, mean, std, inplace=False):
 def adjust_exposure(image_tensor, ev_value):
     correction_factor = 2.0 ** ev_value
     corrected_linear_image = image_tensor * correction_factor 
-    tone_mapped = corrected_linear_image / (corrected_linear_image + 1.0)
+    tone_mapped = corrected_linear_image / (corrected_linear_image + 0.25)
     corrected_srgb_image = torch.pow(tone_mapped, 1.0/2.2)
     return torch.clamp(corrected_srgb_image, 0.0, 1.0)
 
