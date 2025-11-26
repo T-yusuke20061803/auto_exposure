@@ -98,7 +98,7 @@ def main(cfg: DictConfig):
             raise FileNotFoundError(f"モデル '{model_name}' の学習済みモデル（best_model.pth）が見つかりません。")
 
 
-        latest_model_dir = max((p for p in history_dir.glob("*") if p.is_dir()), key=lambda p: p.stat().st_mtime)
+        latest_model_dir = max(run_dirs, key=lambda p: p.stat().st_mtime)
         train_id = latest_model_dir.name
 
         print(f"[INFO] train_id が指定されていないため最新を使用します: {train_id}")
