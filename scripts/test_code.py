@@ -38,7 +38,6 @@ def adjust_exposure(image_tensor, ev_value):
     corrected_srgb_image = torch.pow(tone_mapped, 1.0/2.2)
     # 最終結果を [0, 1] にクリップして返す
     return torch.clamp(corrected_srgb_image, 0.0, 1.0)
-    return corrected_srgb_image
 
 def plot_ev_predictions(csv_file, output_dir):
     try:
@@ -177,8 +176,10 @@ def main(cfg: DictConfig):
     high_ev_candidates = [] # 明るい方用
     low_ev_candidates = []  # 暗い方用
 
+
     #推論速度計測用 start
     start_time = time.time()
+
 
     with torch.no_grad():
         for batch_idx, (inputs, targets, filenames) in enumerate(loader):
@@ -205,8 +206,8 @@ def main(cfg: DictConfig):
                     best_image_info.update({
                         "min_error": errors[i].item(),
                         "original": inputs[i].cpu(),
-                        "pred_ev": t_val,
-                        "true_ev": p_val,
+                        "pred_ev": p_val,
+                        "true_ev": t_val,
                         "filename": filename
                     })
 
@@ -262,11 +263,15 @@ def main(cfg: DictConfig):
     csv_dir = output_root/ "csv_result"
     bestpred_dir = output_root/ "best_predictions"
     extremepred_dir = output_root / "extreme_predictions"
+    high_dir = extremepred_dir / "HighEV"
+    low_dir  = extremepred_dir / "LowEV"
 
     result_dir.mkdir(parents=True, exist_ok=True)
     csv_dir.mkdir(parents=True, exist_ok=True)
     bestpred_dir.mkdir(parents=True, exist_ok=True)
     extremepred_dir.mkdir(parents=True, exist_ok=True)
+    high_dir.mkdir(parents=True, exist_ok=True)
+    low_dir.mkdir(parents=True, exist_ok=True)
  
     csv_path = csv_dir / f"{train_id}_predictions.csv"
     with open(csv_path, "w", newline="") as f:
@@ -295,11 +300,34 @@ def main(cfg: DictConfig):
         item["rank"] = i + 1
         top_samples.append(item)
 
+    high_dir = extremepred_dir / "HighEV"
+    low_dir = extremepred_dir / "LowEV"
+    high_dir.mkdir(exist_ok=True)
+    low_dir.mkdir(exist_ok=True)
+
+     # --- HighEV1・HighEV2・HighEV3, LowEV1〜3 のフォルダ作成 ---
+    high_rank_dirs = {}
+    low_rank_dirs = {}
+
+    for r in range(1, 4):
+        d_high = high_dir / f"HighEV{r}"
+        d_low = low_dir / f"LowEV{r}"
+        d_high.mkdir(exist_ok=True)
+        d_low.mkdir(exist_ok=True)
+        high_rank_dirs[r] = d_high
+        low_rank_dirs[r] = d_low
+
     # 共通処理で画像生成とログ出力
     mean_params = cfg.dataset.train.transform.normalize.mean
     std_params  = cfg.dataset.train.transform.normalize.std
 
     for sample in top_samples:
+        rank = sample["rank"]
+        if sample["type"] == "HighEV":
+            save_dir = high_rank_dirs[rank]
+        else:
+            save_dir = low_rank_dirs[rank]
+
         s_filename = Path(sample["filename"]).stem
         s_true = sample["true_ev"]
         s_pred = sample["pred_ev"]
@@ -321,18 +349,28 @@ def main(cfg: DictConfig):
         img_diff = torch.abs(img_pred - img_orig) * 10.0
 
         # 保存
-        path_pred = extremepred_dir / f"{s_label}_{s_filename}_補正後(EV{s_pred:.2f}).png"
-        vutils.save_image(img_orig, extremepred_dir / f"{s_label}_{s_filename}_補正前.png")
-        vutils.save_image(img_pred, path_pred)
-        vutils.save_image(img_true, extremepred_dir / f"{s_label}_{s_filename}_正解(EV{s_true:.2f}).png")
-        vutils.save_image(img_diff, extremepred_dir / f"{s_label}_{s_filename}_差分強調.png")
+        # 保存
+        orig_path = save_dir / f"{s_filename}_補正前.png"
+        pred_path = save_dir / f"{s_filename}_補正後(EV{s_pred:+.2f}).png"
+        true_path = save_dir / f"{s_filename}_正解(EV{s_true:+.2f}).png"
+        diff_path = save_dir / f"{s_filename}_差分強調.png"
 
-        # ログ出力用の計算
+        vutils.save_image(img_orig, orig_path)
+        vutils.save_image(img_pred, pred_path)
+        vutils.save_image(img_true, true_path)
+        vutils.save_image(img_diff, diff_path)
+
+        # ビット深度確認
         dtype_str = "unknown"
         try:
-            check_img = iio.imread(path_pred)
+            check_img = iio.imread(pred_path)  # ← 保存したファイルパスを使う
             dtype_str = str(check_img.dtype)
-        except: pass
+        except:
+            pass
+
+        print(f"[SAVE] {sample['type']}{rank} → {save_dir}")
+        print(f"  {s_filename}: Pred {s_pred:+.3f}, True {s_true:+.3f}")
+
 
         mean_orig = img_orig.mean().item()
         mean_pred = img_pred.mean().item()
