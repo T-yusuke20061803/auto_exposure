@@ -285,6 +285,12 @@ class ResNetRegression(nn.Module):
             if unfreeze_layers > 1 and hasattr(self.resnet, 'layer3'):
                 for param in self.resnet.layer3.parameters():
                     param.requires_grad = True
+            if unfreeze_layers > 2 and hasattr(self.resnet, 'layer2'):
+                for param in self.resnet.layer2.parameters():
+                    param.requires_grad = True
+            if unfreeze_layers > 3 and hasattr(self.resnet, 'layer1'):
+                for param in self.resnet.layer1.parameters():
+                    param.requires_grad = True
 
         # --- 3. 最後の層(fc)を、カスタム回帰ヘッドに置き換える ---
         # (先生のコードの self.linear の構造を再現)

@@ -173,13 +173,15 @@ def main(cfg: DictConfig):
     predictions = []
     best_image_info = {"min_error": float("inf")}
 
-    high_ev_candidates = [] # 明るい方用
-    low_ev_candidates = []  # 暗い方用
-
+    ev_groups = {
+    "EV0.5": [],
+    "EV1.0": [],
+    "EV1.5": [],
+    "EV2.0": []
+    }
 
     #推論速度計測用 start
     start_time = time.time()
-
 
     with torch.no_grad():
         for batch_idx, (inputs, targets, filenames) in enumerate(loader):
@@ -210,7 +212,6 @@ def main(cfg: DictConfig):
                         "true_ev": t_val,
                         "filename": filename
                     })
-
                 item_data = {
                     "filename": filename,
                     "original": inputs[i].cpu(),
@@ -218,10 +219,23 @@ def main(cfg: DictConfig):
                     "pred_ev": p_val
                 }
 
-                if t_val >= 0:
-                    high_ev_candidates.append(item_data)
-                else:
-                    low_ev_candidates.append(item_data)
+                # --- EV値絶対値による分類 ---
+                # --- EV値絶対値による分類 ---
+                abs_ev = abs(t_val)
+                error = abs(p_val - t_val)
+
+                item_data["error"] = error
+
+                if 0.5 <= abs_ev < 1.0:
+                    ev_groups["EV0.5"].append(item_data)
+                elif 1.0 <= abs_ev < 1.5:
+                    ev_groups["EV1.0"].append(item_data)
+                elif 1.5 <= abs_ev < 2.0:
+                    ev_groups["EV1.5"].append(item_data)
+                elif abs_ev >= 2.0:
+                    ev_groups["EV2.0"].append(item_data)
+
+
 
     end_time = time.time()
     total_inference_time = end_time - start_time
@@ -262,16 +276,13 @@ def main(cfg: DictConfig):
     result_dir = output_root / "result"
     csv_dir = output_root/ "csv_result"
     bestpred_dir = output_root/ "best_predictions"
-    extremepred_dir = output_root / "extreme_predictions"
-    high_dir = extremepred_dir / "HighEV"
-    low_dir  = extremepred_dir / "LowEV"
-
+    ev_save_root = output_root / "extreme_predictions" / "EV_Groups"
+    
     result_dir.mkdir(parents=True, exist_ok=True)
     csv_dir.mkdir(parents=True, exist_ok=True)
     bestpred_dir.mkdir(parents=True, exist_ok=True)
-    extremepred_dir.mkdir(parents=True, exist_ok=True)
-    high_dir.mkdir(parents=True, exist_ok=True)
-    low_dir.mkdir(parents=True, exist_ok=True)
+    ev_save_root.mkdir(parents=True, exist_ok=True)
+
  
     csv_path = csv_dir / f"{train_id}_predictions.csv"
     with open(csv_path, "w", newline="") as f:
@@ -280,58 +291,32 @@ def main(cfg: DictConfig):
         writer.writerows(predictions)
     print(f"\n予測結果保存:{csv_path} ")
 
-    print("\n=== 推論開始 (Sample画像探索中) ===")
+    selected_samples = []
 
-    # High: 正解EVが大きい順 (降順)
-    high_ev_candidates.sort(key=lambda x: x["true_ev"], reverse=True)
-    # Low: 正解EVが小さい順 (昇順: 絶対値が大きい負の数)
-    low_ev_candidates.sort(key=lambda x: x["true_ev"])
+    for group_name, items in ev_groups.items():
+        items.sort(key=lambda x: x["error"])  # 誤差が小さい順
+        top2 = items[:2]  # 2枚だけ選択
 
-    # 上位3つを抽出
-    top_samples = []
-    # LowのTop3を追加 (Rank1, Rank2, Rank3)
-    for i, item in enumerate(low_ev_candidates[:3]):
-        item["type"] = "LowEV"
-        item["rank"] = i + 1
-        top_samples.append(item)
-    # HighのTop3を追加 (Rank1, Rank2, Rank3)
-    for i, item in enumerate(high_ev_candidates[:3]):
-        item["type"] = "HighEV"
-        item["rank"] = i + 1
-        top_samples.append(item)
+        save_dir = ev_save_root / group_name
+        save_dir.mkdir(exist_ok=True)
 
-    high_dir = extremepred_dir / "HighEV"
-    low_dir = extremepred_dir / "LowEV"
-    high_dir.mkdir(exist_ok=True)
-    low_dir.mkdir(exist_ok=True)
-
-     # --- HighEV1・HighEV2・HighEV3, LowEV1〜3 のフォルダ作成 ---
-    high_rank_dirs = {}
-    low_rank_dirs = {}
-
-    for r in range(1, 4):
-        d_high = high_dir / f"HighEV{r}"
-        d_low = low_dir / f"LowEV{r}"
-        d_high.mkdir(exist_ok=True)
-        d_low.mkdir(exist_ok=True)
-        high_rank_dirs[r] = d_high
-        low_rank_dirs[r] = d_low
+        for idx, sample in enumerate(top2, 1):
+            sample["group"] = group_name
+            sample["rank"] = idx
+            sample["save_dir"] = save_dir
+            selected_samples.append(sample)
 
     # 共通処理で画像生成とログ出力
     mean_params = cfg.dataset.train.transform.normalize.mean
     std_params  = cfg.dataset.train.transform.normalize.std
 
-    for sample in top_samples:
-        rank = sample["rank"]
-        if sample["type"] == "HighEV":
-            save_dir = high_rank_dirs[rank]
-        else:
-            save_dir = low_rank_dirs[rank]
+    for sample in selected_samples:
+        save_dir = sample["save_dir"]
 
         s_filename = Path(sample["filename"]).stem
         s_true = sample["true_ev"]
         s_pred = sample["pred_ev"]
-        s_label = f"{sample['type']}{sample['rank']}"
+        s_label = f"{sample['group']}{sample['rank']}"
 
         # 復元処理
         denorm = denormalize(sample["original"], mean_params, std_params)
@@ -351,8 +336,8 @@ def main(cfg: DictConfig):
         # 保存
         # 保存
         orig_path = save_dir / f"{s_filename}_補正前.png"
-        pred_path = save_dir / f"{s_filename}_補正後(EV{s_pred:+.2f}).png"
-        true_path = save_dir / f"{s_filename}_正解(EV{s_true:+.2f}).png"
+        pred_path = save_dir / f"{s_filename}_補正後(EV{s_pred:.4f}).png"
+        true_path = save_dir / f"{s_filename}_正解(EV{s_true:.4f}).png"
         diff_path = save_dir / f"{s_filename}_差分強調.png"
 
         vutils.save_image(img_orig, orig_path)
@@ -368,7 +353,7 @@ def main(cfg: DictConfig):
         except:
             pass
 
-        print(f"[SAVE] {sample['type']}{rank} → {save_dir}")
+        print(f"[SAVE] {s_label} → {save_dir}")
         print(f"  {s_filename}: Pred {s_pred:+.3f}, True {s_true:+.3f}")
 
 
@@ -428,9 +413,9 @@ def main(cfg: DictConfig):
         base_filename = Path(best_image_info['filename']).stem
 
 
-        original_path = bestpred_dir / f"{base_filename}_補正前(EV {base_ev:+.4f}).png"
-        pred_path = bestpred_dir / f"{base_filename}_補正後(Pred EV {pred_ev:+.4f}).png"
-        true_path = bestpred_dir / f"{base_filename}_正解補正後(True EV {true_ev:+.4f}).png"
+        original_path = bestpred_dir / f"{base_filename}_補正前(EV {base_ev:.4f}).png"
+        pred_path = bestpred_dir / f"{base_filename}_補正後(Pred EV {pred_ev:.4f}).png"
+        true_path = bestpred_dir / f"{base_filename}_正解補正後(True EV {true_ev:.4f}).png"
         path_diff = bestpred_dir / f"{base_filename}_差分強調画像.png"
 
         vutils.save_image(baseline_srgb_img, original_path)
