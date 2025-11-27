@@ -270,7 +270,7 @@ def main(cfg: DictConfig):
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     # モデル別フォルダ構造に整理
     model_name = cfg.model.name
-    output_root = Path("outputs/train_reg/history") / model_name / f"{train_id}"
+    output_root = Path("outputs/train_reg/history") / model_name / f"{train_id}_{timestamp}"
     output_root.mkdir(parents=True, exist_ok=True)
 
     result_dir = output_root / "result"

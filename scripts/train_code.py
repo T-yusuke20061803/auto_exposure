@@ -69,7 +69,7 @@ def main(cfg: DictConfig):
 
     # 保存先
     train_id = generate_train_id(cfg)
-    timestamp = datetime.datetime.now().strftime("%Y%m%d")
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir = Path("outputs/train_reg/history") / cfg.model.name
     history_path = output_dir / f"{train_id}_{timestamp}"
     history_path.mkdir(parents=True, exist_ok=True)
