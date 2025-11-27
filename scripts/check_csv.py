@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 import shutil
+import os
 
 # ================= 設定エリア =================
 # 1. CSVのパス
@@ -26,27 +27,17 @@ def main():
             return
 
         df = pd.read_csv(csv_path)
-        
-        # ファイル名で検索
         row = df[df['Filename'].astype(str).str.contains(target_filename)]
         
         if not row.empty:
             print("\n[CSVデータ確認]")
-            print(f"  CSV内のファイル名: {row['Filename'].values[0]}")
             ev_val = row['Exposure'].values[0]
             print(f"  CSV内の正解EV  : {ev_val}")
             
-            print("-" * 30)
             if ev_val < 0:
-                print(f"  判定: EVは {ev_val} (マイナス) です。")
-                print("  意味: この画像は「暗い (Underexposed)」状態です。")
-                print("  補正: 明るくするために「プラス」の補正が必要です。")
+                print("  判定: マイナス (暗い画像のはず)")
             else:
-                print(f"  判定: EVは {ev_val} (プラス) です。")
-                print("  意味: この画像は「明るい (Overexposed)」状態です。")
-                print("  補正: 暗くするために「マイナス」の補正が必要です。")
-            print("-" * 30)
-                
+                print("  判定: プラス (明るい画像のはず)")
         else:
             print(f"\n[警告] ファイル名 {target_filename} がCSV内に見つかりませんでした。")
 
@@ -55,29 +46,27 @@ def main():
         return
 
     # --- 2. 画像ファイルの検索と保存 ---
-    print("\n[画像ファイル検索]")
+    print("\n[画像ファイル検索と保存]")
     
     if not image_root_dir.exists():
         print(f"エラー: 画像ディレクトリが見つかりません -> {image_root_dir}")
         return
 
-    # 拡張子が不明なため、ファイル名部分一致で検索します
     found_files = list(image_root_dir.rglob(f"{target_filename}*"))
     
     if found_files:
-        # 保存先作成
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        # 見つかったファイルをコピー（複数あれば全て）
         for src_path in found_files:
-            # フォルダではなくファイルのみ対象
             if src_path.is_file():
                 dst_path = output_dir / src_path.name
                 shutil.copy(src_path, dst_path)
-                print(f"  発見・保存しました -> {dst_path}")
-        
-        print(f"\n完了: '{output_dir}' フォルダを確認してください。")
-        print("保存された画像を開いて、CSVの判定（暗い/明るい）と一致するか確認してください。")
+                
+                # ★修正: 絶対パスを取得して表示
+                abs_path = dst_path.resolve()
+                print(f"\n保存完了しました。以下のパスを確認してください:")
+                print(f"{abs_path}")
+                print("-" * 40)
     else:
         print(f"  エラー: 画像フォルダ内に '{target_filename}' を含むファイルが見つかりませんでした。")
 
