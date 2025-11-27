@@ -329,8 +329,8 @@ def main(cfg: DictConfig):
 
         # 画像生成
         img_orig = adjust_exposure(linear, 0.0)
-        img_pred = adjust_exposure(linear, s_pred)
-        img_true = adjust_exposure(linear, s_true)
+        img_pred = adjust_exposure(linear, -s_pred) #修正：符号反転（修正前img_pred = adjust_exposure(linear, s_pred)）
+        img_true = adjust_exposure(linear, -s_true)
         img_diff = torch.abs(img_pred - img_orig) * 10.0
 
         # 保存
@@ -406,9 +406,9 @@ def main(cfg: DictConfig):
         # adjust_exposure には「線形」の linear_img を渡す
         baseline_srgb_img = adjust_exposure(linear_img_normalized, base_ev) #対数修正その3:denorm_img -> linear_img
         #モデル予測値で補正した画像
-        pred_corrected_img = adjust_exposure(linear_img_normalized, pred_ev)
+        pred_corrected_img = adjust_exposure(linear_img_normalized, -pred_ev)
         #正解ラベル値で補正した画像
-        true_corrected_img = adjust_exposure(linear_img_normalized, true_ev)
+        true_corrected_img = adjust_exposure(linear_img_normalized, -true_ev)
         # 元のファイル名から拡張子 (.jpgなど) を取り除く
         base_filename = Path(best_image_info['filename']).stem
 
