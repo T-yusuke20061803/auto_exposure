@@ -2,10 +2,10 @@
 Train ID: 80eb593fe0_20251127
 Model:resnet
 Size: 364 件
-MSE:0.17943
-RMSE:0.42360
-MAE:0.30068
-SmoothL1:0.08792
+MSE:0.17612
+RMSE:0.41967
+MAE:0.29730
+SmoothL1:0.08607
 総パラメータ数: 11.31 M (学習対象: 11.15 M)
-推論速度: 16.72 ms/枚
-  Pred EV: 0.4013 / True EV: 0.4000
+推論速度: 11.00 ms/枚
+  Pred EV: 0.2997 / True EV: 0.3000
