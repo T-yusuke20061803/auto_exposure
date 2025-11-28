@@ -19,18 +19,18 @@ def normalize_for_display(img):
     # 完全にデータがない(真っ黒)場合
     if img.max() <= 0:
         return img
-    # 外れ値対策: 上位1%を最大値とみなしてクリップ
-    v_min = img.min()
-    v_max = np.percentile(img, 99.5)
-    if v_max <= v_min: v_max = img.max()
-
-    # 0-1正規化
-    img_norm = (img - v_min) / (v_max - v_min + 1e-8)
-    img_norm = np.clip(img_norm, 0, 1)
-
-    # ガンマ補正 (暗部を持ち上げる)
-    img_gamma = np.power(img_norm, 1/2.2)
-    return img_gamma
+    # ★修正ポイント: 画像ごとの最大値(v_max)を使わず、単純なトーンマップのみ行う
+    # Reinhard Tone Mapping: x / (1 + x)
+    # 明るい場所は1.0に近づき、暗い場所は0.0に近いままになる
+    img_mapped = img / (img + 1.0)
+    
+    # ガンマ補正 (sRGB表示用)
+    img_gamma = np.power(img_mapped, 1.0/2.2)
+    
+    # 0-1クリップ
+    img_final = np.clip(img_gamma, 0, 1)
+    
+    return img_final
 
 def main():
     if not csv_path.exists():
