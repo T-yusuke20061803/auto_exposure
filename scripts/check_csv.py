@@ -1,85 +1,143 @@
 import pandas as pd
 from pathlib import Path
+import matplotlib
+matplotlib.use('Agg') # サーバー環境用（GUIなし）
 import matplotlib.pyplot as plt
 import imageio.v3 as iio
 import numpy as np
-import os
+import random
 
 # ================= 設定 =================
 csv_path = Path("conf/dataset/HDR+burst_split/test.csv")
 image_root = Path("conf/dataset/HDR+burst/processed_1024px_exr")
-output_path = Path("outputs/dataset_verification.png")
-num_samples = 5
+output_check_img = Path("outputs/dataset_check_sample.png") # 確認用画像の保存先
 # ========================================
+
 def check_dataset_integrity(csv_path, root_dir):
     csv_p = Path(csv_path)
     root_p = Path(root_dir)
 
-    print(f"--- データ整合性チェック開始 ---")
+    print(f"\n{'='*40}")
+    print(f"   データ整合性・不整合チェック")
+    print(f"{'='*40}")
     print(f"CSVファイル: {csv_p}")
-    print(f"画像ルート : {root_p}\n")
+    print(f"画像ルート : {root_p}")
 
+    # --- 1. パス存在確認 ---
     if not csv_p.exists():
-        print(f"[Error] CSVファイルが見つかりません: {csv_p}")
+        print(f"\n[Fatal Error] CSVファイルが見つかりません: {csv_p}")
         return
     if not root_p.exists():
-        print(f"[Error] 画像ルートディレクトリが見つかりません: {root_p}")
+        print(f"\n[Fatal Error] 画像ルートディレクトリが見つかりません: {root_p}")
         return
 
-    # CSV読み込み
+    # --- 2. CSV読み込み ---
     try:
         df = pd.read_csv(csv_p)
         print(f"CSV読み込み成功: {len(df)} 行")
+        print(f"カラム一覧: {df.columns.tolist()}")
     except Exception as e:
-        print(f"[Error] CSV読み込み失敗: {e}")
+        print(f"\n[Fatal Error] CSV読み込み失敗: {e}")
         return
 
-    if "filename" not in df.columns:
-        print(f"[Error] CSVに 'filename' カラムがありません。現在のカラム: {df.columns.tolist()}")
-        return
+    # 必須カラムチェック
+    required_cols = ["filename"]
+    for col in required_cols:
+        if col not in df.columns:
+            print(f"\n[Fatal Error] CSVに必須カラム '{col}' がありません。")
+            return
 
-    # --- チェック1: CSVにあるファイルが実際に存在するか ---
+    # --- 3. ファイル存在チェック (全件) ---
+    print("\n--- [Step 1] ファイルの実在確認 (全件走査) ---")
     missing_files = []
     
-    # プログレスバー代わりにカウント表示
-    print("ファイルの存在確認を実行中...")
-    
+    # 拡張子の傾向確認用
+    extensions = set()
+
     for idx, row in df.iterrows():
-        fname = str(row['filename']).strip() # 空白除去
-        
-        # パスの結合 (pathlibはOSに合わせて区切り文字を自動調整します)
+        fname = str(row['filename']).strip()
         full_path = root_p / fname
         
+        # 拡張子記録
+        extensions.add(full_path.suffix)
+
         if not full_path.exists():
             missing_files.append({
                 "index": idx,
-                "csv_filename": fname,
-                "expected_path": str(full_path)
+                "filename": fname,
+                "path": str(full_path)
             })
 
-    # --- 結果報告 ---
-    print("\n" + "="*30)
-    print("       診断結果")
-    print("="*30)
-
+    # 結果表示
     if len(missing_files) == 0:
-        print(" 正常: CSV内のすべての画像ファイルが存在します。")
+        print("OK: CSV内のすべての画像ファイルがディスク上に存在します。")
     else:
-        print(f"警告: {len(missing_files)} 件のファイルが見つかりません！")
-        print("\n[見つからないファイルの例 (最初の5件)]:")
+        print(f" NG: {len(missing_files)} / {len(df)} 件のファイルが見つかりません！")
+        print("   [見つからないファイルの例 (先頭5件)]")
         for item in missing_files[:5]:
-            print(f"  Row {item['index']}: {item['csv_filename']}")
-            print(f"    -> 探したパス: {item['expected_path']}")
-        
-        print("\n考えられる原因:")
-        print("  1. CSV内のパスが相対パス('folder/img.dng')ではなく、ファイル名のみ('img.dng')になっている")
-        print("  2. ルートディレクトリ(root_dir)の指定が間違っている")
-        print("  3. 拡張子の大文字・小文字が違う (.dng vs .DNG)")
-        print("  4. パス区切り文字の違い (Windows '\\' vs Linux '/')")
+            print(f"    - Row {item['index']}: {item['filename']}")
+    
+    print(f"   検出された拡張子: {extensions}")
 
-    # --- おまけ: 拡張子の確認 ---
-    extensions = df['filename'].apply(lambda x: Path(x).suffix).unique()
-    print(f"\n[Info] CSVに含まれる拡張子一覧: {extensions}")
+
+    # --- 4. ラベルとファイル名の整合性チェック (ランダムサンプリング) ---
+    print("\n--- [Step 2] ファイル名とラベルの整合性確認 (ランダム5件) ---")
+    print("※ ここを目視確認してください。「ファイル名に含まれる情報」と「EV値」はずれていませんか？")
+    
+    if len(df) > 0:
+        sample_indices = random.sample(range(len(df)), min(5, len(df)))
+        samples = df.iloc[sample_indices]
+        
+        print(f"{'Index':<6} | {'EV (Label)':<10} | {'Filename'}")
+        print("-" * 50)
+        
+        # 'true_ev' カラムがあるか確認（CSVのヘッダー名に合わせてください。例: ev, label, true_ev）
+        label_col = None
+        for cand in ['true_ev', 'ev', 'label', 'EV']:
+            if cand in df.columns:
+                label_col = cand
+                break
+        
+        for idx, row in samples.iterrows():
+            fname = row['filename']
+            label_val = row[label_col] if label_col else "N/A"
+            print(f"{idx:<6} | {str(label_val):<10} | {fname}")
+            
+    # --- 5. 画像読み込みテスト (1枚だけ) ---
+    print("\n--- [Step 3] 画像読み込みテスト (最初の1枚) ---")
+    try:
+        first_row = df.iloc[0]
+        fname = first_row['filename']
+        full_path = root_p / fname
+        
+        if full_path.exists():
+            # EXR対応のために imageio を使用
+            img = iio.imread(full_path)
+            print(f"読み込み成功: {fname}")
+            print(f"  Shape: {img.shape}")
+            print(f"  Dtype: {img.dtype}")
+            print(f"  Min: {img.min():.4f}, Max: {img.max():.4f}")
+            
+            # 簡易可視化 (トーンマップなしの単純クリップ表示)
+            plt.figure(figsize=(5,5))
+            # EXRなどのfloat画像の場合、表示用にクリップ
+            disp_img = np.clip(img, 0, 1) 
+            # チャンネル処理 (CHW -> HWC 等の確認は省略、通常imageioはHWCで読む)
+            if disp_img.ndim == 3 and disp_img.shape[0] == 3: # もしCHWなら
+                 disp_img = disp_img.transpose(1, 2, 0)
+            
+            plt.imshow(disp_img)
+            plt.title(f"Check: {fname}")
+            output_check_img.parent.mkdir(parents=True, exist_ok=True)
+            plt.savefig(output_check_img)
+            print(f"  確認用画像を保存しました: {output_check_img}")
+            print("  → この画像を開いて、真っ黒/ノイズでないか確認してください。")
+        else:
+            print("  (最初のファイルが存在しないためスキップ)")
+
+    except Exception as e:
+        print(f"⚠️ 画像読み込み中にエラーが発生しました: {e}")
+        print("  拡張子が .exr の場合、imageioのプラグイン(freeimageなど)が必要な場合があります。")
 
 if __name__ == "__main__":
     check_dataset_integrity(csv_path, image_root)
