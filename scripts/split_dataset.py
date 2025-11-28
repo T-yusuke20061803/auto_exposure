@@ -32,10 +32,10 @@ def split_dataset(
         raise FileNotFoundError(f"アノテーションCSVが存在しません: {annotations_csv}")
 
     # 画像ファイル検索
-    print(f"{input_dir} 内の merged.dng ファイルを検索中...")
+    print(f"{input_dir} 内の merged.exr ファイルを検索中...")
     image_paths = sorted(list(input_dir.rglob("merged.exr"))) #11/28 merged.dng -> mergeged.exr
     if not image_paths:
-        raise RuntimeError(f"merged.dng 無し: {input_dir}")
+        raise RuntimeError(f"merged.exr 無し: {input_dir}")
 
     print(f"総画像数: {len(image_paths)} 枚検出 ({input_dir})")
 
