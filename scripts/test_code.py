@@ -5,6 +5,7 @@ import torchvision.utils as vutils
 from torchvision.transforms import v2
 import hydra
 from omegaconf import DictConfig
+import scipy.stats #KLダイバージェイス計算用
 
 
 import matplotlib.pyplot as plt
@@ -72,8 +73,74 @@ def plot_ev_predictions(csv_file, output_dir):
         plt.savefig(Path(output_dir) / "error_histogram.png")
         plt.close()
 
+        #モデル予測値のみヒストグラム
+        plt.figure(figsize=(6,4))
+        plt.hist(df["pred_ev"], bins=30, alpha=0.7, color='orange', edgecolor='black')
+        plt.xlabel("Predicted EV")
+        plt.ylabel("Frequency")
+        plt.title("Predicted EV Distribution")
+        plt.grid(True)
+        plt.tight_layout()
+        plt.savefig(Path(output_dir) / "predicted_ev_histogram.png")
+        plt.close()
+
+        #正解値のみヒストグラム
+        plt.figure(figsize=(6,4))
+        plt.hist(df["true_ev"], bins=30, alpha=0.7, color='orange', edgecolor='black')
+        plt.xlabel("Predicted EV")
+        plt.ylabel("Frequency")
+        plt.title("Predicted EV Distribution")
+        plt.grid(True)
+        plt.tight_layout()
+        plt.savefig(Path(output_dir) / "true_ev_histogram.png")
+        plt.close()
+
+        # ヒストグラムの範囲を統一して計算
+        # 範囲決定
+        range_min = min(df["true_ev"].min(), df["pred_ev"].min())
+        range_max = max(df["true_ev"].max(), df["pred_ev"].max())
+        bins = np.linspace(range_min, range_max, 31) # 30ビン 論文を同じにすること
+
+        # 度数分布を取得
+        hist_true, _ = np.histogram(df["true_ev"], bins=bins, density=False)
+        hist_pred, _ = np.histogram(df["pred_ev"], bins=bins, density=False)
+
+        # 確率分布に変換 (和を1にする)
+        prob_true = hist_true / (hist_true.sum() + 1e-10)
+        prob_pred = hist_pred / (hist_pred.sum() + 1e-10)
+
+        # ゼロ除算回避のための微小値加算
+        epsilon = 1e-10
+        prob_true = prob_true + epsilon
+        prob_pred = prob_pred + epsilon
+        
+        # 再正規化
+        prob_true /= prob_true.sum()
+        prob_pred /= prob_pred.sum()
+
+        # KLダイバージェンス計算: entropy(pk, qk) = sum(pk * log(pk / qk))
+        # P:正解分布、Q:予測分布 とするのが一般的
+        kl_value = scipy.stats.entropy(prob_true, prob_pred)
+
+        # 描画
+        plt.figure(figsize=(8, 5))
+        # alphaで透過させて重ねる
+        plt.hist(df["true_ev"], bins=bins, alpha=0.5, label='True EV', color='blue', density=True)
+        plt.hist(df["pred_ev"], bins=bins, alpha=0.5, label='Pred EV', color='orange', density=True)
+        
+        plt.xlabel("EV")
+        plt.ylabel("Density")
+        plt.title(f"True vs Pred Distribution (KL Divergence = {kl_value:.4f})")
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        plt.savefig(Path(output_dir) / "distribution_comparison_kl.png")
+        plt.close()
+
         print(f"可視化グラフ保存完了: {output_dir}")
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         print(f"警告: グラフの描画に失敗しました。{e}")
  
 @hydra.main(version_base=None, config_path="../conf", config_name="config.yaml")
