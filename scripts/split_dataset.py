@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 def split_dataset(
     dataset_name="HDR+burst",
-    subset_name="20171106/results_20171023",  # ← 使用フォルダをここで変更
+    subset_name="processed_1024px_exr",  #変更前：20171106/results_20171023 ← 使用フォルダをここで変更
     annotations_csv="conf/dataset/annotations.csv",
     train_size=0.8,
     val_size=0.1,
@@ -33,7 +33,7 @@ def split_dataset(
 
     # 画像ファイル検索
     print(f"{input_dir} 内の merged.dng ファイルを検索中...")
-    image_paths = sorted(list(input_dir.rglob("merged.dng"))) # final.jpg -> merged.dng
+    image_paths = sorted(list(input_dir.rglob("merged.exr"))) #11/28 merged.dng -> mergeged.exr
     if not image_paths:
         raise RuntimeError(f"merged.dng 無し: {input_dir}")
 
