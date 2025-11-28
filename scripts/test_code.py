@@ -220,7 +220,6 @@ def main(cfg: DictConfig):
                 }
 
                 # --- EV値絶対値による分類 ---
-                # --- EV値絶対値による分類 ---
                 abs_ev = abs(t_val)
                 error = abs(p_val - t_val)
 
@@ -329,26 +328,45 @@ def main(cfg: DictConfig):
 
         # 画像生成
         img_orig = adjust_exposure(linear, 0.0)
-        img_pred = adjust_exposure(linear, -s_pred) #修正：符号反転（修正前img_pred = adjust_exposure(linear, s_pred)）
-        img_true = adjust_exposure(linear, -s_true)
-        img_diff = torch.abs(img_pred - img_orig) * 10.0
+        img_pred_inv = adjust_exposure(linear, -s_pred) #修正：符号反転（修正前img_pred = adjust_exposure(linear, s_pred)）
+        img_pred_raw = adjust_exposure(linear, s_pred)
+        img_true_raw = adjust_exposure(linear, s_true)
+        img_true_inv = adjust_exposure(linear, -s_true)
+        img_diff = torch.abs(img_pred_inv - img_orig) * 10.0
 
         # 保存
-        # 保存
         orig_path = save_dir / f"{s_filename}_補正前.png"
-        pred_path = save_dir / f"{s_filename}_補正後(EV{s_pred:.4f}).png"
-        true_path = save_dir / f"{s_filename}_正解(EV{s_true:.4f}).png"
+        pred_path_raw = save_dir / f"{s_filename}_補正後(Pred EV {s_pred:.4f}).png"
+        true_path_raw = save_dir / f"{s_filename}_正解補正後(True EV {s_true:.4f}).png"
+        pred_path_inv = save_dir / f"{s_filename}_補正後(反転)(Pred EV {-s_pred:.4f}).png"
+        true_path_inv = save_dir / f"{s_filename}_正解補正後（反転）(True EV {-s_true:.4f}).png"
         diff_path = save_dir / f"{s_filename}_差分強調.png"
 
         vutils.save_image(img_orig, orig_path)
-        vutils.save_image(img_pred, pred_path)
-        vutils.save_image(img_true, true_path)
+        vutils.save_image(img_true_inv, true_path_inv)
+        vutils.save_image(img_true_raw, true_path_raw) 
+        vutils.save_image(img_pred_inv, pred_path_inv)
+        vutils.save_image(img_pred_raw, pred_path_raw) 
         vutils.save_image(img_diff, diff_path)
+
+    
+        # --- まとめて比較画像の保存 (グリッド表示) ---
+        # 配列順序: 
+        # [元画像, 正解(反転), 正解(生)]
+        # [差分,   予測(反転), 予測(生)]
+        compare_path = save_dir / f"{s_filename}_ALL_Comparison.png"
+        comparison_list = [
+            img_orig, img_true_inv, img_true_raw,
+            img_diff, img_pred_inv, img_pred_raw
+        ]
+        
+        # nrow=3 にすることで、横3枚で折り返しになり、2行3列の画像が生成されます
+        vutils.save_image(comparison_list, compare_path, nrow=3, padding=5, normalize=False)
 
         # ビット深度確認
         dtype_str = "unknown"
         try:
-            check_img = iio.imread(pred_path)  # ← 保存したファイルパスを使う
+            check_img = iio.imread(pred_path_inv)  # ← 保存したファイルパスを使う
             dtype_str = str(check_img.dtype)
         except:
             pass
@@ -358,7 +376,7 @@ def main(cfg: DictConfig):
 
 
         mean_orig = img_orig.mean().item()
-        mean_pred = img_pred.mean().item()
+        mean_pred = img_pred_inv.mean().item()
         diff_val  = mean_pred - mean_orig
         judge = "変化あり" if abs(diff_val) > 0.0001 else "変化なし"
 
@@ -406,32 +424,49 @@ def main(cfg: DictConfig):
         # adjust_exposure には「線形」の linear_img を渡す
         baseline_srgb_img = adjust_exposure(linear_img_normalized, base_ev) #対数修正その3:denorm_img -> linear_img
         #モデル予測値で補正した画像
-        pred_corrected_img = adjust_exposure(linear_img_normalized, -pred_ev)
+        # モデル予測値 (2パターン)
+        pred_corrected_img_inv = adjust_exposure(linear_img_normalized, -pred_ev) # 反転
+        pred_corrected_img_raw = adjust_exposure(linear_img_normalized, pred_ev)  # そのまま
         #正解ラベル値で補正した画像
-        true_corrected_img = adjust_exposure(linear_img_normalized, -true_ev)
+        # 正解ラベル (2パターン)
+        true_corrected_img_inv = adjust_exposure(linear_img_normalized, -true_ev) # 反転
+        true_corrected_img_raw = adjust_exposure(linear_img_normalized, true_ev)  # そのまま
         # 元のファイル名から拡張子 (.jpgなど) を取り除く
         base_filename = Path(best_image_info['filename']).stem
 
 
         original_path = bestpred_dir / f"{base_filename}_補正前(EV {base_ev:.4f}).png"
-        pred_path = bestpred_dir / f"{base_filename}_補正後(Pred EV {pred_ev:.4f}).png"
-        true_path = bestpred_dir / f"{base_filename}_正解補正後(True EV {true_ev:.4f}).png"
+        pred_raw_path = bestpred_dir / f"{base_filename}_補正後(Pred EV {pred_ev:.4f}).png"
+        true_raw_path = bestpred_dir / f"{base_filename}_正解補正後(True EV {true_ev:.4f}).png"
+        pred_inv_path = bestpred_dir / f"{base_filename}_補正後(反転)(Pred EV {-pred_ev:.4f}).png"
+        true_inv_path = bestpred_dir / f"{base_filename}_正解補正後（反転）(True EV {-true_ev:.4f}).png"
         path_diff = bestpred_dir / f"{base_filename}_差分強調画像.png"
 
         vutils.save_image(baseline_srgb_img, original_path)
-        vutils.save_image(pred_corrected_img, pred_path)
-        vutils.save_image(true_corrected_img, true_path)
+        vutils.save_image(pred_corrected_img_inv, pred_inv_path)
+        vutils.save_image(true_corrected_img_inv, true_inv_path)
+        vutils.save_image(pred_corrected_img_raw, pred_raw_path)
+        vutils.save_image(true_corrected_img_raw, true_raw_path)
 
         # 視覚的に変化を確認するための「差分強調画像」を作成,(補正後 - 補正前) の絶対値を 10倍 して保存
-        diff_tensor = torch.abs(pred_corrected_img - baseline_srgb_img) * 10.0
+        diff_tensor = torch.abs(pred_corrected_img_inv - baseline_srgb_img) * 10.0
         vutils.save_image(diff_tensor, path_diff)
+
+        # --- まとめて比較画像の保存 ---
+        compare_path = bestpred_dir / f"{base_filename}_ALL_Comparison.png"
+        comparison_list = [
+            baseline_srgb_img, true_corrected_img_inv, true_corrected_img_raw,
+            diff_tensor,       pred_corrected_img_inv, pred_corrected_img_raw
+        ]
+        # nrow=3 で 2行3列 の配置
+        vutils.save_image(comparison_list, compare_path, nrow=3, padding=5, normalize=False)
 
         #出力画像が何bitなのか
         print("確認事項：画像bit深度")
         try:
             #保存した画像を読み込みして確認
-            loaded_img = iio.imread(pred_path)
-            print(f"  保存ファイル: {pred_path.name}")
+            loaded_img = iio.imread(pred_inv_path)
+            print(f"  保存ファイル: {pred_inv_path.name}")
             print(f"  データ型(dtype): {loaded_img.dtype}")
 
             if loaded_img.dtype == np.uint8:
@@ -448,7 +483,7 @@ def main(cfg: DictConfig):
 
         # 画像全体の平均輝度を計算
         mean_orig = baseline_srgb_img.mean().item()
-        mean_pred = pred_corrected_img.mean().item()
+        mean_pred = pred_corrected_img_inv.mean().item()
         diff_val  = mean_pred - mean_orig
 
         print(f"  予測EV値: {pred_ev:.4f}")
