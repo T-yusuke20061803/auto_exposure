@@ -19,7 +19,7 @@ class LogTransform(object):
     """
     def __call__(self, tensor):
         # +1.0 して log(0) を防ぐ
-        return torch.log2(tensor* 65535.0+1.0)
+        return torch.log2(tensor+1.0)
 
 
 class AnnotatedDatasetFolder(torchdata.Dataset):
