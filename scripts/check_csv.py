@@ -11,99 +11,75 @@ image_root = Path("conf/dataset/HDR+burst/processed_1024px_exr")
 output_path = Path("outputs/dataset_verification.png")
 num_samples = 5
 # ========================================
+def check_dataset_integrity(csv_path, root_dir):
+    csv_p = Path(csv_path)
+    root_p = Path(root_dir)
 
-def normalize_for_display(img):
-    """画像を強制的に0-1の範囲に正規化して見やすくする"""
-    img = img.astype(np.float32)
-    img = np.nan_to_num(img) # NaN除去
-    
-    # 完全にデータがない(真っ黒)場合
-    if img.max() <= 0:
-        return img
+    print(f"--- データ整合性チェック開始 ---")
+    print(f"CSVファイル: {csv_p}")
+    print(f"画像ルート : {root_p}\n")
 
-    # 外れ値対策: 上位1%を最大値とみなしてクリップ
-    v_min = img.min()
-    v_max = np.percentile(img, 99.5) 
-    if v_max <= v_min: v_max = img.max()
-    
-    # 0-1正規化
-    img_norm = (img - v_min) / (v_max - v_min + 1e-8)
-    img_norm = np.clip(img_norm, 0, 1)
-    
-    # ガンマ補正 (暗部を持ち上げる)
-    img_gamma = np.power(img_norm, 1/2.2)
-    
-    return img_gamma
-
-def main():
-    if not csv_path.exists():
-        print(f"エラー: CSVが見つかりません {csv_path}")
+    if not csv_p.exists():
+        print(f"[Error] CSVファイルが見つかりません: {csv_p}")
+        return
+    if not root_p.exists():
+        print(f"[Error] 画像ルートディレクトリが見つかりません: {root_p}")
         return
 
-    df = pd.read_csv(csv_path)
-    samples = df.sample(n=num_samples, random_state=42)
-    
-    print(f"=== 画像データの強制可視化 ({num_samples}枚) ===")
-    
-    fig, axes = plt.subplots(1, num_samples, figsize=(20, 5))
-    if num_samples == 1: axes = [axes]
-    
-    for i, (_, row) in enumerate(samples.iterrows()):
-        filename = row['Filename']
-        ev_val = row['Exposure']
-        
-        print(f"\nProcessing: {filename}")
-        
-        # フォルダ検索
-        found_dirs = list(image_root.rglob(f"{filename}*"))
-        
-        target_file = None
-        if found_dirs:
-            # 見つかったパスがディレクトリなら、その中の画像ファイルを探す
-            base_path = found_dirs[0]
-            if base_path.is_dir():
-                # ディレクトリ内のファイルを検索 (merged.exr を優先、なければ最初のファイル)
-                files_in_dir = list(base_path.iterdir())
-                exr_files = list(base_path.glob("*.exr"))
-                
-                if exr_files:
-                    target_file = exr_files[0]
-                elif files_in_dir:
-                    target_file = files_in_dir[0]
-            else:
-                target_file = base_path
-        
-        if target_file is None:
-            print("  -> 画像ファイルが見つかりませんでした (スキップ)")
-            continue
+    # CSV読み込み
+    try:
+        df = pd.read_csv(csv_p)
+        print(f"CSV読み込み成功: {len(df)} 行")
+    except Exception as e:
+        print(f"[Error] CSV読み込み失敗: {e}")
+        return
 
-        print(f"  -> 読み込み対象: {target_file.name}")
+    if "filename" not in df.columns:
+        print(f"[Error] CSVに 'filename' カラムがありません。現在のカラム: {df.columns.tolist()}")
+        return
 
-        try:
-            # 画像読み込み
-            img = iio.imread(target_file)
-            
-            # 強制可視化処理
-            img_disp = normalize_for_display(img)
-            
-            # 表示
-            ax = axes[i]
-            ax.imshow(img_disp)
-            
-            # ラベル表示
-            status = "Bright(+)" if ev_val > 0 else "Dark(-)"
-            color = "red" if ev_val > 0 else "blue"
-            ax.set_title(f"CSV: {ev_val}\n{status}", color=color, fontsize=12, fontweight='bold')
-            ax.axis('off')
-            
-        except Exception as e:
-            print(f"  読み込みエラー: {e}")
+    # --- チェック1: CSVにあるファイルが実際に存在するか ---
+    missing_files = []
+    
+    # プログレスバー代わりにカウント表示
+    print("ファイルの存在確認を実行中...")
+    
+    for idx, row in df.iterrows():
+        fname = str(row['filename']).strip() # 空白除去
+        
+        # パスの結合 (pathlibはOSに合わせて区切り文字を自動調整します)
+        full_path = root_p / fname
+        
+        if not full_path.exists():
+            missing_files.append({
+                "index": idx,
+                "csv_filename": fname,
+                "expected_path": str(full_path)
+            })
 
-    plt.tight_layout()
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_path)
-    print(f"\n確認画像を保存しました: {output_path.resolve()}")
-    print("生成された画像を確認してください。青字(Dark)が暗く、赤字(Bright)が明るければ、データセットは正常です。")
+    # --- 結果報告 ---
+    print("\n" + "="*30)
+    print("       診断結果")
+    print("="*30)
+
+    if len(missing_files) == 0:
+        print(" 正常: CSV内のすべての画像ファイルが存在します。")
+    else:
+        print(f"警告: {len(missing_files)} 件のファイルが見つかりません！")
+        print("\n[見つからないファイルの例 (最初の5件)]:")
+        for item in missing_files[:5]:
+            print(f"  Row {item['index']}: {item['csv_filename']}")
+            print(f"    -> 探したパス: {item['expected_path']}")
+        
+        print("\n考えられる原因:")
+        print("  1. CSV内のパスが相対パス('folder/img.dng')ではなく、ファイル名のみ('img.dng')になっている")
+        print("  2. ルートディレクトリ(root_dir)の指定が間違っている")
+        print("  3. 拡張子の大文字・小文字が違う (.dng vs .DNG)")
+        print("  4. パス区切り文字の違い (Windows '\\' vs Linux '/')")
+
+    # --- おまけ: 拡張子の確認 ---
+    extensions = df['filename'].apply(lambda x: Path(x).suffix).unique()
+    print(f"\n[Info] CSVに含まれる拡張子一覧: {extensions}")
 
 if __name__ == "__main__":
-    main()
+    check_dataset_integrity(csv_path, image_root)

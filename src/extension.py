@@ -299,6 +299,7 @@ class LearningCurvePlotter(Extension):
     
     def __call__(self, trainer: Trainer) -> typing.NoReturn:
         import matplotlib.pyplot as plt
+        plt.figure()
         history = trainer.history
  
          # 訓練ロスは trainer.py 側で 'loss' とハードコードされているため、これでOK
