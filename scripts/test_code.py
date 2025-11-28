@@ -70,29 +70,29 @@ def plot_ev_predictions(csv_file, output_dir):
         plt.title(f"Prediction Error Distribution (RMSE={np.sqrt((df['diff']**2).mean()):.3f})")
         plt.grid(True)
         plt.tight_layout()
-        plt.savefig(Path(output_dir) / "error_histogram.png")
+        plt.savefig(Path(output_dir) / "誤差分布_histogram.png")
         plt.close()
 
         #モデル予測値のみヒストグラム
         plt.figure(figsize=(6,4))
-        plt.hist(df["pred_ev"], bins=30, alpha=0.7, color='orange', edgecolor='black')
+        plt.hist(df["pred_ev"], bins=30, alpha=0.7, edgecolor='black')
         plt.xlabel("Predicted EV")
         plt.ylabel("Frequency")
         plt.title("Predicted EV Distribution")
         plt.grid(True)
         plt.tight_layout()
-        plt.savefig(Path(output_dir) / "predicted_ev_histogram.png")
+        plt.savefig(Path(output_dir) / "予測値_ev_histogram.png")
         plt.close()
 
         #正解値のみヒストグラム
         plt.figure(figsize=(6,4))
-        plt.hist(df["true_ev"], bins=30, alpha=0.7, color='orange', edgecolor='black')
+        plt.hist(df["true_ev"], bins=30, alpha=0.7, edgecolor='black')
         plt.xlabel("Predicted EV")
         plt.ylabel("Frequency")
         plt.title("Predicted EV Distribution")
         plt.grid(True)
         plt.tight_layout()
-        plt.savefig(Path(output_dir) / "true_ev_histogram.png")
+        plt.savefig(Path(output_dir) / "正価値_ev_histogram.png")
         plt.close()
 
         # ヒストグラムの範囲を統一して計算
