@@ -41,7 +41,7 @@ def main():
         return
 
     df = pd.read_csv(csv_path)
-    samples = df.sample(n=num_samples, random_state=42)
+    samples = df.sample(n=num_samples)
     
     print(f"=== 画像データの強制可視化 ({num_samples}枚) ===")
     
