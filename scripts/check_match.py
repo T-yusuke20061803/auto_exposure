@@ -3,7 +3,7 @@ from pathlib import Path
 import sys
 
 # ================= 設定 =================
-csv_path = Path("conf/dataset/annotation.csv")
+csv_path = Path("conf/dataset/annotations.csv")
 image_root = Path("conf/dataset/HDR+burst/processed_1024px_exr")
 # ========================================
 
