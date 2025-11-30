@@ -6,6 +6,7 @@ from torchvision.transforms import v2
 import hydra
 from omegaconf import DictConfig
 import scipy.stats #KLダイバージェイス計算用
+import shutil
 
 
 import matplotlib.pyplot as plt
@@ -32,8 +33,11 @@ def adjust_exposure(image_tensor, ev_value):
     #linear_image = torch.pow(image_tensor, 2.2)
     correction_factor = 2.0 ** ev_value
     corrected_linear_image = image_tensor * correction_factor #linear_image -> image_tensor
-    # トーンマッピング（Reinhard）
-    tone_mapped = corrected_linear_image / (corrected_linear_image + 1.0)
+    # トーンマッピング (変更日11/30)
+    # 変更前 : tone_mapped = corrected_linear_image / (corrected_linear_image + 1.0)
+    # 変更後 (Code1): Clipping ( 1.0を超えたら切り捨て )
+    # これにより、明るい部分は白飛びするようになります（アノテーション画面と同じ見た目）
+    tone_mapped = torch.clamp(corrected_linear_image, 0.0, 1.0)
     # Linear (線形) -> sRGB (非線形) に戻す
     # ガンマ補正 (1 / 2.2) を適用
     corrected_srgb_image = torch.pow(tone_mapped, 1.0/2.2)
