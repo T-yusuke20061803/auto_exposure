@@ -500,15 +500,15 @@ def main(cfg: DictConfig):
         true_ev = best_image_info["true_ev"]
 
         # adjust_exposure には「線形」の linear_img を渡す
-        baseline_srgb_img = adjust_exposure(linear_img_normalized, base_ev) #対数修正その3:denorm_img -> linear_img
+        baseline_srgb_img = adjust_exposure(linear_img, base_ev) #対数修正その3:denorm_img -> linear_img
         #モデル予測値で補正した画像
         # モデル予測値 (2パターン)
-        pred_corrected_img_inv = adjust_exposure(linear_img_normalized, -pred_ev) # 反転
-        pred_corrected_img_raw = adjust_exposure(linear_img_normalized, pred_ev)  # そのまま
+        pred_corrected_img_inv = adjust_exposure(linear_img, -pred_ev) # 反転
+        pred_corrected_img_raw = adjust_exposure(linear_img, pred_ev)  # そのまま
         #正解ラベル値で補正した画像
         # 正解ラベル (2パターン)
-        true_corrected_img_inv = adjust_exposure(linear_img_normalized, -true_ev) # 反転
-        true_corrected_img_raw = adjust_exposure(linear_img_normalized, true_ev)  # そのまま
+        true_corrected_img_inv = adjust_exposure(linear_img, -true_ev) # 反転
+        true_corrected_img_raw = adjust_exposure(linear_img, true_ev)  # そのまま
         # 元のファイル名から拡張子 (.jpgなど) を取り除く
         base_filename = Path(best_image_info['filename']).stem
 
