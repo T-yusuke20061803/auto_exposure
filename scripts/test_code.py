@@ -465,7 +465,7 @@ def main(cfg: DictConfig):
     if "original" in best_image_info:
         mean = cfg.dataset.train.transform.normalize.mean
         std  = cfg.dataset.train.transform.normalize.std
-
+        #デバック確認用
         print(f"\n[Config Check]")
         print(f"  Mean: {mean}")
         print(f"  Std : {std}")
