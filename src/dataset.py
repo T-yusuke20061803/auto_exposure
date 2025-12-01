@@ -112,7 +112,7 @@ def imageio_loader(path):
         img_float_numpy = imageio.v3.imread(path) 
         # NumPy (H, W, C) -> PyTorch Tensor (C, H, W) に変換
         tensor = torch.from_numpy(img_float_numpy.astype(np.float32)).permute(2, 0, 1) 
-        return tensor / 65535.0
+        return tensor 
     except Exception as e:
         print(f"imageioでの画像読み込みエラー: {path}, エラー: {e}")
         raise

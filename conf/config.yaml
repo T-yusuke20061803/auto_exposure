@@ -12,19 +12,19 @@ args:
 
 
 seed: 50 #再現性確保のため、固定値を採用
-epoch: 600
+epoch: 500
 
 
 amp: true #AMP
 
 # データローダ設定
 dataloader: 
-  batch_size: 128 # バッチサイズ
+  batch_size: 64 # バッチサイズ
   num_workers: 8  # ← 16 から減らす 同様の理由
   pin_memory: true
 
 # 勾配累積：実質的なバッチサイズを 32 * 2 = 64 にする(※無しの場合：デフォルトの１となる)
-accumulation_steps: 1
+accumulation_steps: 2
 
 #---データセットの指定---
 dataset:
@@ -52,7 +52,7 @@ dataset:
       root: ${dataset.image_root}
       transform:
         random_resized_crop: # 画像をランダムな位置・サイズで切り抜き、224x224にリサイズする
-          size: 384
+          size: 512
           scale: [0.8, 1.0] # 元画像を指定の範囲で切り抜く
           ratio: [0.75, 1.33]
         random_horizontal_flip: # 画像を左右反転
@@ -81,8 +81,8 @@ dataset:
     csv_file: ${dataset.split_root}/val.csv
     root: ${dataset.image_root}
     transform:
-      resize: 448
-      center_crop: 384
+      resize: 600
+      center_crop: 512
       normalize:
         mean: ${dataset.log_normalize_mean} # ◀ 共通の値を参照 dataset.log_normalize_mean(対数修正)
         std: ${dataset.log_normalize_std}   #dataset.log_normalize_std(対数修正)
@@ -94,8 +94,8 @@ dataset:
     
     # 評価時にはデータ拡張を行わない
     transform:
-      resize: 448
-      center_crop: 384
+      resize: 600
+      center_crop: 512
       normalize:
         mean: ${dataset.log_normalize_mean} # ◀ 共通の値を参照 dataset.log_normalize_mean(対数修正)
         std: ${dataset.log_normalize_std}   #dataset.log_normalize_std(対数修正)
