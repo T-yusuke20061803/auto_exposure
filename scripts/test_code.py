@@ -466,6 +466,10 @@ def main(cfg: DictConfig):
         mean = cfg.dataset.train.transform.normalize.mean
         std  = cfg.dataset.train.transform.normalize.std
 
+        print(f"\n[Config Check]")
+        print(f"  Mean: {mean}")
+        print(f"  Std : {std}")
+
         #補正前の画像(EV=0 のsRGB画像として保存) <- ".png"で保存すると画像全体が暗くなるため、視覚的に比較しやすくするため
         denorm_img = denormalize(best_image_info["original"], mean, std)
     #対数修正その2
