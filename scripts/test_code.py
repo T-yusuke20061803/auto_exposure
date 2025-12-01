@@ -465,9 +465,6 @@ def main(cfg: DictConfig):
     if "original" in best_image_info:
         mean = cfg.dataset.train.transform.normalize.mean
         std  = cfg.dataset.train.transform.normalize.std
-        print(f"\n[Config Check]")
-        print(f"  Mean: {mean}")
-        print(f"  Std : {std}")
 
         #補正前の画像(EV=0 のsRGB画像として保存) <- ".png"で保存すると画像全体が暗くなるため、視覚的に比較しやすくするため
         denorm_img = denormalize(best_image_info["original"], mean, std)
@@ -479,10 +476,10 @@ def main(cfg: DictConfig):
         # (計算誤差でマイナスになるのを防ぐ)
         linear_img = torch.clamp(linear_img, min=0.0)
 
-        linear_img_normalized = linear_img / 65535.0
+        #linear_img_normalized = linear_img / 65535.0
         
         # 確認用ログ（これで 0.0 〜 1.0 くらいになっていればOK）
-        print(f"\n[Check] 0-1正規化後の最大値: {linear_img_normalized.max().item():.4f}")
+        print(f"\n[Check] 0-1正規化後の最大値: {linear_img.max().item():.4f}")
 
         # max値が1.0に近い場合はすでに正規化されているので65535で割ってはいけない
         #max_val = linear_img.max().item()
