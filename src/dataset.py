@@ -18,8 +18,11 @@ class LogTransform(object):
     理由：画素値が0から10,000に集中しているため対数を用いることで、小さいな（0～10000）に集中している部分を強調するため
     """
     def __call__(self, tensor):
-        # +1.0 して log(0) を防ぐ
-        return torch.log2(tensor+1.0)
+        # もし入力が 0-1 なら 65535倍に戻す
+        if tensor.max() <= 1.0:
+             return torch.log2(tensor * 65535.0 + 1.0)
+        # 65535スケールならそのまま
+        return torch.log2(tensor + 1.0)
 
 
 class AnnotatedDatasetFolder(torchdata.Dataset):
