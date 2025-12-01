@@ -28,6 +28,8 @@ def denormalize(tensor, mean, std, inplace=False):
     return tensor_copy
 
 def adjust_exposure(image_tensor, ev_value):
+    print(f"\n[DEBUG] EV: {ev_value:.4f}")
+    print(f"  Input Min: {image_tensor.min():.6f}, Max: {image_tensor.max():.6f}, Mean: {image_tensor.mean():.6f}")
     # sRGB (非線形) -> Linear (線形)
     # 一般的なガンマ値 2.2 を使用
     #linear_image = torch.pow(image_tensor, 2.2)
