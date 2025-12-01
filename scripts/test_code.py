@@ -476,18 +476,23 @@ def main(cfg: DictConfig):
         # (計算誤差でマイナスになるのを防ぐ)
         linear_img = torch.clamp(linear_img, min=0.0)
 
+        linear_img_normalized = linear_img / 65535.0
+        
+        # 確認用ログ（これで 0.0 〜 1.0 くらいになっていればOK）
+        print(f"\n[Check] 0-1正規化後の最大値: {linear_img_normalized.max().item():.4f}")
+
         # max値が1.0に近い場合はすでに正規化されているので65535で割ってはいけない
-        max_val = linear_img.max().item()
-        print(f"\n[Check] 復元されたRawデータの最大値: {max_val:.2f}")
+        #max_val = linear_img.max().item()
+        #print(f"\n[Check] 復元されたRawデータの最大値: {max_val:.2f}")
         
         # あなたの前処理コードでは 0-65535 なので、それに対応
         # トーンマップ用には [0,1] スケールが必要
-        if max_val > 100.0: # 明らかに1.0より大きい場合
-            linear_img_normalized = linear_img / 65535.0
-            print(" -> 16bitスケールと判定: 表示用に 1/65535を実施。")
-        else:
-            linear_img_normalized = linear_img
-            print(" -> 0-1スケールと判定: そのまま処理")
+        #if max_val > 100.0: # 明らかに1.0より大きい場合
+            #linear_img_normalized = linear_img / 65535.0
+            #print(" -> 16bitスケールと判定: 表示用に 1/65535を実施。")
+        #else:
+            #linear_img_normalized = linear_img
+            #print(" -> 0-1スケールと判定: そのまま処理")
 
         # (補正前のEV値は 0.0 で固定)
         base_ev = 0.0 
