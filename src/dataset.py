@@ -23,7 +23,7 @@ class LogTransform(object):
         # もし入力が 0-1 なら 65535倍に戻す
         if tensor.max() <= 1.0:
              return torch.log2(tensor * 65535.0 + 1.0)
-        # 65535スケールならそのまま
+        # 0～65535ならそのまま
         return torch.log2(tensor + 1.0)
 
 
@@ -49,9 +49,9 @@ class AnnotatedDatasetFolder(torchdata.Dataset):
             except FileNotFoundError:
                 raise RuntimeError(f"アノテーションファイルが見つかりません: {csv_file}")
             
-        if "filepath" not in dataframe.columns:
+        if "filepath" not in dataframe.columns:#画像の場所
             raise ValueError("CSVには 'filepath' 列が必要です。")
-        if "Exposure" not in dataframe.columns:
+        if "Exposure" not in dataframe.columns:#正解ラベルの場所
             raise ValueError("CSVには 'Exposure' 列が必要です。")
         
         self.samples = []
@@ -68,20 +68,19 @@ class AnnotatedDatasetFolder(torchdata.Dataset):
             
             if os.path.exists(path):
                 try:
+                    # リストに追加 (場所, 正解ラベル, ファイル名ID)
                     self.samples.append((path, float(target), filename))
                 except (ValueError, TypeError):
                      print(f"警告: {path} の Exposure '{target}' を float に変換不可。スキップします。")
                      missing_files += 1
             else:
                 missing_files += 1
-                if missing_files < 10: # ログが溢れないように
-                    print(f"警告: パスが見つかりません ( .exr に変換): {path}") # .exr に変換 -> .dng
-        
-        if missing_files > 0:
-             print(f"警告: {missing_files} 件のファイルが見つかりませんでした。")
+                if 0 < missing_files < 10: 
+                    print(f"警告: パスが無し( .exr に変換): {path}:{missing_files} 件") # .exr に変換 -> .dng
+
         if not self.samples:
-             raise RuntimeError("有効なサンプルが見つかりませんでした。")
-        print(f"{len(self.samples)} 件の有効なサンプルを読み込みました。")
+             raise RuntimeError("有効なサンプル無し")
+        print(f"{len(self.samples)} 件の有効なサンプルを読み込み")
     def __getitem__(self, index):
         path, target, filename = self.samples[index]
         try:
@@ -89,7 +88,7 @@ class AnnotatedDatasetFolder(torchdata.Dataset):
         except Exception as e:
             print(f"エラー: 画像の読み込み失敗{path}, {e}")
             return None
-        
+        #前処理適応
         if self.transform is not None:
             sample = self.transform(sample)
         
@@ -107,11 +106,12 @@ def pil_loader(path):
 # .exr を読み込むローダーを新設
 def imageio_loader(path):
     try:
-        # .exr を float32 の numpy 配列 (H, W, C) として読み込む
+        # .exr を float32 の numpy 配列 (H, W, C) として読み込む　値は 0〜65535 のまま
         img_float_numpy = imageio.v3.imread(path) 
-        # NumPy (H, W, C) -> PyTorch Tensor (C, H, W) に変換
+        # NumPy (縦, 横, 色) -> PyTorch Tensor (色, 縦, 横) に変換　この順でないと処理できない
         tensor = torch.from_numpy(img_float_numpy.astype(np.float32)).permute(2, 0, 1) 
         return tensor 
+    
     except Exception as e:
         print(f"imageioでの画像読み込みエラー: {path}, エラー: {e}")
         raise
@@ -136,6 +136,7 @@ def dng_loader(path):
         raise
 
 def collate_fn_skip_none(batch):
+    # 読み込み失敗(None)のデータがあったら、リストから除外
     batch = list(filter(lambda x: x is not None, batch))
     if not batch:
         return None, None, None

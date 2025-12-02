@@ -32,7 +32,7 @@ def split_dataset(
         raise FileNotFoundError(f"アノテーションCSVが存在しません: {annotations_csv}")
 
     # 画像ファイル検索
-    print(f"{input_dir} 内の merged.exr ファイルを検索中...")
+    print(f"{input_dir} 内の merged.exr ファイルを検索中")
     image_paths = sorted(list(input_dir.rglob("merged.exr"))) #11/28 merged.dng -> mergeged.exr
     if not image_paths:
         raise RuntimeError(f"merged.exr 無し: {input_dir}")
@@ -43,11 +43,11 @@ def split_dataset(
     df_ann = pd.read_csv(annotations_csv)
     # 重複行がある場合は最初の1つを採用
     df_ann = df_ann.drop_duplicates(subset="Filename", keep="last")#keep="first"で最初に記録されたExposureを優先、keep="last"で最後に記録されたExposureを優先
-    if "Filename" not in df_ann.columns or "Exposure" not in df_ann.columns:
+    if "Filename" not in df_ann.columns or "Exposure" not in df_ann.columns: #columns:列の項目名を指定
         raise ValueError("annotations.csv に 'Filename' + 'Exposure' 列が必要です。")
 
     # Exposure欠損チェック
-    missing_expo = df_ann["Exposure"].isna().sum()
+    missing_expo = df_ann["Exposure"].isna().sum() #isna():データの欠損値を判定する関数
     if missing_expo > 0:
         print(f"警告: Exposure が欠損している行有り： {missing_expo} 件")
 

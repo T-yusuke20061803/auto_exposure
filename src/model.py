@@ -251,7 +251,7 @@ class ResNetRegression(nn.Module):
     torchvision の事前学習済み ResNet をベースとし、
     カスタム回帰ヘッドを持つモデル
     """
-    def __init__(self, resnet_name="ResNet34", num_classes=1, freeze_base=True, dropout_p=0.8, unfreeze_layers=2):
+    def __init__(self, resnet_name="ResNet34", num_classes=1, freeze_base=True, dropout_p=0.6, unfreeze_layers=2):
         super().__init__()
 
         # 事前学習済みのResNetを読み込む
@@ -310,7 +310,7 @@ class RegressionEfficientNet(nn.Module):
     EfficientNet-B0をベースに、露出値回帰用にカスタマイズした軽量モデル
     （過学習抑制と汎化性能向上を重視）
     """
-    def __init__(self, version='b4', out_features=1, freeze_base=True, unfreeze_layers=1, dropout_p =0.8, pretrained=True):#versonでモデルの種類を指定 :pretrained=True:事前学習有り、pretrained=False:事前学習無し
+    def __init__(self, version='b0', out_features=1, freeze_base=True, unfreeze_layers=1, dropout_p =0.6, pretrained=True):#versonでモデルの種類を指定 :pretrained=True:事前学習有り、pretrained=False:事前学習無し
         super().__init__() 
         version = version.lower()
         valid_versions = [f"b{i}" for i in range(8)]
@@ -342,12 +342,12 @@ class RegressionEfficientNet(nn.Module):
             nn.Linear(num_ftrs, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(),
-            nn.Dropout(p=dropout_p*0.6),
+            nn.Dropout(p=dropout_p),
 
             nn.Linear(256, 32),
             nn.BatchNorm1d(32),
             nn.ReLU(),
-            nn.Dropout(p=dropout_p*0.3),
+            nn.Dropout(p=dropout_p*0.5),
 
             nn.Linear(32, out_features)
         )
@@ -361,7 +361,7 @@ class RegressionMobileNet(nn.Module):
     MobileNetV3をベースにした軽量回帰モデル
     小型かつ高汎化（過学習抑制・正則化強化）
     """
-    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.7, pretrained=True):
+    def __init__(self, out_features=1, freeze_base=True, unfreeze_layers=0, dropout_p=0.6, pretrained=True):
         super().__init__()
         
         weights = models.MobileNet_V3_Large_Weights.DEFAULT if pretrained else None
