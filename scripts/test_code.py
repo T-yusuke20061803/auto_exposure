@@ -34,16 +34,15 @@ def adjust_exposure(image_tensor, ev_value):
     # 一般的なガンマ値 2.2 を使用
     #linear_image = torch.pow(image_tensor, 2.2)
     correction_factor = 2.0 ** ev_value
-    corrected_linear_image = image_tensor * correction_factor #linear_image -> image_tensor
+    corrected_linear_image = image_tensor * correction_factor
     # トーンマッピング (変更日11/30)
-    # 変更前 : tone_mapped = torch.clamp(corrected_linear_image, 0.0, 1.0)
-    # 変更後 (Code1): Clipping ( 1.0を超えたら切り捨て )
-    # これにより、明るい部分は白飛びするようになります（アノテーション画面と同じ見た目）
-    tone_mapped = corrected_linear_image / (corrected_linear_image + 1.0)
+    # 変更前 : tone_mapped = corrected_linear_image / (corrected_linear_image + 1.0) 
+    # 変更後 : 1.0を超えたら切り捨て 
+    tone_mapped = torch.clamp(corrected_linear_image, 0.0, 1.0)
     # Linear (線形) -> sRGB (非線形) に戻す
-    # ガンマ補正 (1 / 2.2) を適用
+    # ガンマ補正 (1/2.2) を適用
     corrected_srgb_image = torch.pow(tone_mapped, 1.0/2.2)
-    # 最終結果を [0, 1] にクリップして返す
+    # 最終結果を [0,1] にクリップして返す
     return torch.clamp(corrected_srgb_image, 0.0, 1.0)
 
 def plot_ev_predictions(csv_file, output_dir):
@@ -292,7 +291,7 @@ def main(cfg: DictConfig):
                     "pred_ev": p_val
                 }
 
-                # --- EV値絶対値による分類 ---
+                # EV値絶対値による分類
                 abs_ev = abs(t_val)
                 error = abs(p_val - t_val)
 
@@ -334,7 +333,7 @@ def main(cfg: DictConfig):
     result["MAE"] = mae_value
     result["SmoothL1"] = smooth_value
 
-    # --- 総パラメータ数を計算 ---
+    #総パラメータ数を計算
     total_params = sum(p.numel() for p in net.parameters()) / 1e6
     trainable_params = sum(p.numel() for p in net.parameters() if p.requires_grad) / 1e6
 
@@ -423,7 +422,7 @@ def main(cfg: DictConfig):
         vutils.save_image(img_diff, diff_path)
 
     
-        # --- まとめて比較画像の保存 (グリッド表示) ---
+        # まとめて比較画像の保存 (グリッド表示)
         # 配列順序: 
         # [元画像, 正解(反転), 正解(生)]
         # [差分,   予測(反転), 予測(生)]
