@@ -147,7 +147,7 @@ def plot_ev_predictions(csv_file, output_dir):
     except Exception as e:
         import traceback
         traceback.print_exc()
-        print(f"警告: グラフの描画に失敗しました。{e}")
+        print(f"警告: グラフの描画に失敗:{e}")
  
 @hydra.main(version_base=None, config_path="../conf", config_name="config.yaml")
 def main(cfg: DictConfig):
@@ -163,11 +163,11 @@ def main(cfg: DictConfig):
         train_id = cfg.train_id
     else:
         if not history_dir.exists():
-            raise FileNotFoundError(f"モデル '{model_name}' の学習履歴ディレクトリが見つかりません。")
+            raise FileNotFoundError(f"モデル '{model_name}' の学習履歴:無し")
         # best_model.pthが存在するディレクトリの中から、更新日時が最新のものを探す
         run_dirs = [d for d in history_dir.iterdir() if d.is_dir() and (d / "best_model.pth").exists()]
         if not run_dirs:
-            raise FileNotFoundError(f"モデル '{model_name}' の学習済みモデル（best_model.pth）が見つかりません。")
+            raise FileNotFoundError(f"モデル '{model_name}' の学習済みモデル（best_model.pth）:無し")
 
 
         latest_model_dir = max(run_dirs, key=lambda p: p.stat().st_mtime)
@@ -182,9 +182,9 @@ def main(cfg: DictConfig):
 
 
     if not model_path.exists():
-        raise FileNotFoundError(f"最良モデルが見つかりません: {model_path}")
+        raise FileNotFoundError(f"最良モデル無し: {model_path}")
     if not config_path.exists():
-        print("[WARN] config.yaml が見つかりません。train_id のみで識別します。")
+        print("[WARN] config.yaml 無し。train_id のみで識別")
     
     print(f"[INFO] 使用モデル: {model_path}")
 
@@ -198,7 +198,7 @@ def main(cfg: DictConfig):
     elif cfg.model.name.lower() == "mobilenet":
         net = RegressionMobileNet(**cfg.model.params).to(device)
     else:
-        raise ValueError(f"未対応のモデルです: {cfg.model.name}")
+        raise ValueError(f"未対応のモデル: {cfg.model.name}")
     
     net.load_state_dict(torch.load(model_path, map_location=device))
     net.eval()
@@ -433,7 +433,7 @@ def main(cfg: DictConfig):
             img_diff, img_pred_inv, img_pred_raw
         ]
         
-        # nrow=3 にすることで、横3枚で折り返しになり、2行3列の画像が生成されます
+        # nrow=3 にすることで、横3枚で折り返しになり、2行3列の画像が生成
         vutils.save_image(comparison_list, compare_path, nrow=3, padding=5, normalize=False)
 
         # ビット深度確認
@@ -466,36 +466,22 @@ def main(cfg: DictConfig):
         mean = cfg.dataset.train.transform.normalize.mean
         std  = cfg.dataset.train.transform.normalize.std
 
-        #補正前の画像(EV=0 のsRGB画像として保存) <- ".png"で保存すると画像全体が暗くなるため、視覚的に比較しやすくするため
+        #補正前の画像(EV=0 のsRGB画像として保存)
         denorm_img = denormalize(best_image_info["original"], mean, std)
     #対数修正その2
         # Log -> 線形 への「逆変換」
         #(x = 2^y - 1)
         temp = torch.pow(2.0, denorm_img) - 1.0
         linear_img = temp / 65535.0
-        # (計算誤差でマイナスになるのを防ぐ)
+        # 計算誤差でマイナスになるのを防ぐ
         linear_img = torch.clamp(linear_img, min=0.0)
 
         #linear_img_normalized = linear_img / 65535.0
         linear_img_normalized = linear_img
         
-        # 確認用ログ（これで 0.0 〜 1.0 くらいになっていればOK）
-        print(f"\n[Check] 0-1正規化後の最大値: {linear_img_normalized.max().item():.4f}")
+        # 確認用ログ
+        print(f"\n[Check] 正規化後の最大値: {linear_img_normalized.max().item():.4f}")
 
-        # max値が1.0に近い場合はすでに正規化されているので65535で割ってはいけない
-        #max_val = linear_img.max().item()
-        #print(f"\n[Check] 復元されたRawデータの最大値: {max_val:.2f}")
-        
-        # あなたの前処理コードでは 0-65535 なので、それに対応
-        # トーンマップ用には [0,1] スケールが必要
-        #if max_val > 100.0: # 明らかに1.0より大きい場合
-            #linear_img_normalized = linear_img / 65535.0
-            #print(" -> 16bitスケールと判定: 表示用に 1/65535を実施。")
-        #else:
-            #linear_img_normalized = linear_img
-            #print(" -> 0-1スケールと判定: そのまま処理")
-
-        # (補正前のEV値は 0.0 で固定)
         base_ev = 0.0 
         pred_ev = best_image_info["pred_ev"]
         true_ev = best_image_info["true_ev"]
@@ -510,7 +496,6 @@ def main(cfg: DictConfig):
         # 正解ラベル (2パターン)
         true_corrected_img_inv = adjust_exposure(linear_img_normalized, -true_ev) # 反転
         true_corrected_img_raw = adjust_exposure(linear_img_normalized, true_ev)  # そのまま
-        # 元のファイル名から拡張子 (.jpgなど) を取り除く
         base_filename = Path(best_image_info['filename']).stem
 
 
@@ -527,11 +512,11 @@ def main(cfg: DictConfig):
         vutils.save_image(pred_corrected_img_raw, pred_raw_path)
         vutils.save_image(true_corrected_img_raw, true_raw_path)
 
-        # 視覚的に変化を確認するための「差分強調画像」を作成,(補正後 - 補正前) の絶対値を 10倍 して保存
-        diff_tensor = torch.abs(pred_corrected_img_inv - baseline_srgb_img) * 10.0
+        # 視覚的に変化を確認するための「差分強調画像」を作成,(補正後 - 補正前) の絶対値を計算して保存
+        diff_tensor = torch.abs(pred_corrected_img_inv - baseline_srgb_img) 
         vutils.save_image(diff_tensor, path_diff)
 
-        # --- まとめて比較画像の保存 ---
+        # まとめて比較画像の保存
         compare_path = bestpred_dir / f"{base_filename}_ALL_Comparison.png"
         comparison_list = [
             baseline_srgb_img, true_corrected_img_inv, true_corrected_img_raw,
@@ -569,22 +554,6 @@ def main(cfg: DictConfig):
         print(f"  平均輝度 (補正前): {mean_orig:.5f}")
         print(f"  平均輝度 (補正後): {mean_pred:.5f}")
         print(f"  輝度差分        : {diff_val:+.5f}")
-
-        # 判定
-        if abs(diff_val) < 0.00001:
-            print(" 判定: 変化なし")
-            print(" 可能性1: 入力画像が真っ白/真っ黒になっている (上のMax値を確認)")
-            print(" 可能性2: 予測EVが 0.0 に近すぎる")
-        else:
-            print(" 判定: 数値上で明るさが変化確認")
-            print(f"視覚確認用画像を作成: {path_diff.name}")
-            print("(この画像に何かが写っていれば、補正処理は機能")
-
-
-        print("DEBUG img:", torch.isnan(baseline_srgb_img).any(), baseline_srgb_img.min(), baseline_srgb_img.max())
-        print("denorm_img:", denorm_img.min().item(), denorm_img.max().item())
-        print("linear_img:", linear_img.min().item(), linear_img.max().item())
-        print("baseline_srgb_img:", baseline_srgb_img.min().item(), baseline_srgb_img.max().item())
 
         print(f"補正前後の画像を {output_root} に保存しました")
 
