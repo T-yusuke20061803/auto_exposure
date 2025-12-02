@@ -90,7 +90,7 @@ def main(cfg: DictConfig):
         v2.RandomRotation(**cfg.dataset.train.transform.random_rotation),
         #v2.ToDtype(torch.float32, scale=True),(入力がすでにfloat32のため)
         LogTransform(),
-        v2.Normalize(**cfg.dataset.train.transform.normalize), #log_normalize(対数を取る場合) -> normalize(そうでない場合)
+        v2.Normalize(**cfg.dataset.train.transform.normalize),
         v2.RandomErasing(p=0.2, scale=(0.02, 0.1), ratio=(0.3, 3.3)),
     ])
     #採用しなかったデータ拡張及び正規化
@@ -114,13 +114,13 @@ def main(cfg: DictConfig):
     train_set = AnnotatedDatasetFolder(
         root=cfg.dataset.train.root,
         csv_file=cfg.dataset.train.csv_file, # dataframe= ではなく csv_file=
-        loader=imageio_loader, # ★ imageio_loader から dng_loader
+        loader=imageio_loader, #imageio_loader から dng_loader
         transform=train_transforms
     )
     val_set = AnnotatedDatasetFolder(
         root=cfg.dataset.val.root,
         csv_file=cfg.dataset.val.csv_file, # dataframe= ではなく csv_file=
-        loader=imageio_loader, # ★ imageio_loader から dng_loader
+        loader=imageio_loader, # imageio_loader から dng_loader
         transform=val_transforms
     )
 
@@ -234,8 +234,6 @@ def main(cfg: DictConfig):
 
     # 差動学習率 (DLR) の設定 
     
-    # 1configからベースLRを取得
-    #    (cfg.optimizer.params.lr に設定されていると仮定)
     base_lr = cfg.optimizer.params.lr 
 
     
@@ -257,9 +255,6 @@ def main(cfg: DictConfig):
         base_model_name = "mobilenet" # RegressionMobileNet は self.mobilenet を持つ
 
     # パラメータをグループ分け
-    #    head_name と base_model_name が設定されており、
-    #    かつ net.base_model_name.head_name が存在する場合にDLRを適用
-    
     if head_name and base_model_name and hasattr(net, base_model_name) and hasattr(getattr(net, base_model_name), head_name):
         
         # getattr を使い、動的に層を取得
@@ -293,15 +288,6 @@ def main(cfg: DictConfig):
             print(f"[WARN] DLR設定エラー: 'net.{base_model_name}.{head_name}' が見つかりません。単一のLRを使用します。")
         param_groups = net.parameters()
 
-    #opt_name = cfg.optimizer.name.lower() 11/17修正以下のものに変更
-    #if opt_name == "adam":
-        #optimizer = optim.Adam(net.parameters(), **cfg.optimizer.params) #変更前param_groups -> net.parameters() 11/13
-    #elif opt_name == "adamw":
-        #optimizer = optim.AdamW(net.parameters(), **cfg.optimizer.params)
-    #elif opt_name == "sgd":
-        #optimizer = optim.SGD(net.parameters(), **cfg.optimizer.params)
-    #else:
-        #raise ValueError(f"未対応のoptimizer: {opt_name}")
     opt_name = cfg.optimizer.name.lower()
     
     # DLR設定時は cfg.optimizer.params.lr を上書きするため、

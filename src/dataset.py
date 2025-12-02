@@ -16,8 +16,10 @@ class LogTransform(object):
     """
     各入力の画素値に対してlog2(T+1.0)を適応する 
     理由：画素値が0から10,000に集中しているため対数を用いることで、小さいな（0～10000）に集中している部分を強調するため
+         対数処理を取ることがで、0～16程度の扱いやすい範囲に返還する
     """
     def __call__(self, tensor):
+
         # もし入力が 0-1 なら 65535倍に戻す
         if tensor.max() <= 1.0:
              return torch.log2(tensor * 65535.0 + 1.0)
@@ -42,7 +44,7 @@ class AnnotatedDatasetFolder(torchdata.Dataset):
             if csv_file is None:
                 raise ValueError("annotation_fileまたはdataframeのどちらかが必要です。")
             try:
-                #annotation_fileは実行場所からの相対パス、または絶対パスです
+                #annotation_fileは実行場所からの相対パス、または絶対パス
                 dataframe = pd.read_csv(csv_file)
             except FileNotFoundError:
                 raise RuntimeError(f"アノテーションファイルが見つかりません: {csv_file}")
