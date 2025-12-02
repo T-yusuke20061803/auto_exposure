@@ -404,7 +404,7 @@ def main(cfg: DictConfig):
         img_pred_raw = adjust_exposure(linear, s_pred)
         img_true_raw = adjust_exposure(linear, s_true)
         img_true_inv = adjust_exposure(linear, -s_true)
-        img_diff = torch.abs(img_pred_inv - img_orig) * 10.0
+        img_diff = torch.abs(img_pred_inv - img_orig) #見えないようであれば、値を*Xで倍にして大きくする
 
         # 保存
         orig_path = save_dir / f"{s_filename}_補正前.png"
