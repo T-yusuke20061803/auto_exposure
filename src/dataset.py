@@ -26,16 +26,13 @@ class LogTransform(object):
 
 
 class AnnotatedDatasetFolder(torchdata.Dataset):
-    """
-    画像フォルダパスと、アノテーション情報(CSVパス or データフレーム)を受け取りデータセットを作成するクラス
-    """
+    #画像フォルダパスと、アノテーション情報(CSVパス or データフレーム)を受け取りデータセットを作成するクラス
     def __init__(self, root, loader, transform=None, csv_file=None, dataframe=None):
         """
             root (str): 画像フォルダのルートパス
             dataframe (pd.DataFrame): "Filename", "Exposure" を含む DataFrame
             loader (callable, optional): 画像を読み込む関数 (デフォルト: PIL)
             transform (callable, optional): 前処理 (torchvision.transforms など)
-            extensions (list, optional): 許可する拡張子 (例: [".jpg", ".png", ".jpeg"])
         """
         self.root = root
         self.loader = loader
@@ -118,7 +115,7 @@ def imageio_loader(path):
         raise
 
 def dng_loader(path):
-    """ .dng を rawpy で読み込み、線形 float32 テンソルで返す """
+    # .dng を rawpy で読み込み、線形 float32 テンソルで返す 
     try:
         with rawpy.imread(str(path)) as raw:
         # 線形16bitデータを取得
