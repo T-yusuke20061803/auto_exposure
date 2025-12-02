@@ -555,6 +555,22 @@ def main(cfg: DictConfig):
         print(f"  平均輝度 (補正後): {mean_pred:.5f}")
         print(f"  輝度差分        : {diff_val:+.5f}")
 
+        # 判定
+        if abs(diff_val) < 0.00001:
+            print(" 判定: 変化なし")
+            print(" 可能性1: 入力画像が真っ白/真っ黒になっている (上のMax値を確認)")
+            print(" 可能性2: 予測EVが 0.0 に近すぎる")
+        else:
+            print(" 判定: 数値上で明るさが変化確認")
+            print(f"視覚確認用画像を作成: {path_diff.name}")
+            print("(この画像に何かが写っていれば、補正処理は機能")
+
+
+        print("DEBUG img:", torch.isnan(baseline_srgb_img).any(), baseline_srgb_img.min(), baseline_srgb_img.max())
+        print("denorm_img:", denorm_img.min().item(), denorm_img.max().item())
+        print("linear_img:", linear_img.min().item(), linear_img.max().item())
+        print("baseline_srgb_img:", baseline_srgb_img.min().item(), baseline_srgb_img.max().item())
+
         print(f"補正前後の画像を {output_root} に保存しました")
 
         # ターミナルに分かりやすく表示 
