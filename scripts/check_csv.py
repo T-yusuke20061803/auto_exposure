@@ -9,7 +9,7 @@ import random
 # ================= 設定 =================
 csv_path = Path("conf/dataset/HDR+burst_split/train.csv")
 image_root = Path("conf/dataset/HDR+burst/processed_1024px_exr")
-output_path = Path("outputs/visual_confirmation.png")
+output_path = Path("outputs/画像確認.png")
 # ========================================
 
 def get_sample_with_ev(df):
