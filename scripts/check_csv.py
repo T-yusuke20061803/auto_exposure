@@ -1,138 +1,116 @@
 import pandas as pd
 from pathlib import Path
 import matplotlib
-matplotlib.use('Agg') # サーバー環境用
 import matplotlib.pyplot as plt
 import imageio.v3 as iio
 import numpy as np
-import random
-
+import torch
 # ================= 設定 =================
-csv_path = Path("conf/dataset/HDR+burst_split/test.csv")
+csv_path = Path("conf/dataset/HDR+burst_split/train.csv")
 image_root = Path("conf/dataset/HDR+burst/processed_1024px_exr")
-output_check_img = Path("outputs/dataset_check_sample.png") 
 # ========================================
 
-def check_dataset_integrity(csv_path, root_dir):
-    csv_p = Path(csv_path)
-    root_p = Path(root_dir)
+def get_sample_with_ev(df):
+    subset = df[df["Exposure"] < -1.0]
+    if len(subset) > 0:
+        return subset.iloc[0] #iloc:行番号や列番号を使用して、PandasのDataFrameからデータを取得または操作するためのメソッド
+    return df.iloc[0]
 
-    print(f"\n{'='*40}")
-    print(f"   データ整合性・不整合チェック (修正版)")
-    print(f"{'='*40}")
-    print(f"CSVファイル: {csv_p}")
-    print(f"画像ルート : {root_p}")
 
-    if not csv_p.exists():
-        print(f"\n[Fatal Error] CSVファイルが見つかりません: {csv_p}")
-        return
-    if not root_p.exists():
-        print(f"\n[Fatal Error] 画像ルートディレクトリが見つかりません: {root_p}")
-        return
+def debug_pixel_values():
+    print("原因特定のための数値追跡")
+    #データ追跡
+    df = pd.read_csv(csv_path)
+    row = get_sample_with_ev(df)
 
-    # CSV読み込み
+    fname = row["Filename"]
+    label_ev = float(row["Exposure"])
+    filepath = image_root / row["filepath"]
+
+    print(f"検証ファイル:{fname}")
+    print(f"正解ラベル:{label_ev}")
+    print("-"*40)
+
+    #画像の読み込み
     try:
-        df = pd.read_csv(csv_p)
-        print(f"CSV読み込み成功: {len(df)} 行")
-        print(f"カラム一覧: {df.columns.tolist()}")
-    except Exception as e:
-        print(f"\n[Fatal Error] CSV読み込み失敗: {e}")
-        return
+        img_raw = iio.imread(filepath).astype(np.float32) #astype:NumPy配列のデータ型を変換するためのメソッド
+        #0～1に正規化←学習時と同じ条件にする
+        img_01 = img_raw / 65535.0
 
-    # ★ 修正: カラム名の揺らぎを吸収
-    fname_col = "Filename" if "Filename" in df.columns else "filename"
-    if fname_col not in df.columns:
-        # filepathしかない場合の対応
-        if "filepath" in df.columns:
-            fname_col = "filepath"
-            print(f"※ 'Filename' カラムがないため 'filepath' を使用します。")
+        # 代表値（画像の真ん中あたりの画素）を取得
+        h, w, _ = img_01.shape
+        center_pixel = img_01[h//2, w//2, :] # RGB
+        mean_brightness = img_01.mean()
+
+        print(f"【1. 画像自体のチェック】")
+        print(f"  画素値の平均: {mean_brightness:.6f}")
+        print(f"  中心の画素値: {center_pixel}")
+
+        if mean_brightness < 0.01:
+            print("画像状態：暗い")
+        elif mean_brightness > 0.5:
+            print("画像状態：明るい")
         else:
-            print(f"\n[Fatal Error] 画像ファイル名を特定できるカラム(Filename, filename, filepath)がありません。")
-            return
+            print("画像状態；普通")
 
-    # ★ 修正: EV値カラムの特定
-    label_col = None
-    # 優先順位: Exposure -> ev -> label -> true_ev
-    for cand in ['Exposure', 'ev', 'label', 'true_ev']:
-        if cand in df.columns:
-            label_col = cand
-            break
+    except Exception as e:
+        print("error:画像読み込み失敗")
+
+    #補正計算について
+    print("補正計算の確認")
+
+    #補正係数
+    gain = 2 ** label_ev
+    print(f"{label_ev}：倍率{gain:.4f}倍")
+
+    #補正後の値
+    corrected_img = mean_brightness *gain
+    print(f"補正後の平均輝度→{mean_brightness}*{gain}={corrected_img}")
+
+    #ディスプレイ表示を確認
+    print("ディスプレイ表示の確認")
+
+    #トーンマッピング
+    tone_mapped = torch.clamp(corrected_img, 0.0, 1.0)
+    #ガンマ補正
+    ganma_val = np.pow(tone_mapped, 1.0/2.2)
+
+    print(f"0～1のクリッピング後{tone_mapped:.6f}")
+    print(f"ガンマ補正後(最終出力){ganma_val:.6f}")
+
+
+    # 最終判定
+    print("\n" + "="*40)
+    print("結果まとめ")
+    print("="*40)
+
+    #判定ロジック
+    if mean_brightness > 0.3 and label_ev < 0:
+        print("【原因候補: 正解値の意味】")
+        print("元画像：ある程度明るい＋正解ラベル：暗くする")
+        print("補正後画像が暗くなっていたらOK")
+
+    elif mean_brightness < 0.01 and label_ev < 0:
+        # 元が暗いのに、マイナスEVでさらに暗くしている場合
+        print("【原因候補: 正解値と画像のミスマッチ】")
+        print("  元画像:暗い+正解ラベル：暗くする")
+        print("  考えられる原因:")
+        print("    1. データセット自体が「暗い画像にマイナスのラベル」をつけている（仕様）")
+        print("    2. 実は「マイナスラベル＝明るくする」という定義だった（符号の解釈）")
+
+    elif ganma_val > 0.05:
+        print("【原因候補: ディスプレイ/感覚】")
+        print(f"  数値上は {ganma_val:.2f} (0-1) の明るさが出ています。")
+        print("  これは真っ黒ではありません。モニタの輝度や、生成画像の確認方法に問題があるかもしれません。")
     
-    print(f"使用カラム -> ファイル名: '{fname_col}', EV値: '{label_col}'")
-
-    # --- ファイル存在チェック ---
-    print("\n--- [Step 1] ファイルの実在確認 (全件走査) ---")
-    missing_files = []
-    
-    for idx, row in df.iterrows():
-        fname = str(row[fname_col]).strip()
-        # ファイル名がパスを含む場合と含まない場合に対応
-        # root_p と結合して確認
-        full_path = root_p / fname
-        
-        if not full_path.exists():
-            # もしファイル名だけ(Filename)でなく、filepathがフルパスに近い場合の救済措置確認
-            # ここでは単純に結合のみチェック
-            missing_files.append({
-                "index": idx,
-                "filename": fname,
-                "path": str(full_path)
-            })
-
-    if len(missing_files) == 0:
-        print("✅ OK: CSV内のすべての画像ファイルがディスク上に存在します。")
     else:
-        print(f"❌ NG: {len(missing_files)} / {len(df)} 件のファイルが見つかりません！")
-        print("   [見つからないファイルの例 (先頭5件)]")
-        for item in missing_files[:5]:
-            print(f"    - Row {item['index']}: {item['filename']}")
-            print(f"      (探した場所: {item['path']})")
-
-    # --- 整合性チェック (ここが本題) ---
-    print("\n--- [Step 2] ファイル名とラベルの整合性確認 (ランダム5件) ---")
-    print("※ 以下の表を見て、「Filename」に含まれるEV値と、「Exposure」の値が一致しているか確認してください。")
-    
-    if len(df) > 0:
-        sample_indices = random.sample(range(len(df)), min(5, len(df)))
-        samples = df.iloc[sample_indices]
+        print("  数値が極端に小さいです。画像データとラベルの組み合わせを再確認する必要があります。")
         
-        print(f"{'Index':<6} | {str(label_col):<12} | {fname_col}")
-        print("-" * 60)
-        
-        for idx, row in samples.iterrows():
-            fname = row[fname_col]
-            label_val = row[label_col] if label_col else "N/A"
-            print(f"{idx:<6} | {str(label_val):<12} | {fname}")
-            
-    # --- 画像読み込みテスト ---
-    print("\n--- [Step 3] 画像読み込みテスト (最初の1枚) ---")
-    try:
-        first_row = df.iloc[0]
-        fname = first_row[fname_col]
-        full_path = root_p / fname
-        
-        if full_path.exists():
-            img = iio.imread(full_path)
-            print(f"読み込み成功: {fname}")
-            print(f"  Shape: {img.shape}")
-            print(f"  Min: {img.min():.4f}, Max: {img.max():.4f}")
-            
-            plt.figure(figsize=(5,5))
-            disp_img = np.clip(img, 0, 1) 
-            # チャンネル処理 (HWC想定)
-            if disp_img.ndim == 3 and disp_img.shape[0] == 3: 
-                 disp_img = disp_img.transpose(1, 2, 0)
-            
-            plt.imshow(disp_img)
-            plt.title(f"Check: {fname}\nLabel: {first_row[label_col] if label_col else 'None'}")
-            output_check_img.parent.mkdir(parents=True, exist_ok=True)
-            plt.savefig(output_check_img)
-            print(f"  確認用画像を保存しました: {output_check_img}")
-        else:
-            print("  (最初のファイルが存在しないためスキップ)")
-
-    except Exception as e:
-        print(f"⚠️ 画像読み込み中にエラーが発生しました: {e}")
-
 if __name__ == "__main__":
-    check_dataset_integrity(csv_path, image_root)
+    debug_pixel_values()
+
+
+
+
+
+

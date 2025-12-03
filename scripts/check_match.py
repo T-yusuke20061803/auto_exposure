@@ -19,7 +19,7 @@ def check_filename_matching(csv_path, root_dir):
     print("1. CSVファイルを読み込んでいます...")
     try:
         df = pd.read_csv(csv_p)
-        # カラム名の揺らぎ吸収
+
         fname_col = "Filename" if "Filename" in df.columns else "filename"
         if fname_col not in df.columns:
             print(f"[Error] CSVにFilenameカラムがありません。")
