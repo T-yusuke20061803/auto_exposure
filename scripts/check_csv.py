@@ -18,6 +18,17 @@ def get_sample_with_ev(df):
         return subset.sample(1).iloc[0] #iloc:行番号や列番号を使用して、PandasのDataFrameからデータを取得または操作するためのメソッド
     return df.sample(1).iloc[0]
 
+def process_image_for_vis(img, ev):
+    """表示用にトーンマップとガンマ補正をかける関数"""
+    # 1. 露出補正 (Linear)
+    factor = 2.0 ** ev
+    corrected = img * factor
+    # 2. クリップ (0-1)
+    clipped = np.clip(corrected, 0.0, 1.0)
+    # 3. ガンマ補正 (sRGB)
+    gamma = np.power(clipped, 1.0/2.2)
+    return gamma
+
 
 def debug_pixel_values():
     print("原因特定のための数値追跡")
@@ -80,43 +91,6 @@ def debug_pixel_values():
     print(f"0～1のクリッピング後{tone_mapped:.6f}")
     print(f"ガンマ補正後(最終出力){ganma_val:.6f}")
 
-    # 3. プロット作成
-    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-    
-    # (左上) 元画像
-    orig_view = process_image(img_01, 0.0)
-    axes[0, 0].imshow(orig_view)
-    axes[0, 0].set_title(f"Original (EV=0)\nMean: {img_01.mean():.4f}")
-    axes[0, 0].axis('off')
-
-    # (右上) ヒストグラム
-    axes[0, 1].hist(img_01.ravel(), bins=50, range=(0.0, 0.5), color='gray')
-    axes[0, 1].set_title("Histogram (Linear, 0.0-0.5)")
-    axes[0, 1].set_xlabel("Pixel Value")
-    axes[0, 1].set_ylabel("Count")
-
-    # (左下) 現在の補正 (2^EV)
-    # ラベルがマイナスなら暗くなる
-    current_view = process_image(img_01, label_ev)
-    axes[1, 0].imshow(current_view)
-    axes[1, 0].set_title(f"Current Code (2^EV)\nEV={label_ev:.2f} (x{2**label_ev:.2f})", color='red')
-    axes[1, 0].axis('off')
-
-    # (右下) 反転補正 (2^-EV)
-    # ラベルがマイナスなら明るくなる
-    inverted_view = process_image(img_01, -label_ev)
-    axes[1, 1].imshow(inverted_view)
-    axes[1, 1].set_title(f"Inverted (2^-EV)\nEV={-label_ev:.2f} (x{2**-label_ev:.2f})", color='blue')
-    axes[1, 1].axis('off')
-
-    plt.tight_layout()
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_path)
-    plt.close()
-    
-    print(f"\n✅ 保存完了: {output_path}")
-    print("この画像をダウンロードして、左下(赤文字)と右下(青文字)、どちらが自然な明るさか確認してください。")
-
 
     # 最終判定
     print("\n" + "="*40)
@@ -144,6 +118,47 @@ def debug_pixel_values():
     
     else:
         print("  数値が極端に小さいです。画像データとラベルの組み合わせを再確認する必要があります。")
+
+    
+    print(f"\n--- 視覚確認画像の生成を開始 ---")
+    
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    # (左上) 元画像
+    # トーンマップなしで表示 (ただし1.0でクリップしないとエラーになる場合があるため簡易表示)
+    orig_view = process_image_for_vis(img_01, 0.0)
+    axes[0, 0].imshow(orig_view)
+    axes[0, 0].set_title(f"Original (EV=0)\nMean: {mean_brightness:.4f}")
+    axes[0, 0].axis('off')
+
+    # (右上) ヒストグラム
+    axes[0, 1].hist(img_01.ravel(), bins=50, range=(0.0, 0.5), color='gray')
+    axes[0, 1].set_title("Histogram (Linear, 0.0-0.5)")
+    axes[0, 1].set_xlabel("Pixel Value")
+    axes[0, 1].set_ylabel("Count")
+
+    # (左下) 現在の補正 (Code 1: 2^EV)
+    # そのままの符号で補正
+    current_view = process_image_for_vis(img_01, label_ev)
+    axes[1, 0].imshow(current_view)
+    axes[1, 0].set_title(f"Current Code (2^EV)\nEV={label_ev} (x{2**label_ev:.2f})", color='red')
+    axes[1, 0].axis('off')
+
+    # (右下) 反転補正 (Code 2改: 2^-EV)
+    # 符号を反転して補正
+    inverted_view = process_image_for_vis(img_01, -label_ev)
+    axes[1, 1].imshow(inverted_view)
+    axes[1, 1].set_title(f"Inverted (2^-EV)\nEV={-label_ev} (x{2**-label_ev:.2f})", color='blue')
+    axes[1, 1].axis('off')
+
+    plt.tight_layout()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(output_path)
+    plt.close()
+    
+    print(f"画像を保存しました: {output_path}")
+    print(" 左下(赤): 現在のコードの結果")
+    print(" 右下(青): 符号を反転した場合の結果")
+    print(" -> どちらが自然な明るさに見えるか確認してください。")
 
 if __name__ == "__main__":
     debug_pixel_values()
