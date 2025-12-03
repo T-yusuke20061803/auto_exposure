@@ -5,16 +5,18 @@ import matplotlib.pyplot as plt
 import imageio.v3 as iio
 import numpy as np
 import torch
+import random
 # ================= 設定 =================
 csv_path = Path("conf/dataset/HDR+burst_split/train.csv")
 image_root = Path("conf/dataset/HDR+burst/processed_1024px_exr")
+output_path = Path("outputs/visual_confirmation.png")
 # ========================================
 
 def get_sample_with_ev(df):
     subset = df[df["Exposure"] < -1.0]
     if len(subset) > 0:
-        return subset.iloc[0] #iloc:行番号や列番号を使用して、PandasのDataFrameからデータを取得または操作するためのメソッド
-    return df.iloc[0]
+        return subset.sample(1).iloc[0] #iloc:行番号や列番号を使用して、PandasのDataFrameからデータを取得または操作するためのメソッド
+    return df.sample(1).iloc[0]
 
 
 def debug_pixel_values():
@@ -77,6 +79,43 @@ def debug_pixel_values():
 
     print(f"0～1のクリッピング後{tone_mapped:.6f}")
     print(f"ガンマ補正後(最終出力){ganma_val:.6f}")
+
+    # 3. プロット作成
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    
+    # (左上) 元画像
+    orig_view = process_image(img_01, 0.0)
+    axes[0, 0].imshow(orig_view)
+    axes[0, 0].set_title(f"Original (EV=0)\nMean: {img_01.mean():.4f}")
+    axes[0, 0].axis('off')
+
+    # (右上) ヒストグラム
+    axes[0, 1].hist(img_01.ravel(), bins=50, range=(0.0, 0.5), color='gray')
+    axes[0, 1].set_title("Histogram (Linear, 0.0-0.5)")
+    axes[0, 1].set_xlabel("Pixel Value")
+    axes[0, 1].set_ylabel("Count")
+
+    # (左下) 現在の補正 (2^EV)
+    # ラベルがマイナスなら暗くなる
+    current_view = process_image(img_01, label_ev)
+    axes[1, 0].imshow(current_view)
+    axes[1, 0].set_title(f"Current Code (2^EV)\nEV={label_ev:.2f} (x{2**label_ev:.2f})", color='red')
+    axes[1, 0].axis('off')
+
+    # (右下) 反転補正 (2^-EV)
+    # ラベルがマイナスなら明るくなる
+    inverted_view = process_image(img_01, -label_ev)
+    axes[1, 1].imshow(inverted_view)
+    axes[1, 1].set_title(f"Inverted (2^-EV)\nEV={-label_ev:.2f} (x{2**-label_ev:.2f})", color='blue')
+    axes[1, 1].axis('off')
+
+    plt.tight_layout()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(output_path)
+    plt.close()
+    
+    print(f"\n✅ 保存完了: {output_path}")
+    print("この画像をダウンロードして、左下(赤文字)と右下(青文字)、どちらが自然な明るさか確認してください。")
 
 
     # 最終判定
