@@ -70,10 +70,10 @@ def debug_pixel_values():
     #ディスプレイ表示を確認
     print("ディスプレイ表示の確認")
 
-    #トーンマッピング
-    tone_mapped = torch.clamp(corrected_img, 0.0, 1.0)
-    #ガンマ補正
-    ganma_val = np.pow(tone_mapped, 1.0/2.2)
+    # トーンマッピング
+    tone_mapped = np.clip(corrected_img, 0.0, 1.0)
+    # ガンマ補正
+    ganma_val = np.power(tone_mapped, 1.0/2.2)
 
     print(f"0～1のクリッピング後{tone_mapped:.6f}")
     print(f"ガンマ補正後(最終出力){ganma_val:.6f}")
@@ -105,7 +105,7 @@ def debug_pixel_values():
     
     else:
         print("  数値が極端に小さいです。画像データとラベルの組み合わせを再確認する必要があります。")
-        
+
 if __name__ == "__main__":
     debug_pixel_values()
 
