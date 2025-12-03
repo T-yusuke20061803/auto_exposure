@@ -59,22 +59,22 @@ def check_filename_matching(csv_path, root_dir):
     # --- 4. 結果レポート ---
     print(f"\n{'='*20} 結果レポート {'='*20}")
     
-    print(f"✅ 一致 (OK)          : {len(matched)} 件")
-    print(f"❌ 欠損 (Missing)     : {len(missing_in_dir)} 件 (CSVにあるがフォルダにない)")
-    print(f"⚠️ 未使用 (Extra)     : {len(extra_in_dir)} 件 (フォルダにあるがCSVにない)")
+    print(f"一致 (OK)          : {len(matched)} 件")
+    print(f"欠損 (Missing)     : {len(missing_in_dir)} 件 (CSVにあるがフォルダにない)")
+    print(f"未使用 (Extra)     : {len(extra_in_dir)} 件 (フォルダにあるがCSVにない)")
     
     print("-" * 56)
     
     # 詳細表示
     if len(missing_in_dir) > 0:
-        print("\n[❌ 欠損ファイル一覧 (最初の10件)]")
+        print("\n[欠損ファイル一覧 (最初の10件)]")
         print("これらは学習・評価時に「FileNotFoundError」を引き起こします。")
         for i, name in enumerate(sorted(list(missing_in_dir))):
             if i >= 10: break
             print(f"  - {name}")
 
     if len(extra_in_dir) > 0:
-        print("\n[⚠️ 未使用ファイル一覧 (最初の10件)]")
+        print("\n[未使用ファイル一覧 (最初の10件)]")
         print("これらはCSVに含まれていないため、学習・評価には使われません。")
         for i, name in enumerate(sorted(list(extra_in_dir))):
             if i >= 10: break
@@ -107,9 +107,9 @@ def check_filename_matching(csv_path, root_dir):
         # ファイルそのものの場合はチェック不要（存在確認済みなので）
 
     if len(empty_folders) == 0:
-        print("✅ OK: 一致した全てのフォルダの中に、画像ファイル(.exr/.jpg/.png/.dng)が含まれています。")
+        print("OK: 一致した全てのフォルダの中に、画像ファイル(.exr/.jpg/.png/.dng)が含まれています。")
     else:
-        print(f"❌ NG: {len(empty_folders)} 件のフォルダが空（または画像なし）です！")
+        print(f"NG: {len(empty_folders)} 件のフォルダが空（または画像なし）です！")
         for i, name in enumerate(sorted(empty_folders)):
             if i >= 5: break
             print(f"  - {name} (中身なし)")
