@@ -46,7 +46,7 @@ def debug_pixel_values():
         print(f"  画素値の平均: {mean_brightness:.6f}")
         print(f"  中心の画素値: {center_pixel}")
 
-        if mean_brightness < 0.01:
+        if mean_brightness < 0.05:
             print("画像状態：暗い")
         elif mean_brightness > 0.5:
             print("画像状態：明るい")
