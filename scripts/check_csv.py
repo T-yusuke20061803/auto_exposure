@@ -13,7 +13,7 @@ output_path = Path("outputs/visual_confirmation.png")
 # ========================================
 
 def get_sample_with_ev(df):
-    subset = df[df["Exposure"] < -1.0]
+    subset = df[df["Exposure"] > 1.0]
     if len(subset) > 0:
         return subset.sample(1).iloc[0] #iloc:行番号や列番号を使用して、PandasのDataFrameからデータを取得または操作するためのメソッド
     return df.sample(1).iloc[0]
