@@ -110,13 +110,13 @@ def pil_loader(path):
 def imageio_loader(path):
     try:
         # .exr を float32 の numpy 配列 (H, W, C) として読み込む　値は 0〜65535 のまま
-        img_float_numpy = imageio.v3.imread(path) 
-        if img_numpy.ndim == 2:
-             img_numpy = np.stack([img_numpy]*3, axis=-1)
-        elif img_numpy.shape[2] > 3:
-             img_numpy = img_numpy[:, :, :3]
+        img = imageio.v3.imread(path) 
+        if img.ndim == 2:
+             img = np.stack([img]*3, axis=-1)
+        elif img.ndim == 3 and img.shape[2] > 3:
+             img = img[:, :, :3]
         # NumPy (縦, 横, 色) -> PyTorch Tensor (色, 縦, 横) に変換　この順でないと処理できない
-        tensor = torch.from_numpy(img_float_numpy.astype(np.float32)).permute(2, 0, 1) 
+        tensor = torch.from_numpy(img.astype(np.float32)).permute(2, 0, 1) 
         return tensor 
     
     except Exception as e:
