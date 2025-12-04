@@ -17,6 +17,8 @@ class LogTransform(object):
     各入力の画素値に対してlog2(T+1.0)を適応する 
     理由：画素値が0から10,000に集中しているため対数を用いることで、小さいな（0～10000）に集中している部分を強調するため
          対数処理を取ることがで、0～16程度の扱いやすい範囲に返還する
+    入力: [0.0, 65535.0] のリニアデータ
+    出力: [0.0, 16.0] の対数データ
     """
     def __call__(self, tensor):
 
@@ -42,17 +44,17 @@ class AnnotatedDatasetFolder(torchdata.Dataset):
         
         if dataframe is None:
             if csv_file is None:
-                raise ValueError("annotation_fileまたはdataframeのどちらかが必要です。")
+                raise ValueError("csv_file or dataframe:必要")
             try:
                 #annotation_fileは実行場所からの相対パス、または絶対パス
                 dataframe = pd.read_csv(csv_file)
             except FileNotFoundError:
-                raise RuntimeError(f"アノテーションファイルが見つかりません: {csv_file}")
+                raise RuntimeError(f"csv_file無し: {csv_file}")
             
         if "filepath" not in dataframe.columns:#画像の場所
-            raise ValueError("CSVには 'filepath' 列が必要です。")
+            raise ValueError("CSVには 'filepath' 列が必要")
         if "Exposure" not in dataframe.columns:#正解ラベルの場所
-            raise ValueError("CSVには 'Exposure' 列が必要です。")
+            raise ValueError("CSVには 'Exposure' 列が必要")
         
         self.samples = []
         print(f"{csv_file or 'DataFrame'} からサンプルを読み込み中 (基準パス: {root})...")
@@ -71,7 +73,7 @@ class AnnotatedDatasetFolder(torchdata.Dataset):
                     # リストに追加 (場所, 正解ラベル, ファイル名ID)
                     self.samples.append((path, float(target), filename))
                 except (ValueError, TypeError):
-                     print(f"警告: {path} の Exposure '{target}' を float に変換不可。スキップします。")
+                     print(f"警告: {path} Exposure '{target}' -> float 変換不可のためスキップ")
                      missing_files += 1
             else:
                 missing_files += 1
@@ -80,15 +82,16 @@ class AnnotatedDatasetFolder(torchdata.Dataset):
 
         if not self.samples:
              raise RuntimeError("有効なサンプル無し")
-        print(f"{len(self.samples)} 件の有効なサンプルを読み込み")
+        print(f"有効サンプル数：{len(self.samples)} 件")
     def __getitem__(self, index):
         path, target, filename = self.samples[index]
         try:
+            # 読み込み: 値は [0.0, 65535.0]
             sample = self.loader(path)
         except Exception as e:
             print(f"エラー: 画像の読み込み失敗{path}, {e}")
             return None
-        #前処理適応
+        #前処理適応# 読み込み: 値は [0.0, 65535.0]）
         if self.transform is not None:
             sample = self.transform(sample)
         
@@ -108,6 +111,10 @@ def imageio_loader(path):
     try:
         # .exr を float32 の numpy 配列 (H, W, C) として読み込む　値は 0〜65535 のまま
         img_float_numpy = imageio.v3.imread(path) 
+        if img_numpy.ndim == 2:
+             img_numpy = np.stack([img_numpy]*3, axis=-1)
+        elif img_numpy.shape[2] > 3:
+             img_numpy = img_numpy[:, :, :3]
         # NumPy (縦, 横, 色) -> PyTorch Tensor (色, 縦, 横) に変換　この順でないと処理できない
         tensor = torch.from_numpy(img_float_numpy.astype(np.float32)).permute(2, 0, 1) 
         return tensor 
