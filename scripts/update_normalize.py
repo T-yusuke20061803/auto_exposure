@@ -6,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 import rawpy
 import pandas as pd
-from src.dataset import AnnotatedDatasetFolder, LogTransform, collate_fn_skip_none
+from src.dataset import AnnotatedDatasetFolder, LogTransform, collate_fn_skip_none, imageio_loader
 
 # 設定 
 DATASET_ROOT = Path("conf/dataset/HDR+burst/processed_1024px_exr")  # EXR画像フォルダ
@@ -29,6 +29,7 @@ def calculate_mean_std(csv_path, root_dir, batch_size, num_workers):
     dataset = AnnotatedDatasetFolder(
         root = root_dir,
         csv_file = csv_path, 
+        loader = imageio_loader,
         transform = transform
     )
     loader = DataLoader(dataset, 
