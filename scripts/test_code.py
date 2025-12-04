@@ -19,7 +19,7 @@ import time
 from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, dng_loader, collate_fn_skip_none, LogTransform
 from src.model import SimpleCNN, ResNet,ResNetRegression, RegressionEfficientNet, RegressionMobileNet
 from src.trainer import LossEvaluator
-from src.util import set_random_seed
+from src.util import set_random_seed, normalize_hdr
 
 def denormalize(tensor, mean, std, inplace=False):
     tensor_copy = tensor if inplace else tensor.clone()
@@ -30,16 +30,11 @@ def denormalize(tensor, mean, std, inplace=False):
 def adjust_exposure(image_tensor, ev_value):
     print(f"\n[DEBUG] EV: {ev_value:.4f}")
     print(f"  Input Min: {image_tensor.min():.6f}, Max: {image_tensor.max():.6f}, Mean: {image_tensor.mean():.6f}")
-    # sRGB (非線形) -> Linear (線形)
-    # 一般的なガンマ値 2.2 を使用
-    #linear_image = torch.pow(image_tensor, 2.2)
+    # 露出補正（ゲイン乗算）
     correction_factor = 2.0 ** ev_value
     corrected_linear_image = image_tensor * correction_factor
-    # トーンマッピング (変更日11/30)
-    # 変更前 : tone_mapped = corrected_linear_image / (corrected_linear_image + 1.0) 
-    # 変更後 : 1.0を超えたら切り捨て 
+    # トーンマッピング(clipping):1.0を超えたら切り捨て
     tone_mapped = torch.clamp(corrected_linear_image, 0.0, 1.0)
-    # Linear (線形) -> sRGB (非線形) に戻す
     # ガンマ補正 (1/2.2) を適用
     corrected_srgb_image = torch.pow(tone_mapped, 1.0/2.2)
     # 最終結果を [0,1] にクリップして返す
@@ -147,6 +142,7 @@ def plot_ev_predictions(csv_file, output_dir):
         import traceback
         traceback.print_exc()
         print(f"警告: グラフの描画に失敗:{e}")
+
  
 @hydra.main(version_base=None, config_path="../conf", config_name="config.yaml")
 def main(cfg: DictConfig):
@@ -362,6 +358,29 @@ def main(cfg: DictConfig):
         writer.writerows(predictions)
     print(f"\n予測結果保存:{csv_path} ")
 
+    def create_base_image(tensor_original, mean_params, std_params):
+        #学習用Tensorから、normalize_hdrを適用した「ベース画像」を作成
+        # 正規化解除
+        denorm = denormalize(tensor_original, mean_params, std_params)
+        # ログ解除 (LogTransformの逆: 2^x - 1)
+        temp = torch.pow(2.0, denorm) - 1.0
+        linear_img = temp / 65535.0
+        # 計算誤差でマイナスになるのを防ぐ
+        linear_img = torch.clamp(linear_img, min=0.0)
+        # Tensor(C,H,W) -> NumPy(H,W,C)
+        img_np = linear_img.permute(1,2, 0).cpu().numpy()
+
+        # util.py の自動補正で「見やすいベース(平均0.18等)」を作る
+        # 第2引数(ev)はラベル計算用なので、画像生成だけなら0でOK
+        base_np, _, _ = normalize_hdr(img_np, 0)
+
+        # NumPy(H,W,C) -> Tensor(C,H,W) 
+        base_tensor = torch.from_numpy(base_np).permute(2,0,1).float()
+         # 確認用ログ
+        print(f"\n[Check] 正規化後の最大値: {base_tensor.max().item():.4f}")
+
+        return base_tensor
+
     selected_samples = []
 
     for group_name, items in ev_groups.items():
@@ -390,21 +409,15 @@ def main(cfg: DictConfig):
         s_label = f"{sample['group']}{sample['rank']}"
 
         # 復元処理
-        denorm = denormalize(sample["original"], mean_params, std_params)
-        temp = torch.pow(2.0, denorm) - 1.0
-        if temp.max() > 100.0:
-            linear = temp / 65535.0
-        else:
-            linear = temp
-        linear = torch.clamp(linear, min=0.0)
+        base_image = create_base_image(sample["original"], mean_params, std_params)
 
         # 画像生成
-        img_orig = adjust_exposure(linear, 0.0)
-        img_pred_inv = adjust_exposure(linear, -s_pred) #修正：符号反転（修正前img_pred = adjust_exposure(linear, s_pred)）
-        img_pred_raw = adjust_exposure(linear, s_pred)
-        img_true_raw = adjust_exposure(linear, s_true)
-        img_true_inv = adjust_exposure(linear, -s_true)
-        img_diff = torch.abs(img_pred_inv - img_orig) #見えないようであれば、値を*Xで倍にして大きくする
+        img_orig = adjust_exposure(base_image, 0.0)
+        img_pred_raw = adjust_exposure(base_image, s_pred)
+        img_true_raw = adjust_exposure(base_image, s_true)
+        img_pred_inv = adjust_exposure(base_image, -s_pred) #修正：符号反転（修正前img_pred = adjust_exposure(linear, s_pred)）
+        img_true_inv = adjust_exposure(base_image, -s_true)
+        img_diff = torch.abs(img_pred_raw - img_orig) #見えないようであれば、値を*Xで倍にして大きくする
 
         # 保存
         orig_path = save_dir / f"{s_filename}_補正前.png"
@@ -466,35 +479,22 @@ def main(cfg: DictConfig):
         std  = cfg.dataset.train.transform.normalize.std
 
         #補正前の画像(EV=0 のsRGB画像として保存)
-        denorm_img = denormalize(best_image_info["original"], mean, std)
-    #対数修正その2
-        # Log -> 線形 への「逆変換」
-        #(x = 2^y - 1)
-        temp = torch.pow(2.0, denorm_img) - 1.0
-        linear_img = temp / 65535.0
-        # 計算誤差でマイナスになるのを防ぐ
-        linear_img = torch.clamp(linear_img, min=0.0)
-
-        #linear_img_normalized = linear_img / 65535.0
-        linear_img_normalized = linear_img
-        
-        # 確認用ログ
-        print(f"\n[Check] 正規化後の最大値: {linear_img_normalized.max().item():.4f}")
+        linear_img = create_base_image(best_image_info["original"], mean, std)
 
         base_ev = 0.0 
         pred_ev = best_image_info["pred_ev"]
         true_ev = best_image_info["true_ev"]
 
         # adjust_exposure には「線形」の linear_img を渡す
-        baseline_srgb_img = adjust_exposure(linear_img_normalized, base_ev) #対数修正その3:denorm_img -> linear_img
+        baseline_srgb_img = adjust_exposure(linear_img, base_ev) #対数修正その3:denorm_img -> linear_img
         #モデル予測値で補正した画像
         # モデル予測値 (2パターン)
-        pred_corrected_img_inv = adjust_exposure(linear_img_normalized, -pred_ev) # 反転
-        pred_corrected_img_raw = adjust_exposure(linear_img_normalized, pred_ev)  # そのまま
+        pred_corrected_img_inv = adjust_exposure(linear_img, -pred_ev) # 反転
+        pred_corrected_img_raw = adjust_exposure(linear_img, pred_ev)  # そのまま
         #正解ラベル値で補正した画像
         # 正解ラベル (2パターン)
-        true_corrected_img_inv = adjust_exposure(linear_img_normalized, -true_ev) # 反転
-        true_corrected_img_raw = adjust_exposure(linear_img_normalized, true_ev)  # そのまま
+        true_corrected_img_inv = adjust_exposure(linear_img, -true_ev) # 反転
+        true_corrected_img_raw = adjust_exposure(linear_img, true_ev)  # そのまま
         base_filename = Path(best_image_info['filename']).stem
 
 
