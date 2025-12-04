@@ -22,10 +22,37 @@ from src.trainer import LossEvaluator
 from src.util import set_random_seed, normalize_hdr
 
 def denormalize(tensor, mean, std, inplace=False):
+    #標準化されたtensorを元に戻す
     tensor_copy = tensor if inplace else tensor.clone()
+    # shape: (C, H, W) あるいは (Batch, C, H, W)
+    # mean/std はリストなので、Tensorに合わせて計算
     for t, m, s in zip(tensor_copy, mean, std):
         t.mul_(s).add_(m)
     return tensor_copy
+
+def create_base_image(tensor_original, mean_params, std_params):
+        #学習用Tensorから、normalize_hdrを適用した「ベース画像」を作成
+        # 正規化解除
+        denorm = denormalize(tensor_original, mean_params, std_params)
+        # ログ解除 (LogTransformの逆: 2^x - 1)
+        temp = torch.pow(2.0, denorm) - 1.0
+        #リニアスケール(0-1)へ変換
+        linear_img = temp / 65535.0
+        # 計算誤差でマイナスになるのを防ぐ
+        linear_img = torch.clamp(linear_img, min=0.0)
+        # Tensor(C,H,W) -> NumPy(H,W,C)
+        img_np = linear_img.permute(1,2, 0).cpu().numpy()
+
+        # util.py の自動補正で「見やすいベース(平均0.18等)」を作る
+        # 第2引数(ev)はラベル計算用なので、画像生成だけなら0でOK
+        base_np, _, _ = normalize_hdr(img_np, 0)
+
+        # NumPy(H,W,C) -> Tensor(C,H,W) 
+        base_tensor = torch.from_numpy(base_np).permute(2,0,1).float()
+         # 確認用ログ
+        print(f"\n[Check] 正規化後の最大値: {base_tensor.max().item():.4f}")
+
+        return base_tensor
 
 def adjust_exposure(image_tensor, ev_value):
     print(f"\n[DEBUG] EV: {ev_value:.4f}")
@@ -358,28 +385,6 @@ def main(cfg: DictConfig):
         writer.writerows(predictions)
     print(f"\n予測結果保存:{csv_path} ")
 
-    def create_base_image(tensor_original, mean_params, std_params):
-        #学習用Tensorから、normalize_hdrを適用した「ベース画像」を作成
-        # 正規化解除
-        denorm = denormalize(tensor_original, mean_params, std_params)
-        # ログ解除 (LogTransformの逆: 2^x - 1)
-        temp = torch.pow(2.0, denorm) - 1.0
-        linear_img = temp / 65535.0
-        # 計算誤差でマイナスになるのを防ぐ
-        linear_img = torch.clamp(linear_img, min=0.0)
-        # Tensor(C,H,W) -> NumPy(H,W,C)
-        img_np = linear_img.permute(1,2, 0).cpu().numpy()
-
-        # util.py の自動補正で「見やすいベース(平均0.18等)」を作る
-        # 第2引数(ev)はラベル計算用なので、画像生成だけなら0でOK
-        base_np, _, _ = normalize_hdr(img_np, 0)
-
-        # NumPy(H,W,C) -> Tensor(C,H,W) 
-        base_tensor = torch.from_numpy(base_np).permute(2,0,1).float()
-         # 確認用ログ
-        print(f"\n[Check] 正規化後の最大値: {base_tensor.max().item():.4f}")
-
-        return base_tensor
 
     selected_samples = []
 
@@ -563,12 +568,6 @@ def main(cfg: DictConfig):
             print(" 判定: 数値上で明るさが変化確認")
             print(f"視覚確認用画像を作成: {path_diff.name}")
             print("(この画像に何かが写っていれば、補正処理は機能")
-
-
-        print("DEBUG img:", torch.isnan(baseline_srgb_img).any(), baseline_srgb_img.min(), baseline_srgb_img.max())
-        print("denorm_img:", denorm_img.min().item(), denorm_img.max().item())
-        print("linear_img:", linear_img.min().item(), linear_img.max().item())
-        print("baseline_srgb_img:", baseline_srgb_img.min().item(), baseline_srgb_img.max().item())
 
         print(f"補正前後の画像を {output_root} に保存しました")
 

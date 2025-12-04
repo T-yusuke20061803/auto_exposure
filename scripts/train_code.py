@@ -31,14 +31,7 @@ class DebugPrintTransform(object):
         self.name = name
 
     def __call__(self, tensor):
-        print("\n" + "="*20)
-        print(f"DebugPoint: {self.name}")
-        print(f"  Shape: {tensor.shape}")
-        print(f"  Dtype: {tensor.dtype}")
-        print(f"  Min:   {tensor.min().item():.6f}")
-        print(f"  Max:   {tensor.max().item():.6f}")
-        print(f"  Mean:  {tensor.mean().item():.6f}")
-        print("="*20 + "\n")
+        print(f"\n[Debug: {self.name}] Shape: {tensor.shape}, Range: [{tensor.min():.4f}, {tensor.max():.4f}], Mean: {tensor.mean():.4f}")
         return tensor
 
 # === CSVから画像パスと補正量(EV)を読み込むデータセット ===
@@ -84,25 +77,25 @@ def main(cfg: DictConfig):
 
     # データ変換 (データ拡張＋正規化)
     train_transforms = v2.Compose([
-        #v2.ToImage(),(入力がPILではないため)
         v2.RandomResizedCrop(**cfg.dataset.train.transform.random_resized_crop),
         v2.RandomHorizontalFlip(**cfg.dataset.train.transform.random_horizontal_flip),
         v2.RandomRotation(**cfg.dataset.train.transform.random_rotation),
-        #v2.ToDtype(torch.float32, scale=True),(入力がすでにfloat32のため)
+        # LogTransform: log2(x + 1)
+        # 入力 [0, 65535] -> 出力 [0, 16] 程度
         LogTransform(),
         v2.Normalize(**cfg.dataset.train.transform.normalize),
         v2.RandomErasing(p=0.2, scale=(0.02, 0.1), ratio=(0.3, 3.3)),
     ])
     #採用しなかったデータ拡張及び正規化
+        #v2.ToImage(),(入力がPILではないため)
+        #v2.ToDtype(torch.float32, scale=True),(入力がすでにfloat32のため)
         #v2.RandomVerticalFlip(**cfg.dataset.train.transform.random_vertical_flip),
         #v2.ColorJitter(**cfg.dataset.train.transform.color_jitter), 
         #v2.RandomErasing(p=0.2, scale=(0.02, 0.1), ratio=(0.3, 3.3)),
 
     val_transforms = v2.Compose([
-        #v2.ToImage(),
         v2.Resize(cfg.dataset.val.transform.resize),
         v2.CenterCrop(cfg.dataset.val.transform.center_crop),
-        #v2.ToDtype(torch.float32, scale=True),
         LogTransform(),
         v2.Normalize(**cfg.dataset.val.transform.normalize),
     ])
@@ -113,14 +106,14 @@ def main(cfg: DictConfig):
 
     train_set = AnnotatedDatasetFolder(
         root=cfg.dataset.train.root,
-        csv_file=cfg.dataset.train.csv_file, # dataframe= ではなく csv_file=
-        loader=imageio_loader, #imageio_loader から dng_loader
+        csv_file=cfg.dataset.train.csv_file,
+        loader=imageio_loader, #リサイズしない場合：dng_loader
         transform=train_transforms
     )
     val_set = AnnotatedDatasetFolder(
         root=cfg.dataset.val.root,
-        csv_file=cfg.dataset.val.csv_file, # dataframe= ではなく csv_file=
-        loader=imageio_loader, # imageio_loader から dng_loader
+        csv_file=cfg.dataset.val.csv_file,
+        loader=imageio_loader, #リサイズしない場合：dng_loader
         transform=val_transforms
     )
 
@@ -143,7 +136,7 @@ def main(cfg: DictConfig):
     else:
         raise ValueError(f"未対応のモデルです: {cfg.model.name}")
     
-    #  重み読み込み 
+    #  重み読み込み  (Transfer Learning / Resume)
     if "load_weights_from" in cfg and cfg.load_weights_from is not None:
         model_path_str = cfg.load_weights_from
         # 'latest'が指定された場合、自動で最新のモデルを探す
@@ -173,7 +166,7 @@ def main(cfg: DictConfig):
         else:
             print(f"警告: 指定された重みファイル:無し  {model_path}")  
 
-    print("\n--- 事前学習（凍結）設定の確認 ---")
+    print("\n事前学習（凍結）設定の確認")
     if cfg.model.params.get("freeze_base", False):
         unfreeze_count = cfg.model.params.get("unfreeze_layers", 0)
         if unfreeze_count == 0:
@@ -201,15 +194,15 @@ def main(cfg: DictConfig):
         
         if image_batch is not None and len(image_batch) > 0:
             print(f"  バッチ形状 (画像): {image_batch.shape}")
-            print(f"  最小値 (Min): {image_batch.min().item():.4f}")
-            print(f"  最大値 (Max): {image_batch.max().item():.4f}")
-            print(f"  平均値 (Mean): {image_batch.mean().item():.4f}")
+            print(f"  最小値 (Min): {image_batch.min().item():.4f}(期待値: -2 ~ -1 程度)")
+            print(f"  最大値 (Max): {image_batch.max().item():.4f}(期待値: 2 ~ 3 程度)")
+            print(f"  平均値 (Mean): {image_batch.mean().item():.4f}(期待値: 0.0 付近)")
             print(f"  標準偏差 (Std): {image_batch.std().item():.4f}")
         else:
-            print("  [WARN] デバッグ用の画像バッチが取得できませんでした。")
+            print("バッチ取得失敗")
 
     except Exception as e:
-        print(f"  [ERROR] デバッグ中にエラー: {e}")
+        print(f"  [ERROR] チェック失敗: {e}")
     print("="*30 + "\n")
 
     # サマリー表示
@@ -220,7 +213,6 @@ def main(cfg: DictConfig):
 
 
  # 損失関数、最適化手法、スケジューラ
-    #MSEからSmoothL１に変更すること、外れ値の影響を軽減
     #学習用
     train_criterion = nn.MSELoss().to(device)
     # 監視・評価用損失 (ログ記録・グラフ化用)
@@ -229,14 +221,10 @@ def main(cfg: DictConfig):
     val_criterion_mse = nn.MSELoss().to(device)
     val_criterion_mae = nn.L1Loss().to(device)
     val_criterion_smooth = nn.SmoothL1Loss(beta=1.0).to(device)
-    #評価用
-    criterion = nn.MSELoss().to(device) #損失関数変更：nn.SmoothL1Loss(beta=1.0) or nn.MAELoss(beta=1.0) 
 
     # 差動学習率 (DLR) の設定 
-    
     base_lr = cfg.optimizer.params.lr 
 
-    
     # モデルの「ヘッド」（最後の層）の名前を特定
     model_name_lower = cfg.model.name.lower()
     head_name = None

@@ -43,6 +43,7 @@ def process_dng(file_path: Path):
             rgb = rgb[:, :, :3]
 
         # リサイズ（HDRレンジ保持）
+        # preserve_range=True なので、[0, 65535] の範囲が維持
         rgb_resized = resize(rgb, 
                              TARGET_SIZE, 
                              anti_aliasing=True, 
@@ -50,8 +51,9 @@ def process_dng(file_path: Path):
                              ).astype(np.float32)
         
         # 追加: 補間によるマイナス値を防ぐ
+         # 補間によるオーバーシュート対策（念のため 0〜65535 でクリップ）
         rgb_resized = np.clip(rgb_resized, 0.0, 65535.0)
-        # EXRで保存
+        # EXRで保存 (float32, 0-65535)
         iio.imwrite(str(output_path), rgb_resized, extension=".exr")
 
         return "Success"
