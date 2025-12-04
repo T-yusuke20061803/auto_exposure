@@ -45,8 +45,10 @@ def create_base_image(tensor_original, mean_params, std_params):
 
         # util.py の自動補正で「見やすいベース(平均0.18等)」を作る
         # 第2引数(ev)はラベル計算用なので、画像生成だけなら0でOK
-        base_np, _, _ = normalize_hdr(img_np, 0)
-
+        base_np, adjusted_label, auto_gain_ev= normalize_hdr(img_np, 0)
+        print(f"  [Auto Level] 自動補正量(camera_ev): {auto_gain_ev:.4f}")
+        print(f"  [Auto Level] Base平均輝度: {base_np.mean():.4f} (期待値: 0.18付近)")
+        base_np = np.clip(base_np, 0.0, 1.0)
         # NumPy(H,W,C) -> Tensor(C,H,W) 
         base_tensor = torch.from_numpy(base_np).permute(2,0,1).float()
          # 確認用ログ
