@@ -35,11 +35,20 @@ def exposure_compensation(image: np.ndarray, stop_value: float) -> np.ndarray:
 
 
 def normalize_hdr(hdr, ev, middle_gray=0.18):
+    # 現在の画像の明るさ(lum)を計算
     lum = get_luminance(hdr)
+    # 平均輝度が「0.18 (18%グレー)」になるために必要な補正量(stop_value)を計算
     stop_value = estimate_exposure_compensation_by_mean_luminance(lum, middle_gray)
+    # 画像を補正して、強制的に「見やすい明るさ」にする
     hdr = exposure_compensation(hdr, stop_value)
+    #(確認用) 補正後の輝度を再計算
     lum = get_luminance(hdr)
+    # カメラの露出状態を記録
+    # 「画像を+3.0段明るくした」なら、元のカメラ設定は「-3.0段暗かった」という意味
     camera_ev = -stop_value
+    # 正解ラベル(ev)の更新 ★ここが重要★
+    # 画像を自動で明るくしてしまった分、AIが予測すべき「残りの補正量」は減る
+    # 新ラベル = 元ラベル - 自動補正量
     given_ev = ev - stop_value
     return hdr, given_ev, camera_ev
 
