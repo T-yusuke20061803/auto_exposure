@@ -48,7 +48,7 @@ def create_base_image(tensor_original, mean_params, std_params):
         base_np, adjusted_label, auto_gain_ev= normalize_hdr(img_np, 0)
         print(f"  [Auto Level] 自動補正量(camera_ev): {auto_gain_ev:.4f}")
         print(f"  [Auto Level] Base平均輝度: {base_np.mean():.4f} (期待値: 0.18付近)")
-        base_np = np.clip(base_np, 0.0, 1.0)
+        base_np = np.clip(base_np, 0.0, None)
         # NumPy(H,W,C) -> Tensor(C,H,W) 
         base_tensor = torch.from_numpy(base_np).permute(2,0,1).float()
          # 確認用ログ
@@ -62,8 +62,8 @@ def adjust_exposure(image_tensor, ev_value):
     # 露出補正（ゲイン乗算）
     correction_factor = 2.0 ** ev_value
     corrected_linear_image = image_tensor * correction_factor
-    # トーンマッピング(clipping):1.0を超えたら切り捨て 変更前12/5　tone_mapped =  corrected_linear_image / (corrected_linear_image + 1.0)
-    tone_mapped = torch.clamp(corrected_linear_image, 0.0, 1.0)
+    # トーンマッピング(clipping):1.0を超えたら切り捨て 変更前12/5　tone_mapped = torch.clamp(corrected_linear_image, 0.0, 1.0)
+    tone_mapped = corrected_linear_image / (corrected_linear_image + 1.0) 
     # ガンマ補正 (1/2.2) を適用
     corrected_srgb_image = torch.pow(tone_mapped, 1.0/2.2)
     # 最終結果を [0,1] にクリップして返す
