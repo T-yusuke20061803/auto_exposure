@@ -62,8 +62,8 @@ def adjust_exposure(image_tensor, ev_value):
     # 露出補正（ゲイン乗算）
     correction_factor = 2.0 ** ev_value
     corrected_linear_image = image_tensor * correction_factor
-    # トーンマッピング(clipping):1.0を超えたら切り捨て 変更前12/5　tone_mapped = torch.clamp(corrected_linear_image, 0.0, 1.0) 
-    tone_mapped = corrected_linear_image / (corrected_linear_image + 1.0)
+    # トーンマッピング(clipping):1.0を超えたら切り捨て 変更前12/5　tone_mapped =  corrected_linear_image / (corrected_linear_image + 1.0)
+    tone_mapped = torch.clamp(corrected_linear_image, 0.0, 1.0)
     # ガンマ補正 (1/2.2) を適用
     corrected_srgb_image = torch.pow(tone_mapped, 1.0/2.2)
     # 最終結果を [0,1] にクリップして返す
