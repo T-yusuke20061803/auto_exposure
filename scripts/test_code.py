@@ -385,13 +385,12 @@ def main(cfg: DictConfig):
     bestpred_dir = output_root/ "best_predictions"
     worstpred_dir = output_root / "worst_predictions"
     ev_save_root = output_root / "extreme_predictions" / "EV_Groups"
-    ev_save_root = output_root / "extreme_predictions" / "EV_Groups"
     
     result_dir.mkdir(parents=True, exist_ok=True)
     csv_dir.mkdir(parents=True, exist_ok=True)
     bestpred_dir.mkdir(parents=True, exist_ok=True)
-    ev_save_root.mkdir(parents=True, exist_ok=True)
     worstpred_dir.mkdir(parents=True, exist_ok=True)
+    ev_save_root.mkdir(parents=True, exist_ok=True)
 
  
     csv_path = csv_dir / f"{train_id}_predictions.csv"
@@ -606,11 +605,9 @@ def main(cfg: DictConfig):
         # adjust_exposure には「線形」の linear_img を渡す
         baseline_srgb_img = adjust_exposure(linear_img, base_ev) #対数修正その3:denorm_img -> linear_img
         #モデル予測値で補正した画像
-        # モデル予測値 (2パターン)
-        pred_corrected_img = adjust_exposure(linear_img, pred_ev)  # そのまま
+        pred_corrected_img = adjust_exposure(linear_img, pred_ev)  
         #正解ラベル値で補正した画像
-        # 正解ラベル (2パターン)
-        true_corrected_img = adjust_exposure(linear_img, true_ev)  # そのまま
+        true_corrected_img = adjust_exposure(linear_img, true_ev)
         base_filename = Path(worst_image_info['filename']).stem
 
 
