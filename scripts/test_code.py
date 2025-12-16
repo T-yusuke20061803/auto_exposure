@@ -269,6 +269,7 @@ def main(cfg: DictConfig):
 
     predictions = []
     best_image_info = {"min_error": float("inf")}
+    worst_image_info = {"max_error": float("inf")}
 
     ev_groups = {
     "EV0.5": [],
@@ -309,6 +310,16 @@ def main(cfg: DictConfig):
                         "true_ev": t_val,
                         "filename": filename
                     })
+
+                if errors[i] > worst_image_info["max_error"]:
+                    worst_image_info.update({
+                        "max_error": errors[i].item(),
+                        "original": inputs[i].cpu(),
+                        "pred_ev": p_val,
+                        "true_ev": t_val,
+                        "filename": filename
+                    })
+
                 item_data = {
                     "filename": filename,
                     "original": inputs[i].cpu(),
@@ -392,12 +403,19 @@ def main(cfg: DictConfig):
 
     for group_name, items in ev_groups.items():
         items.sort(key=lambda x: x["error"])  # 誤差が小さい順
-        top2 = items[:2]  # 2枚だけ選択
+        best_items = items[:2]  # 2枚だけ選択
+        worst_items = items[-1:]
 
         save_dir = ev_save_root / group_name
         save_dir.mkdir(exist_ok=True)
 
-        for idx, sample in enumerate(top2, 1):
+        for idx, sample in enumerate(best_items, 1):
+            sample["group"] = group_name
+            sample["rank"] = idx
+            sample["save_dir"] = save_dir
+            selected_samples.append(sample)
+
+        for idx, sample in enumerate(worst_items, 1):
             sample["group"] = group_name
             sample["rank"] = idx
             sample["save_dir"] = save_dir
@@ -519,14 +537,18 @@ def main(cfg: DictConfig):
         vutils.save_image(true_corrected_img_raw, true_raw_path)
 
         # 視覚的に変化を確認するための「差分強調画像」を作成,(補正後 - 補正前) の絶対値を計算して保存
-        diff_tensor = torch.abs(pred_corrected_img_inv - baseline_srgb_img) 
+        diff_tensor = torch.abs(pred_corrected_img_raw - baseline_srgb_img) 
         vutils.save_image(diff_tensor, path_diff)
 
         # まとめて比較画像の保存
         compare_path = bestpred_dir / f"{base_filename}_ALL_Comparison.png"
         comparison_list = [
-            baseline_srgb_img, true_corrected_img_inv, true_corrected_img_raw,
-            diff_tensor,       pred_corrected_img_inv, pred_corrected_img_raw
+            baseline_srgb_img, 
+            true_corrected_img_inv, 
+            true_corrected_img_raw,
+            diff_tensor,       
+            pred_corrected_img_inv, 
+            pred_corrected_img_raw
         ]
         # nrow=3 で 2行3列 の配置
         vutils.save_image(comparison_list, compare_path, nrow=3, padding=5, normalize=False)
@@ -572,6 +594,56 @@ def main(cfg: DictConfig):
             print("(この画像に何かが写っていれば、補正処理は機能")
 
         print(f"補正前後の画像を {output_root} に保存しました")
+
+    #全体での最大誤差を保存・表示
+    if "original" in worst_image_info:
+        mean = cfg.dataset.train.transform.normalize.mean
+        std  = cfg.dataset.train.transform.normalize.std
+
+        #補正前の画像(EV=0 のsRGB画像として保存)
+        linear_img = create_base_image(worst_image_info["original"], mean, std)
+
+        base_ev = 0.0 
+        pred_ev = worst_image_info["pred_ev"]
+        true_ev = worst_image_info["true_ev"]
+
+        # adjust_exposure には「線形」の linear_img を渡す
+        baseline_srgb_img = adjust_exposure(linear_img, base_ev) #対数修正その3:denorm_img -> linear_img
+        #モデル予測値で補正した画像
+        # モデル予測値 (2パターン)
+        pred_corrected_img = adjust_exposure(linear_img, pred_ev)  # そのまま
+        #正解ラベル値で補正した画像
+        # 正解ラベル (2パターン)
+        true_corrected_img = adjust_exposure(linear_img, true_ev)  # そのまま
+        base_filename = Path(worst_image_info['filename']).stem
+
+
+        original_path = bestpred_dir / f"{base_filename}_補正前(EV {base_ev:.4f}).png"
+        pred_raw_path = bestpred_dir / f"{base_filename}_補正後(Pred EV {pred_ev:.4f}).png"
+        true_raw_path = bestpred_dir / f"{base_filename}_正解補正後(True EV {true_ev:.4f}).png"
+        path_diff = bestpred_dir / f"{base_filename}_差分強調画像.png"
+
+        vutils.save_image(baseline_srgb_img, original_path)
+        vutils.save_image(pred_corrected_img, pred_raw_path)
+        vutils.save_image(true_corrected_img, true_raw_path)
+
+        # 視覚的に変化を確認するための「差分強調画像」を作成,(補正後 - 補正前) の絶対値を計算して保存
+        diff_tensor = torch.abs(pred_corrected_img - baseline_srgb_img) 
+        vutils.save_image(diff_tensor, path_diff)
+
+        # まとめて比較画像の保存
+        compare_path = bestpred_dir / f"{base_filename}_ALL_Comparison.png"
+        comparison_list = [
+            baseline_srgb_img,
+            true_corrected_img,
+            diff_tensor, 
+            pred_corrected_img
+        ]
+        # nrow=3 で 2行3列 の配置
+        vutils.save_image(comparison_list, compare_path, nrow=3, padding=5, normalize=False)
+
+        print(f"Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
+        print(f"補正前後の画像(最大誤差)を {output_root} に保存しました")
 
         # ターミナルに分かりやすく表示 
     print("\n=== 最良モデルの検証結果 ===")
