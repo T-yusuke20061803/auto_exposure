@@ -383,12 +383,15 @@ def main(cfg: DictConfig):
     result_dir = output_root / "result"
     csv_dir = output_root/ "csv_result"
     bestpred_dir = output_root/ "best_predictions"
+    worstpred_dir = output_root / "worst_predictions"
+    ev_save_root = output_root / "extreme_predictions" / "EV_Groups"
     ev_save_root = output_root / "extreme_predictions" / "EV_Groups"
     
     result_dir.mkdir(parents=True, exist_ok=True)
     csv_dir.mkdir(parents=True, exist_ok=True)
     bestpred_dir.mkdir(parents=True, exist_ok=True)
     ev_save_root.mkdir(parents=True, exist_ok=True)
+    worstpred_dir.mkdir(parents=True, exist_ok=True)
 
  
     csv_path = csv_dir / f"{train_id}_predictions.csv"
@@ -404,18 +407,11 @@ def main(cfg: DictConfig):
     for group_name, items in ev_groups.items():
         items.sort(key=lambda x: x["error"])  # 誤差が小さい順
         best_items = items[:2]  # 2枚だけ選択
-        worst_items = items[-1:]
 
         save_dir = ev_save_root / group_name
         save_dir.mkdir(exist_ok=True)
 
         for idx, sample in enumerate(best_items, 1):
-            sample["group"] = group_name
-            sample["rank"] = idx
-            sample["save_dir"] = save_dir
-            selected_samples.append(sample)
-
-        for idx, sample in enumerate(worst_items, 1):
             sample["group"] = group_name
             sample["rank"] = idx
             sample["save_dir"] = save_dir
@@ -618,10 +614,10 @@ def main(cfg: DictConfig):
         base_filename = Path(worst_image_info['filename']).stem
 
 
-        original_path = bestpred_dir / f"{base_filename}_補正前(EV {base_ev:.4f}).png"
-        pred_raw_path = bestpred_dir / f"{base_filename}_補正後(Pred EV {pred_ev:.4f}).png"
-        true_raw_path = bestpred_dir / f"{base_filename}_正解補正後(True EV {true_ev:.4f}).png"
-        path_diff = bestpred_dir / f"{base_filename}_差分強調画像.png"
+        original_path = worstpred_dir / f"{base_filename}_補正前_最大誤差(EV {base_ev:.4f}).png"
+        pred_raw_path = worstpred_dir / f"{base_filename}_補正後_最大誤差(Pred EV {pred_ev:.4f}).png"
+        true_raw_path = worstpred_dir / f"{base_filename}_正解補正後_最大誤差(True EV {true_ev:.4f}).png"
+        path_diff = worstpred_dir / f"{base_filename}_差分強調画像_最大誤差.png"
 
         vutils.save_image(baseline_srgb_img, original_path)
         vutils.save_image(pred_corrected_img, pred_raw_path)
@@ -632,7 +628,7 @@ def main(cfg: DictConfig):
         vutils.save_image(diff_tensor, path_diff)
 
         # まとめて比較画像の保存
-        compare_path = bestpred_dir / f"{base_filename}_ALL_Comparison.png"
+        compare_path = worstpred_dir / f"{base_filename}_ALL_Comparison.png"
         comparison_list = [
             baseline_srgb_img,
             true_corrected_img,
