@@ -269,7 +269,7 @@ def main(cfg: DictConfig):
 
     predictions = []
     best_image_info = {"min_error": float("inf")}
-    worst_image_info = {"max_error": float("inf")}
+    worst_image_info = {"max_error": -1.0}
 
     ev_groups = {
     "EV0.5": [],
