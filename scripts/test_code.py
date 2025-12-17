@@ -605,15 +605,15 @@ def main(cfg: DictConfig):
         # adjust_exposure には「線形」の linear_img を渡す
         baseline_srgb_img = adjust_exposure(linear_img, base_ev) #対数修正その3:denorm_img -> linear_img
         #モデル予測値で補正した画像
-        pred_corrected_img = adjust_exposure(linear_img, pred_ev)  
+        pred_corrected_img = adjust_exposure(linear_img, worst_pred_ev)  
         #正解ラベル値で補正した画像
-        true_corrected_img = adjust_exposure(linear_img, true_ev)
+        true_corrected_img = adjust_exposure(linear_img, worst_true_ev)
         base_filename = Path(worst_image_info['filename']).stem
 
 
         original_path = worstpred_dir / f"{base_filename}_補正前_最大誤差(EV {base_ev:.4f}).png"
-        pred_raw_path = worstpred_dir / f"{base_filename}_補正後_最大誤差(Pred EV {pred_ev:.4f}).png"
-        true_raw_path = worstpred_dir / f"{base_filename}_正解補正後_最大誤差(True EV {true_ev:.4f}).png"
+        pred_raw_path = worstpred_dir / f"{base_filename}_補正後_最大誤差(Pred EV {worst_pred_ev:.4f}).png"
+        true_raw_path = worstpred_dir / f"{base_filename}_正解補正後_最大誤差(True EV {worst_true_ev:.4f}).png"
         path_diff = worstpred_dir / f"{base_filename}_差分強調画像_最大誤差.png"
 
         vutils.save_image(baseline_srgb_img, original_path)
@@ -649,7 +649,7 @@ def main(cfg: DictConfig):
     print(f"SmoothL1:{result['SmoothL1']:.5f}")
     print(f"総パラメータ数: {total_params:.2f} M (学習対象: {trainable_params:.2f} M)")
     print(f"推論速度: {avg_inference_time_ms:.3f} ms/枚")
-    print(f"Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
+    print(f"最良精度：Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
 
     result_path = result_dir / f"{train_id}_result.txt"
     with open(result_path, "w") as f:
@@ -663,7 +663,7 @@ def main(cfg: DictConfig):
         f.write(f"SmoothL1:{result['SmoothL1']:.5f}\n")
         f.write(f"総パラメータ数: {total_params:.2f} M (学習対象: {trainable_params:.2f} M)\n")
         f.write(f"推論速度: {avg_inference_time_ms:.2f} ms/枚\n")
-        f.write(f"  Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
+        f.write(f"最良精度：Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
 
     plot_ev_predictions(csv_path, output_root)
 
