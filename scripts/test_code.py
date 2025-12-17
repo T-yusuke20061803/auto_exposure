@@ -599,8 +599,8 @@ def main(cfg: DictConfig):
         linear_img = create_base_image(worst_image_info["original"], mean, std)
 
         base_ev = 0.0 
-        pred_ev = worst_image_info["pred_ev"]
-        true_ev = worst_image_info["true_ev"]
+        worst_pred_ev = worst_image_info["pred_ev"]
+        worst_true_ev = worst_image_info["true_ev"]
 
         # adjust_exposure には「線形」の linear_img を渡す
         baseline_srgb_img = adjust_exposure(linear_img, base_ev) #対数修正その3:denorm_img -> linear_img
@@ -635,7 +635,7 @@ def main(cfg: DictConfig):
         # nrow=3 で 2行3列 の配置
         vutils.save_image(comparison_list, compare_path, nrow=3, padding=5, normalize=False)
 
-        print(f"Pred EV: {pred_ev:.4f} / True EV: {true_ev:.4f}")
+        print(f"Pred EV: {worst_pred_ev:.4f} / True EV: {worst_true_ev:.4f}")
         print(f"補正前後の画像(最大誤差)を {output_root} に保存しました")
 
         # ターミナルに分かりやすく表示 
