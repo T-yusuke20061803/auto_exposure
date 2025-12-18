@@ -84,7 +84,7 @@ def main(cfg: DictConfig):
         # 入力 [0, 65535] -> 出力 [0, 16] 程度
         LogTransform(),
         v2.Normalize(**cfg.dataset.train.transform.normalize),
-        v2.RandomErasing(p=0.2, scale=(0.02, 0.1), ratio=(0.3, 3.3)),
+        v2.RandomErasing(p=0.4, scale=(0.02, 0.1), ratio=(0.3, 3.3)),
     ])
     #採用しなかったデータ拡張及び正規化
         #v2.ToImage(),(入力がPILではないため)
