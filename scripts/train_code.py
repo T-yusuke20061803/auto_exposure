@@ -176,7 +176,7 @@ def main(cfg: DictConfig):
             print(f" [INFO] 学習対象: 最後のFC層 + Layer {5 - unfreeze_count} 以降")
     else:
         print(f" [INFO] 凍結: OFF (freeze_base: false)")
-        print(f" [INFO] 学習対象: 全てのパラメータ (11.18M)")
+        print(f" [INFO] 学習対象: 全てのパラメータ")
     print("------------------------------------\n")
 
     # === [デバッグ] LogTransform の動作確認 === LogTransformありなしで二回実行しそれぞれの値を比較する
