@@ -393,7 +393,7 @@ def main(cfg: DictConfig):
             HistorySaver(directory=history_path, name=lambda x: "history.pth", trigger=IntervalTrigger(period=1)),
             HistoryLogger(trigger=IntervalTrigger(period=1), print_func=print),
             LearningCurvePlotter(directory=history_path, trigger=IntervalTrigger(period=1)),
-            ScatterPlotter(directory=history_path, trigger=IntervalTrigger(period=5))
+            ScatterPlotter(output_dir=history_path, trigger=IntervalTrigger(period=5))
         ]
 
     # 学習
