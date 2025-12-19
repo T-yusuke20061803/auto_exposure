@@ -30,9 +30,9 @@ from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, dng_l
 
 
 class ScatterPlotter:
-    def __init__(self, output_dir, triggeer):
+    def __init__(self, output_dir, trigger):
         self.root_dir = Path(output_dir)
-        self.trigger = triggeer
+        self.trigger = trigger
 
         self.scatter_dir = self.root_dir / "scatter_plots"
         self.scatter_dir.mkdir(parents=True, exist_ok=True)
