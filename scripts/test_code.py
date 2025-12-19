@@ -95,7 +95,7 @@ def plot_ev_predictions(csv_file, output_dir):
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
-        plt.savefig(scatter_dir / "scatter_ev.png")
+        plt.savefig(scatter_dir / "scatter_test_ev.png")
         plt.close()
         
 
@@ -171,7 +171,7 @@ def plot_ev_predictions(csv_file, output_dir):
         plt.legend()
         plt.grid(True)
         plt.tight_layout()
-        plt.savefig(Path(output_dir) / "distribution_comparison_kl.png")
+        plt.savefig(hist_dir/"distribution_comparison_kl.png")
         plt.close()
 
         print(f"可視化グラフ保存完了: {output_dir}")

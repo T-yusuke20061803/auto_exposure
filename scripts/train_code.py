@@ -27,67 +27,6 @@ from src.extension import ModelSaver, HistorySaver, HistoryLogger, IntervalTrigg
 from src.util import set_random_seed
 from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, dng_loader, collate_fn_skip_none, LogTransform
 
-
-
-class ScatterPlotter:
-    def __init__(self, output_dir, trigger):
-        self.root_dir = Path(output_dir)
-        self.trigger = trigger
-
-        self.scatter_dir = self.root_dir / "scatter_plots"
-        self.scatter_dir.mkdir(parents=True, exist_ok=True)
-
-    def initialize(self, trainer):
-        pass
-
-    def __call__(self, trainer):
-        if self.trigger(trainer):
-            self.plot(trainer)
-
-    def plot(self, trainer):
-        net = trainer.model
-        val_loader = trainer.val_loader
-        device = trainer.device
-
-        net.eval() # 評価モードへ
-        true_list = []
-        pred_list = []
-
-        with torch.no_grad():
-            for batch in val_loader:
-                # Datasetの戻り値が (img, label) なのでそれに対応
-                inputs, targets = batch[0], batch[1]
-
-                inputs = inputs.to(device)
-                outputs = net(inputs)
-
-                # TensorをCPUの数値リストに変換して貯める
-                true_list.extend(targets.view(-1).cpu().numpy().tolist())
-                pred_list.extend(outputs.view(-1).cpu().numpy().tolist())
-        #グラフを評価用と同様のものを書く
-        plt.figure(figsize=(6,6))
-        plt.scatter(true_list, pred_list, s=10, alpha=0.5)
-
-        min_val = min(min(true_list),min(pred_list))
-        max_val = max(max(true_list),max(pred_list))
-        plt.plot([min_val, max_val], [min_val, max_val], 'r--', label="Ideal (y=x)")
-
-        plt.xlabel("True EV")
-        plt.ylabel("Predicted EV")
-        plt.title(f"Epoch {trainer.updater.epoch}: Predicted vs. True EV Scatter Plot")
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        
-        # 保存
-        save_name = f"scatter_epoch_{trainer.updater.epoch:03d}.png"
-        plt.savefig(self.scatter_dir / save_name)
-        plt.close()
-        
-        net.train()
-
-
-        pass
 class DebugPrintTransform(object):
     def __init__(self, name=""):
         self.name = name
@@ -96,7 +35,7 @@ class DebugPrintTransform(object):
         print(f"\n[Debug: {self.name}] Shape: {tensor.shape}, Range: [{tensor.min():.4f}, {tensor.max():.4f}], Mean: {tensor.mean():.4f}")
         return tensor
 
-# === CSVから画像パスと補正量(EV)を読み込むデータセット ===
+# CSVから画像パスと補正量(EV)を読み込むデータセット
 class EVRegressionDataset(Dataset):
     def __init__(self, csv_file, transform=None):
         self.samples = []
@@ -117,6 +56,39 @@ class EVRegressionDataset(Dataset):
         if self.transform:
             img = self.transform(img)
         return img, torch.tensor([ev], dtype=torch.float32)
+    
+#訓練終了後に検証データの結果をプロットする
+def save_training_results_visuals(csv_path, output_root):
+    try:
+        df = pd.read_csv(csv_path)
+        scatter_dir = Path(output_root) / "scatter_plots"
+        scatter_dir.mkdir(parents=True, exist_ok=True)
+
+        # 散布図の作成
+        plt.figure(figsize=(6, 6))
+        plt.scatter(df["true_ev"], df["pred_ev"], s=50, alpha=0.7, label="Validation Data")
+
+        # 理想直線（y=x）
+        min_val = min(df["true_ev"].min(), df["pred_ev"].min())
+        max_val = max(df["true_ev"].max(), df["pred_ev"].max())
+        plt.plot([min_val, max_val], [min_val, max_val], 'r--', label="Ideal (y=x)")
+
+        plt.xlabel("True EV")
+        plt.ylabel("Predicted EV")
+        plt.title("Predicted vs. True EV Scatter Plot (Training/Val)")
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+
+        # 保存
+        save_path = scatter_dir / "scatter_train_ev.png"
+        plt.savefig(save_path)
+        plt.close()
+        print(f"[INFO] 訓練時の散布図を保存: {save_path}")
+
+    except Exception as e:
+        print(f"[ERROR] 散布図の作成に失敗: {e}")
+
 
 # ---- メイン処理 ----
 @hydra.main(version_base=None, config_path="../conf", config_name="config.yaml")
@@ -396,7 +368,6 @@ def main(cfg: DictConfig):
             HistorySaver(directory=history_path, name=lambda x: "history.pth", trigger=IntervalTrigger(period=1)),
             HistoryLogger(trigger=IntervalTrigger(period=1), print_func=print),
             LearningCurvePlotter(directory=history_path, trigger=IntervalTrigger(period=1)),
-            ScatterPlotter(output_dir=history_path, trigger=IntervalTrigger(period=5))
         ]
 
     # 学習
@@ -413,6 +384,34 @@ def main(cfg: DictConfig):
         )
     #学習開始
     trainer.train(cfg.epoch, val_loader)
+    
+    print("\n[INFO] 最良モデルを使用した散布図(Training Result)の作成を開始...")
+    #保存された最良モデルを読み込み
+    best_model_path = history_path / "best_model.pth"
+
+    if best_model_path.exists():
+        net.load_state_dict(torch.load(best_model_path, map_location=device))
+    
+    net.eval()
+    true_list, pred_list = [], []
+    
+    #検証データで推論
+    with torch.no_grad():
+        for batch in val_loader:
+            inputs, targets = batch[0].to(device), batch[1].to(device)
+            outputs = net(inputs)
+            true_list.extend(targets.view(-1).cpu().numpy().tolist())
+            pred_list.extend(outputs.view(-1).cpu().numpy().tolist())
+
+    # 予測結果をCSV保存（後の比較用）
+    csv_dir = history_path / "csv_result"
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = csv_dir / "val_predictions.csv"
+    pd.DataFrame({"true_ev": true_list, "pred_ev": pred_list}).to_csv(csv_path, index=False)
+
+    # 散布図作成（scatter_plots/scatter_train_ev.png を生成）
+    save_training_results_visuals(csv_path, history_path)
+
     # 最終モデル保存
     torch.save(net.state_dict(), history_path / "final_model.pth")
 
