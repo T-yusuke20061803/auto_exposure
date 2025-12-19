@@ -37,6 +37,9 @@ class ScatterPlotter:
         self.scatter_dir = self.root_dir / "scatter_plots"
         self.scatter_dir.mkdir(parents=True, exist_ok=True)
 
+    def initialize(self, trainer):
+        pass
+
     def __call__(self, trainer):
         if self.trigger(trainer):
             self.plot(trainer)
