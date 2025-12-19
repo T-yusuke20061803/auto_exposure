@@ -15,8 +15,10 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 from sklearn.model_selection import train_test_split
 import pandas as pd
-
-
+import matplotlib.pyplot as plt
+import torch
+import numpy as np
+from pathlib import Path
 
 from src.model import SimpleCNN, ResNet,ResNetRegression, RegressionEfficientNet, RegressionMobileNet
 from src.trainer import Trainer, LossEvaluator
@@ -26,6 +28,63 @@ from src.util import set_random_seed
 from src.dataset import AnnotatedDatasetFolder, pil_loader,imageio_loader, dng_loader, collate_fn_skip_none, LogTransform
 
 
+
+class ScatterPlotter:
+    def __init__(self, output_dir, triggeer):
+        self.root_dir = Path(output_dir)
+        self.trigger = triggeer
+
+        self.scatter_dir = self.root_dir / "scatter_plots"
+        self.scatter_dir.mkdir(parents=True, exist_ok=True)
+
+    def __call__(self, trainer):
+        if self.trigger(trainer):
+            self.plot(trainer)
+
+    def plot(self, trainer):
+        net = trainer.model
+        val_loader = trainer.val_loader
+        device = trainer.device
+
+        net.eval() # 評価モードへ
+        true_list = []
+        pred_list = []
+
+        with torch.no_grad():
+            for batch in val_loader:
+                # Datasetの戻り値が (img, label) なのでそれに対応
+                inputs, targets = batch[0], batch[1]
+
+                inputs = inputs.to(device)
+                outputs = net(inputs)
+
+                # TensorをCPUの数値リストに変換して貯める
+                true_list.extend(targets.view(-1).cpu().numpy().tolist())
+                pred_list.extend(outputs.view(-1).cpu().numpy().tolist())
+        #グラフを評価用と同様のものを書く
+        plt.figure(figsize=(6,6))
+        plt.scatter(true_list, pred_list, s=10, alpha=0.5)
+
+        min_val = min(min(true_list),min(pred_list))
+        max_val = max(max(true_list),max(pred_list))
+        plt.plot([min_val, max_val], [min_val, max_val], 'r--', label="Ideal (y=x)")
+
+        plt.xlabel("True EV")
+        plt.ylabel("Predicted EV")
+        plt.title(f"Epoch {trainer.updater.epoch}: Predicted vs. True EV Scatter Plot")
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        
+        # 保存
+        save_name = f"scatter_epoch_{trainer.updater.epoch:03d}.png"
+        plt.savefig(self.scatter_dir / save_name)
+        plt.close()
+        
+        net.train()
+
+
+        pass
 class DebugPrintTransform(object):
     def __init__(self, name=""):
         self.name = name
@@ -334,6 +393,7 @@ def main(cfg: DictConfig):
             HistorySaver(directory=history_path, name=lambda x: "history.pth", trigger=IntervalTrigger(period=1)),
             HistoryLogger(trigger=IntervalTrigger(period=1), print_func=print),
             LearningCurvePlotter(directory=history_path, trigger=IntervalTrigger(period=1)),
+            ScatterPlotter(directory=history_path, trigger=IntervalTrigger(period=5))
         ]
 
     # 学習

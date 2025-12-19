@@ -72,6 +72,14 @@ def adjust_exposure(image_tensor, ev_value):
 def plot_ev_predictions(csv_file, output_dir):
     try:
         df = pd.read_csv(csv_file)
+        root_dir = Path(output_dir)
+
+        # 保存先フォルダを分別作成
+        scatter_dir = root_dir / "scatter_plots"
+        hist_dir = root_dir / "histograms"
+        
+        scatter_dir.mkdir(parents=True, exist_ok=True)
+        hist_dir.mkdir(parents=True, exist_ok=True)
         #散布図
         plt.figure(figsize=(6, 6))
         plt.scatter(df["true_ev"], df["pred_ev"], s=50, alpha=0.7)
@@ -87,7 +95,7 @@ def plot_ev_predictions(csv_file, output_dir):
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
-        plt.savefig(Path(output_dir) / "scatter_ev.png")
+        plt.savefig(scatter_dir / "scatter_ev.png")
         plt.close()
         
 
@@ -99,7 +107,7 @@ def plot_ev_predictions(csv_file, output_dir):
         plt.title(f"Prediction Error Distribution (RMSE={np.sqrt((df['diff']**2).mean()):.3f})")
         plt.grid(True)
         plt.tight_layout()
-        plt.savefig(Path(output_dir) / "誤差分布_histogram.png")
+        plt.savefig(hist_dir / "誤差分布_histogram.png")
         plt.close()
 
         #モデル予測値のみヒストグラム
@@ -110,7 +118,7 @@ def plot_ev_predictions(csv_file, output_dir):
         plt.title("Predicted EV Distribution")
         plt.grid(True)
         plt.tight_layout()
-        plt.savefig(Path(output_dir) / "予測値_ev_histogram.png")
+        plt.savefig(hist_dir/ "予測値_ev_histogram.png")
         plt.close()
 
         #正解値のみヒストグラム
@@ -121,7 +129,7 @@ def plot_ev_predictions(csv_file, output_dir):
         plt.title("Predicted EV Distribution")
         plt.grid(True)
         plt.tight_layout()
-        plt.savefig(Path(output_dir) / "正価値_ev_histogram.png")
+        plt.savefig(hist_dir/ "正解値_ev_histogram.png")
         plt.close()
 
         # ヒストグラムの範囲を統一して計算
