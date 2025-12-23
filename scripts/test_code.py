@@ -87,7 +87,7 @@ def plot_ev_predictions(csv_file, output_dir):
         # 理想直線（y=x）を描画
         min_val = min(df.true_ev.min(), df.pred_ev.min())
         max_val = max(df.true_ev.max(), df.pred_ev.max())
-        plt.plot([min_val, max_val], [min_val, max_val], 'r--', label="Ideal (y=x)", fontsize=18)
+        plt.plot([min_val, max_val], [min_val, max_val], 'r--', label="Ideal (y=x)")
 
         plt.xlabel("True EV[EV] ", fontsize=20) #正解値
         plt.ylabel("Predicted EV[EV] ", fontsize=20) #予測値
