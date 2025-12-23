@@ -299,7 +299,7 @@ class LearningCurvePlotter(Extension):
     
     def __call__(self, trainer: Trainer) -> typing.NoReturn:
         import matplotlib.pyplot as plt
-        plt.figure()
+        plt.figure(figsize=(15,7))
         history = trainer.history
  
          # 訓練ロスは trainer.py 側で 'loss' とハードコードされているため、これでOK
@@ -324,9 +324,10 @@ class LearningCurvePlotter(Extension):
             # 検証ロスのラベルも動的に設定 (例: "validation MSE")
             plt.plot(epoch, val_losses, label=f"validation {monitor_key}")
 
-        plt.xlabel("epoch")
-        plt.ylabel("loss")
-        plt.legend()
+        plt.title("Learning Curve", fontsize=24)
+        plt.xlabel("epoch", fontsize=20)
+        plt.ylabel("loss", fontsize=20)
+        plt.legend(fontsize=18)
         plt.grid(True) # グリッドを追加
         plt.tight_layout() # レイアウトを自動調整
         plt.savefig(str(self.directory / "learning_curve.pdf"), bbox_inches='tight', pad_inches=0.1)

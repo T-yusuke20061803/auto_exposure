@@ -65,7 +65,7 @@ def save_training_results_visuals(csv_path, output_root):
         scatter_dir.mkdir(parents=True, exist_ok=True)
 
         # 散布図の作成
-        plt.figure(figsize=(6, 6))
+        plt.figure(figsize=(7,7))
         plt.scatter(df["true_ev"], df["pred_ev"], s=50, alpha=0.7, label="Validation Data")
 
         # 理想直線（y=x）
@@ -73,11 +73,12 @@ def save_training_results_visuals(csv_path, output_root):
         max_val = max(df["true_ev"].max(), df["pred_ev"].max())
         plt.plot([min_val, max_val], [min_val, max_val], 'r--', label="Ideal (y=x)")
 
-        plt.xlabel("True EV")
-        plt.ylabel("Predicted EV")
-        plt.title("Predicted vs. True EV Scatter Plot (Training/Val)")
+        plt.xlabel("True EV", fontsize=20)
+        plt.ylabel("Predicted EV", fontsize=20)
+        plt.title("Predicted vs. True EV Scatter Plot (Training/Val)", fontsize=24)
+        plt.tick_params(labelsize=16)
         plt.grid(True)
-        plt.legend()
+        plt.legend(fontsize=18)
         plt.tight_layout()
 
         # 保存
