@@ -89,13 +89,13 @@ def plot_ev_predictions(csv_file, output_dir):
         max_val = max(df.true_ev.max(), df.pred_ev.max())
         plt.plot([min_val, max_val], [min_val, max_val], 'r--', label="Ideal (y=x)")
 
-        plt.xlabel("True EV ") #正解値
-        plt.ylabel("Predicted EV ") #予測値
-        plt.title("Predicted vs. True EV Scatter Plot")
+        plt.xlabel("True EV[EV] ") #正解値
+        plt.ylabel("Predicted EV[EV] ") #予測値
+        plt.title("scatter（True and Predicted）")
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
-        plt.savefig(scatter_dir / "scatter_test_ev.png")
+        plt.savefig(scatter_dir / "scatter_test_ev.pdf", bbox_inches='tight', pad_inches=0.1)
         plt.close()
         
 
@@ -104,32 +104,33 @@ def plot_ev_predictions(csv_file, output_dir):
         plt.figure(figsize=(6,4))
         plt.hist(df["diff"], bins=30, alpha=0.7)
         plt.xlabel("Prediction Error (Predicted - True) [EV]")
+        plt.ylabel("Frequency")
         plt.title(f"Prediction Error Distribution (RMSE={np.sqrt((df['diff']**2).mean()):.3f})")
         plt.grid(True)
         plt.tight_layout()
-        plt.savefig(hist_dir / "誤差分布_histogram.png")
+        plt.savefig(hist_dir / "誤差分布_histogram.pdf", bbox_inches='tight', pad_inches=0.1)
         plt.close()
 
         #モデル予測値のみヒストグラム
         plt.figure(figsize=(6,4))
         plt.hist(df["pred_ev"], bins=30, alpha=0.7, edgecolor='black')
-        plt.xlabel("Predicted EV")
+        plt.xlabel("Predicted EV[EV]")
         plt.ylabel("Frequency")
         plt.title("Predicted EV Distribution")
         plt.grid(True)
         plt.tight_layout()
-        plt.savefig(hist_dir/ "予測値_ev_histogram.png")
+        plt.savefig(hist_dir/ "予測値_ev_histogram.pdf", bbox_inches='tight', pad_inches=0.1)
         plt.close()
 
         #正解値のみヒストグラム
         plt.figure(figsize=(6,4))
         plt.hist(df["true_ev"], bins=30, alpha=0.7, edgecolor='black')
-        plt.xlabel("Predicted EV")
+        plt.xlabel("True EV")
         plt.ylabel("Frequency")
-        plt.title("Predicted EV Distribution")
+        plt.title("True EV Distribution")
         plt.grid(True)
         plt.tight_layout()
-        plt.savefig(hist_dir/ "正解値_ev_histogram.png")
+        plt.savefig(hist_dir/ "正解値_ev_histogram.pdf", bbox_inches='tight', pad_inches=0.1)
         plt.close()
 
         # ヒストグラムの範囲を統一して計算
@@ -171,7 +172,7 @@ def plot_ev_predictions(csv_file, output_dir):
         plt.legend()
         plt.grid(True)
         plt.tight_layout()
-        plt.savefig(hist_dir/"distribution_comparison_kl.png")
+        plt.savefig(hist_dir/"distribution_comparison_kl.pdf", bbox_inches='tight', pad_inches=0.1)
         plt.close()
 
         print(f"可視化グラフ保存完了: {output_dir}")

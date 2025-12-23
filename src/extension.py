@@ -329,6 +329,6 @@ class LearningCurvePlotter(Extension):
         plt.legend()
         plt.grid(True) # グリッドを追加
         plt.tight_layout() # レイアウトを自動調整
-        plt.savefig(str(self.directory / "learning_curve.png"))
+        plt.savefig(str(self.directory / "learning_curve.pdf"), bbox_inches='tight', pad_inches=0.1)
         plt.clf()
         plt.close()

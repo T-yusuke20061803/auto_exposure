@@ -81,8 +81,8 @@ def save_training_results_visuals(csv_path, output_root):
         plt.tight_layout()
 
         # 保存
-        save_path = scatter_dir / "scatter_train_ev.png"
-        plt.savefig(save_path)
+        save_path = scatter_dir / "scatter_train_ev.pdf"
+        plt.savefig(save_path, bbox_inches='tight', pad_inches=0.1)
         plt.close()
         print(f"[INFO] 訓練時の散布図を保存: {save_path}")
 
@@ -304,9 +304,9 @@ def main(cfg: DictConfig):
     else:
         # DLR非対応モデル (SimpleCNNなど) または head_name が見つからない場合
         if model_name_lower not in ["resnet", "efficientnet", "mobilenet"]:
-            print(f"[INFO] 差動学習率(DLR)は {cfg.model.name} では未サポートです。単一のLRを使用します。")
+            print(f"[INFO] 差動学習率(DLR)： {cfg.model.name} 未サポート→単一のLRを使用")
         else:
-            print(f"[WARN] DLR設定エラー: 'net.{base_model_name}.{head_name}' が見つかりません。単一のLRを使用します。")
+            print(f"[WARN] DLR設定エラー: 'net.{base_model_name}.{head_name}' ：無し→単一のLRを使用します。")
         param_groups = net.parameters()
 
     opt_name = cfg.optimizer.name.lower()
