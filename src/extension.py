@@ -327,6 +327,7 @@ class LearningCurvePlotter(Extension):
         plt.title("Learning Curve", fontsize=20)
         plt.xlabel("epoch", fontsize=18)
         plt.ylabel("loss", fontsize=18)
+        plt.tick_params(labelsize=12)
         plt.legend(fontsize=14)
         plt.grid(True) # グリッドを追加
         plt.tight_layout() # レイアウトを自動調整
