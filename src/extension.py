@@ -324,10 +324,10 @@ class LearningCurvePlotter(Extension):
             # 検証ロスのラベルも動的に設定 (例: "validation MSE")
             plt.plot(epoch, val_losses, label=f"validation {monitor_key}")
 
-        plt.title("Learning Curve", fontsize=24)
-        plt.xlabel("epoch", fontsize=20)
-        plt.ylabel("loss", fontsize=20)
-        plt.legend(fontsize=18)
+        plt.title("Learning Curve", fontsize=20)
+        plt.xlabel("epoch", fontsize=18)
+        plt.ylabel("loss", fontsize=18)
+        plt.legend(fontsize=14)
         plt.grid(True) # グリッドを追加
         plt.tight_layout() # レイアウトを自動調整
         plt.savefig(str(self.directory / "learning_curve.pdf"), bbox_inches='tight', pad_inches=0.1)
