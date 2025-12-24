@@ -106,7 +106,7 @@ def plot_ev_predictions(csv_file, output_dir):
         plt.hist(df["diff"], bins=30, alpha=0.7)
         plt.xlabel("Prediction Error (Predicted - True) [EV]", fontsize=18)
         plt.ylabel("Frequency", fontsize=18)
-        plt.title(f"Prediction Error Distribution (RMSE={np.sqrt((df['diff']**2).mean()):.3f})", fontsize=20)
+        plt.title(f"Prediction Error Distribution", fontsize=20)
         plt.tick_params(labelsize=16)
         plt.grid(True)
         plt.tight_layout()
