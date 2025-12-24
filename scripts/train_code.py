@@ -73,12 +73,12 @@ def save_training_results_visuals(csv_path, output_root):
         max_val = max(df["true_ev"].max(), df["pred_ev"].max())
         plt.plot([min_val, max_val], [min_val, max_val], 'r--', label="Ideal (y=x)")
 
-        plt.xlabel("True EV", fontsize=18)
-        plt.ylabel("Predicted EV", fontsize=18)
-        plt.title("Predicted vs. True EV Scatter Plot (Training/Val)", fontsize=20)
-        plt.tick_params(labelsize=12)
+        plt.xlabel("True EV", fontsize=22)
+        plt.ylabel("Predicted EV", fontsize=22)
+        plt.title("Predicted vs. True EV Scatter Plot (Training/Val)", fontsize=24)
+        plt.tick_params(labelsize=16)
         plt.grid(True)
-        plt.legend(fontsize=14)
+        plt.legend(fontsize=18)
         plt.tight_layout()
 
         # 保存

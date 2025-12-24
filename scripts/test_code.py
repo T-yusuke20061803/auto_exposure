@@ -89,8 +89,8 @@ def plot_ev_predictions(csv_file, output_dir):
         max_val = max(df.true_ev.max(), df.pred_ev.max())
         plt.plot([min_val, max_val], [min_val, max_val], 'r--', label="Ideal (y=x)")
 
-        plt.xlabel("True EV[EV] ", fontsize=20) #正解値
-        plt.ylabel("Predicted EV[EV] ", fontsize=20) #予測値
+        plt.xlabel("True EV[EV] ", fontsize=22) #正解値
+        plt.ylabel("Predicted EV[EV] ", fontsize=22) #予測値
         plt.title("scatter(True and Predicted)", fontsize=24)
         plt.tick_params(labelsize=16)
         plt.grid(True)
@@ -107,7 +107,7 @@ def plot_ev_predictions(csv_file, output_dir):
         plt.xlabel("Prediction Error (Predicted - True) [EV]", fontsize=18)
         plt.ylabel("Frequency", fontsize=18)
         plt.title(f"Prediction Error Distribution (RMSE={np.sqrt((df['diff']**2).mean()):.3f})", fontsize=20)
-        plt.tick_params(labelsize=12)
+        plt.tick_params(labelsize=16)
         plt.grid(True)
         plt.tight_layout()
         plt.savefig(hist_dir / "誤差分布_histogram.pdf", bbox_inches='tight', pad_inches=0.1)
@@ -116,10 +116,10 @@ def plot_ev_predictions(csv_file, output_dir):
         #モデル予測値のみヒストグラム
         plt.figure(figsize=(7,7))
         plt.hist(df["pred_ev"], bins=30, alpha=0.7, edgecolor='black')
-        plt.xlabel("Predicted EV[EV]", fontsize=18)
-        plt.ylabel("Frequency", fontsize=18)
-        plt.title("Predicted EV Distribution", fontsize=20)
-        plt.tick_params(labelsize=12)
+        plt.xlabel("Predicted EV[EV]", fontsize=22)
+        plt.ylabel("Frequency", fontsize=22)
+        plt.title("Predicted EV Distribution", fontsize=24)
+        plt.tick_params(labelsize=16)
         plt.grid(True)
         plt.tight_layout()
         plt.savefig(hist_dir/ "予測値_ev_histogram.pdf", bbox_inches='tight', pad_inches=0.1)
@@ -128,10 +128,10 @@ def plot_ev_predictions(csv_file, output_dir):
         #正解値のみヒストグラム
         plt.figure(figsize=(7,7))
         plt.hist(df["true_ev"], bins=30, alpha=0.7, edgecolor='black')
-        plt.xlabel("True EV", fontsize=18)
-        plt.ylabel("Frequency", fontsize=18)
-        plt.title("True EV Distribution", fontsize=20)
-        plt.tick_params(labelsize=12)
+        plt.xlabel("True EV", fontsize=22)
+        plt.ylabel("Frequency", fontsize=22)
+        plt.title("True EV Distribution", fontsize=24)
+        plt.tick_params(labelsize=16)
         plt.grid(True)
         plt.tight_layout()
         plt.savefig(hist_dir/ "正解値_ev_histogram.pdf", bbox_inches='tight', pad_inches=0.1)
@@ -170,11 +170,11 @@ def plot_ev_predictions(csv_file, output_dir):
         plt.hist(df["true_ev"], bins=bins, alpha=0.5, label='True EV', color='blue', density=True)
         plt.hist(df["pred_ev"], bins=bins, alpha=0.5, label='Pred EV', color='orange', density=True)
         
-        plt.xlabel("EV", fontsize=18)
-        plt.ylabel("Density", fontsize=18)
-        plt.title(f"True vs Pred Distribution (KL Divergence = {kl_value:.4f})", fontsize=20)
-        plt.tick_params(labelsize=12)
-        plt.legend(fontsize=14)
+        plt.xlabel("EV", fontsize=22)
+        plt.ylabel("Density", fontsize=22)
+        plt.title(f"True vs Pred Distribution (KL Divergence = {kl_value:.4f})", fontsize=24)
+        plt.tick_params(labelsize=16)
+        plt.legend(fontsize=18)
         plt.grid(True)
         plt.tight_layout()
         plt.savefig(hist_dir/"distribution_comparison_kl.pdf", bbox_inches='tight', pad_inches=0.1)
