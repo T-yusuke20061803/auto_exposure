@@ -147,6 +147,18 @@ class Trainer(ABCTrainer):
             inputs = inputs.to(self.device)
             targets = targets.to(self.device)
 
+            with torch.no_grad():
+                # --- NaN対策：入力に不正な値がないか確認 ---
+                inputs = torch.nan_to_num(inputs, nan=0.0, posinf=65535.0, neginf=0.0)
+                # 2. 平均輝度正規化
+                inputs = normalize_images_batch_gpu(inputs)
+                # 3. 対数変換
+                inputs = self.log_transform_gpu(inputs)
+                # --- NaN対策：対数変換後の値を安全な範囲に収める ---
+                inputs = torch.clamp(inputs, min=-20.0, max=20.0)
+                # 4. 標準化
+                inputs = (inputs - self.norm_mean) / (self.norm_std + 1e-6) # 0除算防止
+
             if self.use_amp: #AMP利用
                 with autocast(enabled = self.use_amp):
                     outputs = self.net(inputs)
@@ -184,8 +196,8 @@ class Trainer(ABCTrainer):
 
                 # schedulerをバッチ単位で更新
             if self.scheduler is not None:
-                if isinstance(self.scheduler, torch.optim.lr_scheduler.CosineAnnealingWarmRestarts):  # ← 修正
-                    self.scheduler.step(epoch + i / len(self.dataloader))
+                    if isinstance(self.scheduler, torch.optim.lr_scheduler.CosineAnnealingWarmRestarts):
+                        self.scheduler.step(epoch + i / len(self.dataloader))
 
             loss_meter.update(loss.item() * accumulation_steps, number=inputs.size(0))
         #if self.scheduler is not None:
