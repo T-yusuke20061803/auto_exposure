@@ -9,7 +9,7 @@ import numpy as np
 from pathlib import Path
 import rawpy
 import torch
-
+from src.util import normalize_hdr
 _loader_print_count = 0
 
 class LogTransform(object):
@@ -91,6 +91,13 @@ class AnnotatedDatasetFolder(torchdata.Dataset):
         except Exception as e:
             print(f"エラー: 画像の読み込み失敗{path}, {e}")
             return None
+        # normalize_hdr が numpy 配列を想定している場合、一旦変換が必要
+        img_np = sample.permute(1, 2, 0).numpy() 
+        # 画像を 18% グレーに調整し、ラベルも更新する
+        img_res, new_target, _ = normalize_hdr(img_np, target)
+        # テンソルに戻す
+        sample = torch.from_numpy(img_res).permute(2, 0, 1).float()
+        target = new_target
         #前処理適応# 読み込み: 値は [0.0, 65535.0]）
         if self.transform is not None:
             sample = self.transform(sample)
