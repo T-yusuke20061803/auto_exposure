@@ -83,27 +83,23 @@ class AnnotatedDatasetFolder(torchdata.Dataset):
         if not self.samples:
              raise RuntimeError("有効なサンプル無し")
         print(f"有効サンプル数：{len(self.samples)} 件")
+    # dataset.py
     def __getitem__(self, index):
         path, target, filename = self.samples[index]
         try:
-            # 読み込み: 値は [0.0, 65535.0]
+            # 読み込み: [0.0, 65535.0] のリニアデータ (C, H, W)
             sample = self.loader(path)
         except Exception as e:
             print(f"エラー: 画像の読み込み失敗{path}, {e}")
             return None
-        # normalize_hdr が numpy 配列を想定している場合、一旦変換が必要
-        img_np = sample.permute(1, 2, 0).numpy() 
-        # 画像を 18% グレーに調整し、ラベルも更新する
-        img_res, new_target, _ = normalize_hdr(img_np, target)
-        # テンソルに戻す
-        sample = torch.from_numpy(img_res).permute(2, 0, 1).float()
-        target = new_target
-        #前処理適応# 読み込み: 値は [0.0, 65535.0]）
+
+        # CPU側では幾何学的変換（Resize等）のみ行う
         if self.transform is not None:
             sample = self.transform(sample)
         
-        target = torch.tensor([target], dtype=torch.float32)
-        return sample, target, filename
+        # ラベルは更新せずそのまま返す
+        target_tensor = torch.tensor([target], dtype=torch.float32)
+        return sample, target_tensor, filename
 
     def __len__(self):
         return len(self.samples)

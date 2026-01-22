@@ -31,36 +31,32 @@ def denormalize(tensor, mean, std, inplace=False):
     return tensor_copy
 
 def create_base_image(tensor_original, mean_params, std_params):
-        # 学習用Tensor（既にdataset側で正規化済み）から、可視化用の「ベース画像」を作成
-        
-        # 1. 標準化の解除 (Undo v2.Normalize)
+        # 標準化の解除 (Undo v2.Normalize)
         denorm = denormalize(tensor_original, mean_params, std_params)
         
-        # 2. ログ変換の解除 (LogTransformの逆操作: $2^x - 1$)
+        # ログ変換の解除 (LogTransformの逆操作: $2^x - 1$)
         # dataset側の処理により、値は [0, 65535] スケールに戻ります
         temp = torch.pow(2.0, denorm) - 1.0
         
-        # 3. リニアスケール [0, 1] へ変換
+        # リニアスケール [0, 1] へ変換
         linear_img_65535 = torch.clamp(temp, min=0.0)
         linear_img = linear_img_65535 / 65535.0
         
-        # 4. Tensor(C, H, W) -> NumPy(H, W, C) へ変換
+        # Tensor(C, H, W) -> NumPy(H, W, C) へ変換
         img_np = linear_img.permute(1, 2, 0).cpu().numpy()
 
         # --- 修正箇所：再度の正規化をスキップ ---
         # dataset.py の __getitem__ 内で既に normalize_hdr が適用されているため
         # ここでは normalize_hdr を呼び出さず、値をそのまま使用します
-        base_np = img_np
+        base_np, _, auto_gain_ev = normalize_hdr(img_np, 0) 
         
-        print(f"  [Info] dataset側で正規化済みのため、再正規化をスキップしました。")
+        print(f"  [Auto Level] 自動補正量(camera_ev): {auto_gain_ev:.4f}")
+        
         print(f"  [Auto Level] Base平均輝度: {base_np.mean():.4f} (期待値: 0.18付近)")
         # ---------------------------------------
-
         base_np = np.clip(base_np, 0.0, None)
-        
         # 5. NumPy(H, W, C) -> Tensor(C, H, W) に戻す
         base_tensor = torch.from_numpy(base_np).permute(2, 0, 1).float()
-        
         # 確認用ログ
         print(f"\n[Check] 正規化後の最大値: {base_tensor.max().item():.4f}")
 

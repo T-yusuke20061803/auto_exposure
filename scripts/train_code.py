@@ -117,8 +117,8 @@ def main(cfg: DictConfig):
         v2.RandomRotation(**cfg.dataset.train.transform.random_rotation),
         # LogTransform: log2(x + 1)
         # 入力 [0, 65535] -> 出力 [0, 16] 程度
-        LogTransform(),
-        v2.Normalize(**cfg.dataset.train.transform.normalize),
+        #LogTransform(),
+        #v2.Normalize(**cfg.dataset.train.transform.normalize),
         v2.RandomErasing(p=0.2, scale=(0.02, 0.1), ratio=(0.3, 3.3)),
     ])
     #採用しなかったデータ拡張及び正規化
@@ -130,8 +130,8 @@ def main(cfg: DictConfig):
     val_transforms = v2.Compose([
         v2.Resize(cfg.dataset.val.transform.resize),
         v2.CenterCrop(cfg.dataset.val.transform.center_crop),
-        LogTransform(),
-        v2.Normalize(**cfg.dataset.val.transform.normalize),
+        #LogTransform(),
+        #v2.Normalize(**cfg.dataset.val.transform.normalize),
     ])
      # データ分割 
     train_df = pd.read_csv(cfg.dataset.train.csv_file)

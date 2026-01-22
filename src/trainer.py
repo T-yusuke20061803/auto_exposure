@@ -11,6 +11,9 @@ from torch import autograd
 import torch.nn.functional as F
 from torch.cuda.amp import autocast, GradScaler #AMP対応
 
+from src.util import normalize_images_batch_gpu
+from src.dataset import LogTransform
+
 
 # Utility: 平均値を取るクラス
 class AverageMeter(object):
@@ -70,6 +73,11 @@ class Trainer(ABCTrainer):
         self.total_epoch = None
         self.history = {}
 
+        self.log_transform_gpu = LogTransform()
+        norm_cfg = self.cfg.dataset.train.transform.normalize
+        # 平均と標準偏差を (1, 3, 1, 1) の形状にしてGPUに送っておく
+        self.norm_mean = torch.tensor(norm_cfg.mean, device=self.device).view(1, 3, 1, 1)
+        self.norm_std = torch.tensor(norm_cfg.std, device=self.device).view(1, 3, 1, 1)
         #AMP scaler(GPUの場合のみ使用)
         # deviceが'cuda'であることと、configで有効になっているかを確認
         self.use_amp = (self.device.type == 'cuda') and self.cfg.get('amp', False)
@@ -138,6 +146,7 @@ class Trainer(ABCTrainer):
             inputs , targets , _ = batch
             inputs = inputs.to(self.device)
             targets = targets.to(self.device)
+
             if self.use_amp: #AMP利用
                 with autocast(enabled = self.use_amp):
                     outputs = self.net(inputs)
@@ -198,6 +207,12 @@ class Trainer(ABCTrainer):
             for inputs, targets, _ in val_loader:
                 inputs = inputs.to(self.device)
                 targets = targets.to(self.device)
+
+                # 検証時もGPU前処理を適用
+                inputs = normalize_images_batch_gpu(inputs)
+                inputs = self.log_transform_gpu(inputs)
+                inputs = (inputs - self.norm_mean) / self.norm_std
+
                 outputs = self.net(inputs)
 
                 for evaluator in self.evaluators:
